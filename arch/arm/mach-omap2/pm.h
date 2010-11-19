@@ -289,4 +289,27 @@ static inline int omap_pm_get_pmic_lp_time(u32 *tstart, u32 *tshut)
 static inline void omap_pm_set_osc_lp_time(u32 tstart, u32 tshut) { }
 static inline void omap_pm_set_pmic_lp_time(u32 tstart, u32 tshut) { }
 #endif
+
+/**
+ * struct omap3_secure_copy_data - describe behavior for the secure ram copy
+ * @size:	size of copy to be saved - this is based on the PPA used
+ *		secure ram size could be configured to various sizes, this is
+ *		the size used + 64 byte header required.
+ *
+ * Different platforms use different security PPAs based on their unique needs.
+ * This structure describes the delta behavior expected for these custom
+ * platforms. The defaults are configured for official TI OMAP3 PPA behavior.
+ */
+struct omap3_secure_copy_data {
+	u32 size;
+};
+
+#if defined(CONFIG_PM)
+extern int __init omap3_secure_copy_data_set(struct omap3_secure_copy_data *d);
+#else
+static inline int omap3_secure_copy_data_set(struct omap3_secure_copy_data *d)
+{
+	return -EINVAL;
+}
+#endif
 #endif
