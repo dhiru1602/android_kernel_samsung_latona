@@ -3,7 +3,10 @@
  * Mikkel Christensen <mlc@ti.com>
  * Felipe Balbi <balbi@ti.com>
  *
- * Modified from mach-omap2/board-ldp.c
+ * Modified from mach-omap2/board-zoom.c for Samsung Latona board
+ *
+ * Mark "Hill Beast" Kennard <komcomputers@gmail.com>
+ * crackerizer <github.com/crackerizer>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -29,7 +32,7 @@
 #include <plat/board.h>
 #include <plat/usb.h>
 
-#include <mach/board-zoom.h>
+#include <mach/board-latona.h>
 
 #include "board-flash.h"
 #include "mux.h"
