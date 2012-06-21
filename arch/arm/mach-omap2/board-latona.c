@@ -6,7 +6,7 @@
  * Modified from mach-omap2/board-zoom.c for Samsung Latona board
  *
  * Mark "Hill Beast" Kennard <komcomputers@gmail.com>
- * crackerizer <github.com/crackerizer>
+ * Phinitnan "Crackerizer" Chanasabaeng <phinitnan_c@xtony.us>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -36,8 +36,7 @@
 
 #include "board-flash.h"
 #include "mux.h"
-#include "sdram-micron-mt46h32m32lf-6.h"
-#include "sdram-hynix-h8mbx00u0mer-0em.h"
+#include "sdram-qimonda-hyb18m512160af-6.h"
 #include "omap_ion.h"
 
 #define LATONA_EHCI_RESET_GPIO		64
@@ -51,12 +50,8 @@
 static void __init latona_init_early(void)
 {
 	omap2_init_common_infrastructure();
-	if (machine_is_latona())
-		omap2_init_common_devices(mt46h32m32lf6_sdrc_params,
-					  mt46h32m32lf6_sdrc_params);
-	else if (machine_is_latona())
-		omap2_init_common_devices(h8mbx00u0mer0em_sdrc_params,
-					  h8mbx00u0mer0em_sdrc_params);
+	omap2_init_common_devices(hyb18m512160af6_sdrc_params,
+					  hyb18m512160af6_sdrc_params);
 }
 
 #ifdef CONFIG_OMAP_MUX
@@ -218,14 +213,10 @@ static void latona_wifi_init(void)
 
 static void __init latona_init(void)
 {
-	if (machine_is_latona()) {
-		omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
-	} else if (machine_is_latona()) {
-		omap3_mux_init(board_mux, OMAP_PACKAGE_CBP);
-		omap_mux_init_gpio(LATONA_EHCI_RESET_GPIO, OMAP_PIN_OUTPUT);
-		omap_mux_init_gpio(LATONA_McBSP3_BT_GPIO, OMAP_PIN_OUTPUT);
-		usbhs_init(&usbhs_bdata);
-	}
+	omap3_mux_init(board_mux, OMAP_PACKAGE_CBP);
+	omap_mux_init_gpio(LATONA_EHCI_RESET_GPIO, OMAP_PIN_OUTPUT);
+	omap_mux_init_gpio(LATONA_McBSP3_BT_GPIO, OMAP_PIN_OUTPUT);
+	usbhs_init(&usbhs_bdata);
 
 	board_nand_init(latona_nand_partitions, ARRAY_SIZE(latona_nand_partitions),
 						LATONA_NAND_CS, NAND_BUSWIDTH_16);
