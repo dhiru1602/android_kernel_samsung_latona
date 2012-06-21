@@ -116,10 +116,7 @@ static struct omap_dss_device latona_lcd_device = {
 };
 
 static struct omap_dss_device *latona_dss_devices[] = {
-	&latona_lcd_device,
-	#ifdef CONFIG_PANEL_SIL9022
-		&latona_hdmi_device,
-	#endif
+	&latona_lcd_device
 };
 
 static struct omap_dss_board_info latona_dss_data = {
