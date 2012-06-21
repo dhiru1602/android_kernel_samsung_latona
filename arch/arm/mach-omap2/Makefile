@@ -258,8 +258,8 @@ obj-$(CONFIG_MACH_OMAP_ZOOM3)		+= board-zoom.o \
 					   board-zoom-debugboard.o \
 					   omapxx_apps_brd_id.o
 obj-$(CONFIG_MACH_OMAP_LATONA)		+= board-latona.o \
-					   board-zoom-peripherals.o \
-					   board-zoom-display.o \
+					   board-latona-peripherals.o \
+					   board-latona-display.o \
 					   board-flash.o \
 					   hsmmc.o \
 					   board-zoom-debugboard.o \
