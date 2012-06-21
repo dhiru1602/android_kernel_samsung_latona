@@ -4,7 +4,7 @@
  * Modified from mach-omap2/board-zoom-display.c
  *
  * Mark "Hill Beast" Kennard <komcomputers@gmail.com>
- * crackerizer <github.com/crackerizer>
+ * Phinitnan "Crackerizer" Chanasabaeng <phinitnan_c@xtony.us>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -21,64 +21,10 @@
 #include <video/omapdss.h>
 #include <plat/omap-pm.h>
 #include "mux.h"
-#ifdef CONFIG_PANEL_SIL9022
-#include <mach/sil9022.h>
-#endif
 
 #define LCD_PANEL_RESET_GPIO_PROD	96
 #define LCD_PANEL_RESET_GPIO_PILOT	55
 #define LCD_PANEL_QVGA_GPIO		56
-
-#define SIL9022_RESET_GPIO		97
-
-#ifdef CONFIG_PANEL_SIL9022
-void config_hdmi_gpio(void)
-{
-	/* HDMI_RESET uses CAM_PCLK mode 4*/
-	omap_mux_init_signal("gpio_97", OMAP_PIN_INPUT_PULLUP);
-}
-
-void latona_hdmi_reset_enable(int level)
-{
-	/* Set GPIO_97 to high to pull SiI9022 HDMI transmitter out of reset
-	* and low to disable it.
-	*/
-	gpio_request(SIL9022_RESET_GPIO, "hdmi reset");
-	gpio_direction_output(SIL9022_RESET_GPIO, level);
-}
-
-static int latona_panel_enable_hdmi(struct omap_dss_device *dssdev)
-{
-	latona_hdmi_reset_enable(1);
-	return 0;
-}
-
-static void latona_panel_disable_hdmi(struct omap_dss_device *dssdev)
-{
-	latona_hdmi_reset_enable(0);
-}
-
-struct hdmi_platform_data latona_hdmi_data = {
-
-};
-
-static struct omap_dss_device latona_hdmi_device = {
-	.name = "hdmi",
-	.driver_name = "hdmi_panel",
-	.type = OMAP_DISPLAY_TYPE_DPI,
-	.clocks	= {
-		.dispc	= {
-			.dispc_fclk_src	= OMAP_DSS_CLK_SRC_DSI_PLL_HSDIV_DISPC,
-		},
-	},
-	.phy.dpi.data_lines = 24,
-	.platform_enable = latona_panel_enable_hdmi,
-	.platform_disable = latona_panel_disable_hdmi,
-	.dev		= {
-		.platform_data = &latona_hdmi_data,
-	},
-};
-#endif
 
 static struct gpio latona_lcd_gpios[] __initdata = {
 	{ -EINVAL,		GPIOF_OUT_INIT_HIGH, "lcd reset" },
