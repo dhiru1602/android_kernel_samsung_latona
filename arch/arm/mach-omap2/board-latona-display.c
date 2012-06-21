@@ -101,7 +101,7 @@ static int latona_set_bl_intensity(struct omap_dss_device *dssdev, int level)
 
 static struct omap_dss_device latona_lcd_device = {
 	.name			= "lcd",
-	.driver_name		= "NEC_8048_panel",
+	.driver_name		= "nt35510_panel",
 	.type			= OMAP_DISPLAY_TYPE_DPI,
 	.clocks = {
 		.dispc  = {
@@ -130,11 +130,11 @@ static struct omap2_mcspi_device_config dss_lcd_mcspi_config = {
 	.single_channel	= 1,  /* 0: slave, 1: master */
 };
 
-static struct spi_board_info nec_8048_spi_board_info[] __initdata = {
+static struct spi_board_info nt35510_spi_board_info[] __initdata = {
 	[0] = {
-		.modalias		= "nec_8048_spi",
+		.modalias		= "nt35510_spi",
 		.bus_num		= 1,
-		.chip_select		= 2,
+		.chip_select		= 0,
 		.max_speed_hz		= 375000,
 		.controller_data	= &dss_lcd_mcspi_config,
 	},
@@ -143,8 +143,8 @@ static struct spi_board_info nec_8048_spi_board_info[] __initdata = {
 void __init latona_display_init(void)
 {
 	omap_display_init(&latona_dss_data);
-	spi_register_board_info(nec_8048_spi_board_info,
-				ARRAY_SIZE(nec_8048_spi_board_info));
+	spi_register_board_info(nt35510_spi_board_info,
+				ARRAY_SIZE(nt35510_spi_board_info));
 	latona_lcd_panel_init();
 }
 
