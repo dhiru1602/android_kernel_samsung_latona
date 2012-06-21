@@ -49,6 +49,12 @@ config PANEL_ACX565AKM
 	help
 	  This is the LCD panel used on Nokia N900
 
+config PANEL_LATONA
+        tristate "Latona panel"
+        help
+        	LCD Panel used in the Latona board
+					(Hydis WVGA Panel based on NT35510 controller)
+
 config PANEL_TC358765
 	tristate "Toshiba TC358765 DSI-2-LVDS chip"
 	depends on OMAP2_DSS_DSI && I2C
