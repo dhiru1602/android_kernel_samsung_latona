@@ -22,31 +22,31 @@
 #include <plat/gpmc.h>
 #include <plat/gpmc-smsc911x.h>
 
-#include <mach/board-zoom.h>
+#include <mach/board-latona.h>
 
-#define ZOOM_SMSC911X_CS	7
-#define ZOOM_SMSC911X_GPIO	158
-#define ZOOM_QUADUART_CS	3
-#define ZOOM_QUADUART_GPIO	102
+#define LATONA_SMSC911X_CS	7
+#define LATONA_SMSC911X_GPIO	158
+#define LATONA_QUADUART_CS	3
+#define LATONA_QUADUART_GPIO	102
 #define QUART_CLK		1843200
 #define DEBUG_BASE		0x08000000
-#define ZOOM_ETHR_START	DEBUG_BASE
+#define LATONA_ETHR_START	DEBUG_BASE
 
-static struct omap_smsc911x_platform_data zoom_smsc911x_cfg = {
-	.cs             = ZOOM_SMSC911X_CS,
-	.gpio_irq       = ZOOM_SMSC911X_GPIO,
+static struct omap_smsc911x_platform_data latona_smsc911x_cfg = {
+	.cs             = LATONA_SMSC911X_CS,
+	.gpio_irq       = LATONA_SMSC911X_GPIO,
 	.gpio_reset     = -EINVAL,
 	.flags		= SMSC911X_USE_32BIT,
 };
 
-static inline void __init zoom_init_smsc911x(void)
+static inline void __init latona_init_smsc911x(void)
 {
-	gpmc_smsc911x_init(&zoom_smsc911x_cfg);
+	gpmc_smsc911x_init(&latona_smsc911x_cfg);
 }
 
 static struct plat_serial8250_port serial_platform_data[] = {
 	{
-		.mapbase	= ZOOM_UART_BASE,
+		.mapbase	= OMAP3_UART1_BASE,
 		.irq		= OMAP_GPIO_IRQ(102),
 		.flags		= UPF_BOOT_AUTOCONF|UPF_IOREMAP|UPF_SHARE_IRQ,
 		.irqflags	= IRQF_SHARED | IRQF_TRIGGER_RISING,
@@ -58,7 +58,7 @@ static struct plat_serial8250_port serial_platform_data[] = {
 	}
 };
 
-static struct platform_device zoom_debugboard_serial_device = {
+static struct platform_device latona_debugboard_serial_device = {
 	.name			= "serial8250",
 	.id			= PLAT8250_DEV_PLATFORM,
 	.dev			= {
@@ -66,13 +66,13 @@ static struct platform_device zoom_debugboard_serial_device = {
 	},
 };
 
-static inline void __init zoom_init_quaduart(void)
+static inline void __init latona_init_quaduart(void)
 {
 	int quart_cs;
 	unsigned long cs_mem_base;
 	int quart_gpio = 0;
 
-	quart_cs = ZOOM_QUADUART_CS;
+	quart_cs = LATONA_QUADUART_CS;
 
 	if (gpmc_cs_request(quart_cs, SZ_1M, &cs_mem_base) < 0) {
 		printk(KERN_ERR "Failed to request GPMC mem"
@@ -80,22 +80,22 @@ static inline void __init zoom_init_quaduart(void)
 		return;
 	}
 
-	quart_gpio = ZOOM_QUADUART_GPIO;
+	quart_gpio = LATONA_QUADUART_GPIO;
 
 	if (gpio_request_one(quart_gpio, GPIOF_IN, "TL16CP754C GPIO") < 0)
 		printk(KERN_ERR "Failed to request GPIO%d for TL16CP754C\n",
 								quart_gpio);
 }
 
-static inline int omap_zoom_debugboard_detect(void)
+static inline int latona_debugboard_detect(void)
 {
 	int debug_board_detect = 0;
 	int ret = 1;
 
-	debug_board_detect = ZOOM_SMSC911X_GPIO;
+	debug_board_detect = LATONA_SMSC911X_GPIO;
 
 	if (gpio_request_one(debug_board_detect, GPIOF_IN,
-			     "Zoom debug board detect") < 0) {
+			     "Latona debug board detect") < 0) {
 		printk(KERN_ERR "Failed to request GPIO%d for Zoom debug"
 		"board detect\n", debug_board_detect);
 		return 0;
@@ -108,16 +108,16 @@ static inline int omap_zoom_debugboard_detect(void)
 	return ret;
 }
 
-static struct platform_device *zoom_devices[] __initdata = {
-	&zoom_debugboard_serial_device,
+static struct platform_device *latona_devices[] __initdata = {
+	&latona_debugboard_serial_device,
 };
 
-int __init zoom_debugboard_init(void)
+int __init latona_debugboard_init(void)
 {
-	if (!omap_zoom_debugboard_detect())
+	if (!latona_debugboard_detect())
 		return 0;
 
-	zoom_init_smsc911x();
-	zoom_init_quaduart();
-	return platform_add_devices(zoom_devices, ARRAY_SIZE(zoom_devices));
+	latona_init_smsc911x();
+	latona_init_quaduart();
+	return platform_add_devices(latona_devices, ARRAY_SIZE(latona_devices));
 }

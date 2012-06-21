@@ -39,15 +39,15 @@
 #include <plat/common.h>
 #include <plat/usb.h>
 #include <linux/switch.h>
-#include <mach/board-zoom.h>
+#include <mach/board-latona.h>
 
 #include "mux.h"
 #include "hsmmc.h"
 #include "common-board-devices.h"
 #include "twl4030.h"
 
-#define OMAP_ZOOM_WLAN_PMENA_GPIO	(101)
-#define OMAP_ZOOM_WLAN_IRQ_GPIO		(162)
+#define OMAP_LATONA_WLAN_PMENA_GPIO	(101)
+#define OMAP_LATONA_WLAN_IRQ_GPIO		(162)
 #define OMAP_SYNAPTICS_GPIO			(163)
 
 /* PWM output/clock enable for LCD backlight*/
@@ -126,33 +126,33 @@ static struct matrix_keymap_data board_map_data = {
 	.keymap_size		= ARRAY_SIZE(board_keymap),
 };
 
-static struct twl4030_keypad_data zoom_kp_twl4030_data = {
+static struct twl4030_keypad_data latona_kp_twl4030_data = {
 	.keymap_data	= &board_map_data,
 	.rows		= 8,
 	.cols		= 8,
 	.rep		= 1,
 };
-static struct __initdata twl4030_power_data zoom_t2scripts_data;
+static struct __initdata twl4030_power_data latona_t2scripts_data;
 
-static struct regulator_consumer_supply zoom_vmmc1_supply = {
+static struct regulator_consumer_supply latona_vmmc1_supply = {
 	.supply		= "vmmc",
 };
 
-static struct regulator_consumer_supply zoom_vsim_supply = {
+static struct regulator_consumer_supply latona_vsim_supply = {
 	.supply		= "vmmc_aux",
 };
 
-static struct regulator_consumer_supply zoom_vmmc2_supply = {
+static struct regulator_consumer_supply latona_vmmc2_supply = {
 	.supply		= "vmmc",
 };
 
-static struct regulator_consumer_supply zoom_vmmc3_supply = {
+static struct regulator_consumer_supply latona_vmmc3_supply = {
 	.supply		= "vmmc",
 	.dev_name	= "omap_hsmmc.2",
 };
 
 /* VMMC1 for OMAP VDD_MMC1 (i/o) and MMC1 card */
-static struct regulator_init_data zoom_vmmc1 = {
+static struct regulator_init_data latona_vmmc1 = {
 	.constraints = {
 		.min_uV			= 1850000,
 		.max_uV			= 3150000,
@@ -163,11 +163,11 @@ static struct regulator_init_data zoom_vmmc1 = {
 					| REGULATOR_CHANGE_STATUS,
 	},
 	.num_consumer_supplies  = 1,
-	.consumer_supplies      = &zoom_vmmc1_supply,
+	.consumer_supplies      = &latona_vmmc1_supply,
 };
 
 /* VMMC2 for MMC2 card */
-static struct regulator_init_data zoom_vmmc2 = {
+static struct regulator_init_data latona_vmmc2 = {
 	.constraints = {
 		.min_uV			= 1850000,
 		.max_uV			= 1850000,
@@ -178,11 +178,11 @@ static struct regulator_init_data zoom_vmmc2 = {
 					| REGULATOR_CHANGE_STATUS,
 	},
 	.num_consumer_supplies  = 1,
-	.consumer_supplies      = &zoom_vmmc2_supply,
+	.consumer_supplies      = &latona_vmmc2_supply,
 };
 
 /* VSIM for OMAP VDD_MMC1A (i/o for DAT4..DAT7) */
-static struct regulator_init_data zoom_vsim = {
+static struct regulator_init_data latona_vsim = {
 	.constraints = {
 		.min_uV			= 1800000,
 		.max_uV			= 3000000,
@@ -193,7 +193,7 @@ static struct regulator_init_data zoom_vsim = {
 					| REGULATOR_CHANGE_STATUS,
 	},
 	.num_consumer_supplies  = 1,
-	.consumer_supplies      = &zoom_vsim_supply,
+	.consumer_supplies      = &latona_vsim_supply,
 };
 
 static struct gpio_switch_platform_data headset_switch_data = {
@@ -209,25 +209,25 @@ static struct platform_device headset_switch_device = {
 	}
 };
 
-static struct regulator_init_data zoom_vmmc3 = {
+static struct regulator_init_data latona_vmmc3 = {
 	.constraints = {
 		.valid_ops_mask	= REGULATOR_CHANGE_STATUS,
 	},
 	.num_consumer_supplies	= 1,
-	.consumer_supplies = &zoom_vmmc3_supply,
+	.consumer_supplies = &latona_vmmc3_supply,
 };
 
-static struct fixed_voltage_config zoom_vwlan = {
+static struct fixed_voltage_config latona_vwlan = {
 	.supply_name		= "vwl1271",
 	.microvolts		= 1800000, /* 1.8V */
-	.gpio			= OMAP_ZOOM_WLAN_PMENA_GPIO,
+	.gpio			= OMAP_LATONA_WLAN_PMENA_GPIO,
 	.startup_delay		= 70000, /* 70msec */
 	.enable_high		= 1,
 	.enabled_at_boot	= 0,
-	.init_data		= &zoom_vmmc3,
+	.init_data		= &latona_vmmc3,
 };
 
-static struct platform_device *zoom_board_devices[] __initdata = {
+static struct platform_device *latona_board_devices[] __initdata = {
 	&headset_switch_device,
 };
 
@@ -235,17 +235,17 @@ static struct platform_device omap_vwlan_device = {
 	.name		= "reg-fixed-voltage",
 	.id		= 1,
 	.dev = {
-		.platform_data	= &zoom_vwlan,
+		.platform_data	= &latona_vwlan,
 	},
 };
 
-static struct wl12xx_platform_data omap_zoom_wlan_data __initdata = {
-	.irq = OMAP_GPIO_IRQ(OMAP_ZOOM_WLAN_IRQ_GPIO),
-	/* ZOOM ref clock is 26 MHz */
+static struct wl12xx_platform_data latona_wlan_data __initdata = {
+	.irq = OMAP_GPIO_IRQ(OMAP_LATONA_WLAN_IRQ_GPIO),
+	/* LATONA ref clock is 26 MHz */
 	.board_ref_clock = 1,
 };
 
-static void zoom_pwm_config(u8 brightness)
+static void latona_pwm_config(u8 brightness)
 {
 	u8 pwm_off = 0;
 
@@ -260,7 +260,7 @@ static void zoom_pwm_config(u8 brightness)
 	twl_i2c_write_u8(TWL4030_MODULE_PWM1, pwm_off, 1);
 }
 
-static void zoom_pwm_enable(int enable)
+static void latona_pwm_enable(int enable)
 {
 	u8 gpbr1;
 
@@ -275,47 +275,47 @@ static void zoom_pwm_enable(int enable)
 	twl_i2c_write_u8(TWL4030_MODULE_INTBR, gpbr1, REG_INTBR_GPBR1);
 }
 
-static void zoom_set_primary_brightness(u8 brightness)
+static void latona_set_primary_brightness(u8 brightness)
 {
 	u8 pmbr1;
-	static int zoom_pwm1_config;
-	static int zoom_pwm1_output_enabled;
+	static int latona_pwm1_config;
+	static int latona_pwm1_output_enabled;
 
-	if (zoom_pwm1_config == 0) {
+	if (latona_pwm1_config == 0) {
 		twl_i2c_read_u8(TWL4030_MODULE_INTBR, &pmbr1, REG_INTBR_PMBR1);
 
 		pmbr1 &= ~REG_INTBR_PMBR1_PWM1_PIN_MASK;
 		pmbr1 |=  REG_INTBR_PMBR1_PWM1_PIN_EN;
 		twl_i2c_write_u8(TWL4030_MODULE_INTBR, pmbr1, REG_INTBR_PMBR1);
 
-		zoom_pwm1_config = 1;
+		latona_pwm1_config = 1;
 	}
 
 	if (!brightness) {
-		zoom_pwm_enable(0);
-		zoom_pwm1_output_enabled = 0;
+		latona_pwm_enable(0);
+		latona_pwm1_output_enabled = 0;
 		return;
 	}
 
-	zoom_pwm_config(brightness);
-	if (zoom_pwm1_output_enabled == 0) {
-		zoom_pwm_enable(1);
-		zoom_pwm1_output_enabled = 1;
+	latona_pwm_config(brightness);
+	if (latona_pwm1_output_enabled == 0) {
+		latona_pwm_enable(1);
+		latona_pwm1_output_enabled = 1;
 	}
 }
 
-static struct omap4430_sdp_disp_led_platform_data zoom_disp_led_data = {
+static struct omap4430_sdp_disp_led_platform_data latona_disp_led_data = {
 	.flags = LEDS_CTRL_AS_ONE_DISPLAY,
-	.primary_display_set = zoom_set_primary_brightness,
+	.primary_display_set = latona_set_primary_brightness,
 	.secondary_display_set = NULL,
 };
 
 
-static struct platform_device zoom_disp_led = {
+static struct platform_device latona_disp_led = {
 	.name   =       "display_led",
 	.id     =       -1,
 	.dev    = {
-		.platform_data = &zoom_disp_led_data,
+		.platform_data = &latona_disp_led_data,
 	},
 };
 
@@ -347,15 +347,15 @@ static struct omap2_hsmmc_info mmc[] = {
 	{}      /* Terminator */
 };
 
-static struct regulator_consumer_supply zoom_vpll2_supplies[] = {
+static struct regulator_consumer_supply latona_vpll2_supplies[] = {
 	REGULATOR_SUPPLY("vdds_dsi", "omapdss"),
 	REGULATOR_SUPPLY("vdds_dsi", "omapdss_dsi1"),
 };
 
-static struct regulator_consumer_supply zoom_vdda_dac_supply =
+static struct regulator_consumer_supply latona_vdda_dac_supply =
 	REGULATOR_SUPPLY("vdda_dac", "omapdss_venc");
 
-static struct regulator_init_data zoom_vpll2 = {
+static struct regulator_init_data latona_vpll2 = {
 	.constraints = {
 		.min_uV                 = 1800000,
 		.max_uV                 = 1800000,
@@ -364,11 +364,11 @@ static struct regulator_init_data zoom_vpll2 = {
 		.valid_ops_mask         = REGULATOR_CHANGE_MODE
 					| REGULATOR_CHANGE_STATUS,
 	},
-	.num_consumer_supplies		= ARRAY_SIZE(zoom_vpll2_supplies),
-	.consumer_supplies		= zoom_vpll2_supplies,
+	.num_consumer_supplies		= ARRAY_SIZE(latona_vpll2_supplies),
+	.consumer_supplies		= latona_vpll2_supplies,
 };
 
-static struct regulator_init_data zoom_vdac = {
+static struct regulator_init_data latona_vdac = {
 	.constraints = {
 		.min_uV                 = 1800000,
 		.max_uV                 = 1800000,
@@ -378,10 +378,10 @@ static struct regulator_init_data zoom_vdac = {
 					| REGULATOR_CHANGE_STATUS,
 	},
 	.num_consumer_supplies		= 1,
-	.consumer_supplies		= &zoom_vdda_dac_supply,
+	.consumer_supplies		= &latona_vdda_dac_supply,
 };
 
-static int zoom_twl_gpio_setup(struct device *dev,
+static int latona_twl_gpio_setup(struct device *dev,
 		unsigned gpio, unsigned ngpio)
 {
 	int ret;
@@ -393,9 +393,9 @@ static int zoom_twl_gpio_setup(struct device *dev,
 	/* link regulators to MMC adapters ... we "know" the
 	 * regulators will be set up only *after* we return.
 	*/
-	zoom_vmmc1_supply.dev = mmc[0].dev;
-	zoom_vsim_supply.dev = mmc[0].dev;
-	zoom_vmmc2_supply.dev = mmc[1].dev;
+	latona_vmmc1_supply.dev = mmc[0].dev;
+	latona_vsim_supply.dev = mmc[0].dev;
+	latona_vmmc2_supply.dev = mmc[1].dev;
 
 	ret = gpio_request_one(LCD_PANEL_ENABLE_GPIO, GPIOF_OUT_INIT_LOW,
 			       "lcd enable");
@@ -407,12 +407,12 @@ static int zoom_twl_gpio_setup(struct device *dev,
 }
 
 /* EXTMUTE callback function */
-static void zoom2_set_hs_extmute(int mute)
+static void latona_set_hs_extmute(int mute)
 {
-	gpio_set_value(ZOOM2_HEADSET_EXTMUTE_GPIO, mute);
+	gpio_set_value(LATONA_HEADSET_EXTMUTE_GPIO, mute);
 }
 
-static int zoom_batt_table[] = {
+static int latona_batt_table[] = {
 /* 0 C*/
 30800, 29500, 28300, 27100,
 26000, 24900, 23900, 22900, 22000, 21100, 20300, 19400, 18700, 17900,
@@ -423,50 +423,50 @@ static int zoom_batt_table[] = {
 4040,  3910,  3790,  3670,  3550
 };
 
-static struct twl4030_bci_platform_data zoom_bci_data = {
-	.battery_tmp_tbl	= zoom_batt_table,
-	.tblsize		= ARRAY_SIZE(zoom_batt_table),
+static struct twl4030_bci_platform_data latona_bci_data = {
+	.battery_tmp_tbl	= latona_batt_table,
+	.tblsize		= ARRAY_SIZE(latona_batt_table),
 };
 
-static struct twl4030_usb_data zoom_usb_data = {
+static struct twl4030_usb_data latona_usb_data = {
 	.usb_mode	= T2_USB_MODE_ULPI,
 };
 
-static struct twl4030_gpio_platform_data zoom_gpio_data = {
+static struct twl4030_gpio_platform_data latona_gpio_data = {
 	.gpio_base	= OMAP_MAX_GPIO_LINES,
 	.irq_base	= TWL4030_GPIO_IRQ_BASE,
 	.irq_end	= TWL4030_GPIO_IRQ_END,
-	.setup		= zoom_twl_gpio_setup,
+	.setup		= latona_twl_gpio_setup,
 };
 
-static struct twl4030_madc_platform_data zoom_madc_data = {
+static struct twl4030_madc_platform_data latona_madc_data = {
 	.irq_line	= 1,
 };
 
-static struct twl4030_codec_audio_data zoom_audio_data;
+static struct twl4030_codec_audio_data latona_audio_data;
 
-static struct twl4030_codec_data zoom_codec_data = {
+static struct twl4030_codec_data latona_codec_data = {
 	.audio_mclk = 26000000,
-	.audio = &zoom_audio_data,
+	.audio = &latona_audio_data,
 };
 
-static struct twl4030_platform_data zoom_twldata = {
+static struct twl4030_platform_data latona_twldata = {
 	.irq_base	= TWL4030_IRQ_BASE,
 	.irq_end	= TWL4030_IRQ_END,
 
 	/* platform_data for children goes here */
-	.bci		= &zoom_bci_data,
-	.madc		= &zoom_madc_data,
-	.usb		= &zoom_usb_data,
-	.gpio		= &zoom_gpio_data,
-	.keypad		= &zoom_kp_twl4030_data,
-	.power		= &zoom_t2scripts_data,
-	.codec		= &zoom_codec_data,
-	.vmmc1          = &zoom_vmmc1,
-	.vmmc2          = &zoom_vmmc2,
-	.vsim           = &zoom_vsim,
-	.vpll2		= &zoom_vpll2,
-	.vdac		= &zoom_vdac,
+	.bci		= &latona_bci_data,
+	.madc		= &latona_madc_data,
+	.usb		= &latona_usb_data,
+	.gpio		= &latona_gpio_data,
+	.keypad		= &latona_kp_twl4030_data,
+	.power		= &latona_t2scripts_data,
+	.codec		= &latona_codec_data,
+	.vmmc1          = &latona_vmmc1,
+	.vmmc2          = &latona_vmmc2,
+	.vsim           = &latona_vsim,
+	.vpll2		= &latona_vpll2,
+	.vdac		= &latona_vdac,
 };
 
 static void synaptics_dev_init(void)
@@ -497,7 +497,7 @@ static struct synaptics_i2c_rmi_platform_data synaptics_platform_data[] = {
 	}
 };
 
-static struct i2c_board_info __initdata zoom2_i2c_bus2_info[] = {
+static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
 	{
 		I2C_BOARD_INFO(SYNAPTICS_I2C_RMI_NAME,  0x20),
 		.platform_data = &synaptics_platform_data,
@@ -507,19 +507,19 @@ static struct i2c_board_info __initdata zoom2_i2c_bus2_info[] = {
 	defined(CONFIG_VIDEO_OMAP3)
 	{
 		I2C_BOARD_INFO(IMX046_NAME, IMX046_I2C_ADDR),
-		.platform_data = &zoom2_imx046_platform_data,
+		.platform_data = &latona_imx046_platform_data,
 	},
 #endif
 #if (defined(CONFIG_VIDEO_LV8093) || defined(CONFIG_VIDEO_LV8093_MODULE)) && \
 	defined(CONFIG_VIDEO_OMAP3)
 	{
 		I2C_BOARD_INFO(LV8093_NAME,  LV8093_AF_I2C_ADDR),
-		.platform_data = &zoom2_lv8093_platform_data,
+		.platform_data = &latona_lv8093_platform_data,
 	},
 #endif
 };
 
-static struct i2c_board_info __initdata zoom2_i2c_bus3_info[] = {
+static struct i2c_board_info __initdata latona_i2c_bus3_info[] = {
 #ifdef CONFIG_PANEL_SIL9022
 	{
 		I2C_BOARD_INFO(SIL9022_DRV_NAME, SI9022_I2CSLAVEADDRESS),
@@ -528,16 +528,16 @@ static struct i2c_board_info __initdata zoom2_i2c_bus3_info[] = {
 };
 static int __init omap_i2c_init(void)
 {
-	if (machine_is_omap_zoom2()) {
-		zoom_audio_data.ramp_delay_value = 3;	/* 161 ms */
-		zoom_audio_data.hs_extmute = 1;
-		zoom_audio_data.set_hs_extmute = zoom2_set_hs_extmute;
+	if (machine_is_latona()) {
+		latona_audio_data.ramp_delay_value = 3;	/* 161 ms */
+		latona_audio_data.hs_extmute = 1;
+		latona_audio_data.set_hs_extmute = latona_set_hs_extmute;
 	}
-	omap_pmic_init(1, 2400, "twl5030", INT_34XX_SYS_NIRQ, &zoom_twldata);
-	omap_register_i2c_bus(2, 100, zoom2_i2c_bus2_info,
-			ARRAY_SIZE(zoom2_i2c_bus2_info));
-	omap_register_i2c_bus(3, 400, zoom2_i2c_bus3_info,
-			ARRAY_SIZE(zoom2_i2c_bus3_info));
+	omap_pmic_init(1, 2400, "twl5030", INT_34XX_SYS_NIRQ, &latona_twldata);
+	omap_register_i2c_bus(2, 100, latona_i2c_bus2_info,
+			ARRAY_SIZE(latona_i2c_bus2_info));
+	omap_register_i2c_bus(3, 400, latona_i2c_bus3_info,
+			ARRAY_SIZE(latona_i2c_bus3_info));
 	return 0;
 }
 
@@ -548,21 +548,21 @@ static void enable_board_wakeup_source(void)
 		OMAP_WAKEUP_EN | OMAP_PIN_INPUT_PULLUP);
 }
 
-void __init zoom_peripherals_init(void)
+void __init latona_peripherals_init(void)
 {
-	platform_add_devices(zoom_board_devices,
-		ARRAY_SIZE(zoom_board_devices));
-	twl4030_get_scripts(&zoom_t2scripts_data);
+	platform_add_devices(latona_board_devices,
+		ARRAY_SIZE(latona_board_devices));
+	twl4030_get_scripts(&latona_t2scripts_data);
 	omap_i2c_init();
 	synaptics_dev_init();
 	platform_device_register(&omap_vwlan_device);
-	platform_device_register(&zoom_disp_led);
+	platform_device_register(&latona_disp_led);
 	usb_musb_init(NULL);
 	enable_board_wakeup_source();
 	omap_serial_init();
-	zoom2_cam_init();
+	latona_cam_init();
 	#ifdef CONFIG_PANEL_SIL9022
 	config_hdmi_gpio();
-	zoom_hdmi_reset_enable(1);
+	latona_hdmi_reset_enable(1);
 	#endif
 }

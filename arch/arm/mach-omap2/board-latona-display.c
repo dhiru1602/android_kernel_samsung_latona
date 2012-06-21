@@ -38,7 +38,7 @@ void config_hdmi_gpio(void)
 	omap_mux_init_signal("gpio_97", OMAP_PIN_INPUT_PULLUP);
 }
 
-void zoom_hdmi_reset_enable(int level)
+void latona_hdmi_reset_enable(int level)
 {
 	/* Set GPIO_97 to high to pull SiI9022 HDMI transmitter out of reset
 	* and low to disable it.
@@ -47,22 +47,22 @@ void zoom_hdmi_reset_enable(int level)
 	gpio_direction_output(SIL9022_RESET_GPIO, level);
 }
 
-static int zoom_panel_enable_hdmi(struct omap_dss_device *dssdev)
+static int latona_panel_enable_hdmi(struct omap_dss_device *dssdev)
 {
-	zoom_hdmi_reset_enable(1);
+	latona_hdmi_reset_enable(1);
 	return 0;
 }
 
-static void zoom_panel_disable_hdmi(struct omap_dss_device *dssdev)
+static void latona_panel_disable_hdmi(struct omap_dss_device *dssdev)
 {
-	zoom_hdmi_reset_enable(0);
+	latona_hdmi_reset_enable(0);
 }
 
-struct hdmi_platform_data zoom_hdmi_data = {
+struct hdmi_platform_data latona_hdmi_data = {
 
 };
 
-static struct omap_dss_device zoom_hdmi_device = {
+static struct omap_dss_device latona_hdmi_device = {
 	.name = "hdmi",
 	.driver_name = "hdmi_panel",
 	.type = OMAP_DISPLAY_TYPE_DPI,
@@ -72,35 +72,35 @@ static struct omap_dss_device zoom_hdmi_device = {
 		},
 	},
 	.phy.dpi.data_lines = 24,
-	.platform_enable = zoom_panel_enable_hdmi,
-	.platform_disable = zoom_panel_disable_hdmi,
+	.platform_enable = latona_panel_enable_hdmi,
+	.platform_disable = latona_panel_disable_hdmi,
 	.dev		= {
-		.platform_data = &zoom_hdmi_data,
+		.platform_data = &latona_hdmi_data,
 	},
 };
 #endif
 
-static struct gpio zoom_lcd_gpios[] __initdata = {
+static struct gpio latona_lcd_gpios[] __initdata = {
 	{ -EINVAL,		GPIOF_OUT_INIT_HIGH, "lcd reset" },
 	{ LCD_PANEL_QVGA_GPIO,	GPIOF_OUT_INIT_HIGH, "lcd qvga"	 },
 };
 
-static void __init zoom_lcd_panel_init(void)
+static void __init latona_lcd_panel_init(void)
 {
-	zoom_lcd_gpios[0].gpio = (omap_rev() > OMAP3430_REV_ES3_0) ?
+	latona_lcd_gpios[0].gpio = (omap_rev() > OMAP3430_REV_ES3_0) ?
 			LCD_PANEL_RESET_GPIO_PROD :
 			LCD_PANEL_RESET_GPIO_PILOT;
 
-	if (gpio_request_array(zoom_lcd_gpios, ARRAY_SIZE(zoom_lcd_gpios)))
+	if (gpio_request_array(latona_lcd_gpios, ARRAY_SIZE(latona_lcd_gpios)))
 		pr_err("%s: Failed to get LCD GPIOs.\n", __func__);
 }
 
-static int zoom_panel_enable_lcd(struct omap_dss_device *dssdev)
+static int latona_panel_enable_lcd(struct omap_dss_device *dssdev)
 {
 	return 0;
 }
 
-static void zoom_panel_disable_lcd(struct omap_dss_device *dssdev)
+static void latona_panel_disable_lcd(struct omap_dss_device *dssdev)
 {
 }
 
@@ -112,7 +112,7 @@ static void zoom_panel_disable_lcd(struct omap_dss_device *dssdev)
 #define TWL_LED_PWMON	0x0
 #define TWL_LED_PWMOFF	0x1
 
-static int zoom_set_bl_intensity(struct omap_dss_device *dssdev, int level)
+static int latona_set_bl_intensity(struct omap_dss_device *dssdev, int level)
 {
 	unsigned char c;
 	u8 mux_pwm, enb_pwm;
@@ -153,7 +153,7 @@ static int zoom_set_bl_intensity(struct omap_dss_device *dssdev, int level)
 	return 0;
 }
 
-static struct omap_dss_device zoom_lcd_device = {
+static struct omap_dss_device latona_lcd_device = {
 	.name			= "lcd",
 	.driver_name		= "NEC_8048_panel",
 	.type			= OMAP_DISPLAY_TYPE_DPI,
@@ -163,23 +163,23 @@ static struct omap_dss_device zoom_lcd_device = {
 		},
 	},
 	.phy.dpi.data_lines	= 24,
-	.platform_enable	= zoom_panel_enable_lcd,
-	.platform_disable	= zoom_panel_disable_lcd,
+	.platform_enable	= latona_panel_enable_lcd,
+	.platform_disable	= latona_panel_disable_lcd,
 	.max_backlight_level	= 100,
-	.set_backlight		= zoom_set_bl_intensity,
+	.set_backlight		= latona_set_bl_intensity,
 };
 
-static struct omap_dss_device *zoom_dss_devices[] = {
-	&zoom_lcd_device,
+static struct omap_dss_device *latona_dss_devices[] = {
+	&latona_lcd_device,
 	#ifdef CONFIG_PANEL_SIL9022
-		&zoom_hdmi_device,
+		&latona_hdmi_device,
 	#endif
 };
 
-static struct omap_dss_board_info zoom_dss_data = {
-	.num_devices		= ARRAY_SIZE(zoom_dss_devices),
-	.devices		= zoom_dss_devices,
-	.default_device		= &zoom_lcd_device,
+static struct omap_dss_board_info latona_dss_data = {
+	.num_devices		= ARRAY_SIZE(latona_dss_devices),
+	.devices		= latona_dss_devices,
+	.default_device		= &latona_lcd_device,
 };
 
 static struct omap2_mcspi_device_config dss_lcd_mcspi_config = {
@@ -197,11 +197,11 @@ static struct spi_board_info nec_8048_spi_board_info[] __initdata = {
 	},
 };
 
-void __init zoom_display_init(void)
+void __init latona_display_init(void)
 {
-	omap_display_init(&zoom_dss_data);
+	omap_display_init(&latona_dss_data);
 	spi_register_board_info(nec_8048_spi_board_info,
 				ARRAY_SIZE(nec_8048_spi_board_info));
-	zoom_lcd_panel_init();
+	latona_lcd_panel_init();
 }
 

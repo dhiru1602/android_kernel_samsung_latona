@@ -262,7 +262,7 @@ obj-$(CONFIG_MACH_OMAP_LATONA)		+= board-latona.o \
 					   board-latona-display.o \
 					   board-flash.o \
 					   hsmmc.o \
-					   board-zoom-debugboard.o \
+					   board-latona-debugboard.o \
 					   omapxx_apps_brd_id.o					   
 obj-$(CONFIG_MACH_OMAP_3630SDP)		+= board-3630sdp.o \
 					   board-zoom-peripherals.o \

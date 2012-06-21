@@ -40,21 +40,21 @@
 #include "sdram-hynix-h8mbx00u0mer-0em.h"
 #include "omap_ion.h"
 
-#define ZOOM3_EHCI_RESET_GPIO		64
-#define ZOOM3_McBSP3_BT_GPIO            164
-#define ZOOM3_BT_RESET_GPIO             109
-#define ZOOM3_WIFI_PMENA_GPIO		157
-#define ZOOM3_WIFI_IRQ_GPIO		162
+#define LATONA_EHCI_RESET_GPIO		64
+#define LATONA_McBSP3_BT_GPIO            164
+#define LATONA_BT_RESET_GPIO             109
+#define LATONA_WIFI_PMENA_GPIO		157
+#define LATONA_WIFI_IRQ_GPIO		162
 
 #define WILINK_UART_DEV_NAME            "/dev/ttyO1"
 
-static void __init omap_zoom_init_early(void)
+static void __init latona_init_early(void)
 {
 	omap2_init_common_infrastructure();
-	if (machine_is_omap_zoom2())
+	if (machine_is_latona())
 		omap2_init_common_devices(mt46h32m32lf6_sdrc_params,
 					  mt46h32m32lf6_sdrc_params);
-	else if (machine_is_omap_zoom3())
+	else if (machine_is_latona())
 		omap2_init_common_devices(h8mbx00u0mer0em_sdrc_params,
 					  h8mbx00u0mer0em_sdrc_params);
 }
@@ -78,7 +78,7 @@ static struct omap_board_mux board_mux[] __initdata = {
 };
 #endif
 
-static struct mtd_partition zoom_nand_partitions[] = {
+static struct mtd_partition latona_nand_partitions[] = {
 	/* All the partition sizes are listed in terms of NAND block size */
 	{
 		.name		= "X-Loader-NAND",
@@ -125,7 +125,7 @@ static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
 	.port_mode[2]		= OMAP_USBHS_PORT_MODE_UNUSED,
 	.phy_reset		= true,
 	.reset_gpio_port[0]	= -EINVAL,
-	.reset_gpio_port[1]	= ZOOM3_EHCI_RESET_GPIO,
+	.reset_gpio_port[1]	= LATONA_EHCI_RESET_GPIO,
 	.reset_gpio_port[2]	= -EINVAL,
 };
 
@@ -158,7 +158,7 @@ static struct platform_device btwilink_device = {
 	.id = -1,
 };
 
-static struct platform_device *zoom_devices[] __initdata = {
+static struct platform_device *latona_devices[] __initdata = {
 	&wl127x_device,
 	&btwilink_device,
 };
@@ -170,19 +170,19 @@ static int wl127x_vio_leakage_fix(void)
 
 	pr_info(" wl127x_vio_leakage_fix\n");
 
-	ret = gpio_request(ZOOM3_BT_RESET_GPIO, "wl127x_bten");
+	ret = gpio_request(LATONA_BT_RESET_GPIO, "wl127x_bten");
 	if (ret < 0) {
 		pr_err("wl127x_bten gpio_%d request fail",
-			ZOOM3_BT_RESET_GPIO);
+			LATONA_BT_RESET_GPIO);
 		goto fail;
 	}
 
-	gpio_direction_output(ZOOM3_BT_RESET_GPIO, 1);
+	gpio_direction_output(LATONA_BT_RESET_GPIO, 1);
 	mdelay(10);
-	gpio_direction_output(ZOOM3_BT_RESET_GPIO, 0);
+	gpio_direction_output(LATONA_BT_RESET_GPIO, 0);
 	udelay(64);
 
-	gpio_free(ZOOM3_BT_RESET_GPIO);
+	gpio_free(LATONA_BT_RESET_GPIO);
 fail:
 	return ret;
 }
@@ -190,8 +190,8 @@ fail:
 static void config_wlan_mux(void)
 {
 	/* WLAN PW_EN and IRQ */
-	omap_mux_init_gpio(ZOOM3_WIFI_PMENA_GPIO, OMAP_PIN_OUTPUT);
-	omap_mux_init_gpio(ZOOM3_WIFI_IRQ_GPIO, OMAP_PIN_INPUT |
+	omap_mux_init_gpio(LATONA_WIFI_PMENA_GPIO, OMAP_PIN_OUTPUT);
+	omap_mux_init_gpio(LATONA_WIFI_IRQ_GPIO, OMAP_PIN_INPUT |
 				OMAP_PIN_OFF_WAKEUPENABLE);
 
 	/* MMC3 */
@@ -203,43 +203,43 @@ static void config_wlan_mux(void)
 	omap_mux_init_signal("etk_d3.sdmmc3_dat3", OMAP_PIN_INPUT_PULLUP);
 }
 
-static struct wl12xx_platform_data zoom3_wlan_data __initdata = {
-	.irq = OMAP_GPIO_IRQ(ZOOM3_WIFI_IRQ_GPIO),
+static struct wl12xx_platform_data latona_wlan_data __initdata = {
+	.irq = OMAP_GPIO_IRQ(LATONA_WIFI_IRQ_GPIO),
 	.board_ref_clock = WL12XX_REFCLOCK_26,
 	.board_tcxo_clock = WL12XX_TCXOCLOCK_26,
 };
 
-static void zoom3_wifi_init(void)
+static void latona_wifi_init(void)
 {
 	config_wlan_mux();
-	if (wl12xx_set_platform_data(&zoom3_wlan_data))
+	if (wl12xx_set_platform_data(&latona_wlan_data))
 		pr_err("Error setting wl12xx data\n");
 }
 
-static void __init omap_zoom_init(void)
+static void __init latona_init(void)
 {
-	if (machine_is_omap_zoom2()) {
+	if (machine_is_latona()) {
 		omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
-	} else if (machine_is_omap_zoom3()) {
+	} else if (machine_is_latona()) {
 		omap3_mux_init(board_mux, OMAP_PACKAGE_CBP);
-		omap_mux_init_gpio(ZOOM3_EHCI_RESET_GPIO, OMAP_PIN_OUTPUT);
-		omap_mux_init_gpio(ZOOM3_McBSP3_BT_GPIO, OMAP_PIN_OUTPUT);
+		omap_mux_init_gpio(LATONA_EHCI_RESET_GPIO, OMAP_PIN_OUTPUT);
+		omap_mux_init_gpio(LATONA_McBSP3_BT_GPIO, OMAP_PIN_OUTPUT);
 		usbhs_init(&usbhs_bdata);
 	}
 
-	board_nand_init(zoom_nand_partitions, ARRAY_SIZE(zoom_nand_partitions),
-						ZOOM_NAND_CS, NAND_BUSWIDTH_16);
-	zoom3_wifi_init();
-	zoom_debugboard_init();
-	zoom_peripherals_init();
-	zoom_display_init();
+	board_nand_init(latona_nand_partitions, ARRAY_SIZE(latona_nand_partitions),
+						LATONA_NAND_CS, NAND_BUSWIDTH_16);
+	latona_wifi_init();
+	latona_debugboard_init();
+	latona_peripherals_init();
+	latona_display_init();
 	omap_register_ion();
-	/* Added to register zoom devices */
-	platform_add_devices(zoom_devices, ARRAY_SIZE(zoom_devices));
+	/* Added to register latona devices */
+	platform_add_devices(latona_devices, ARRAY_SIZE(latona_devices));
 	wl127x_vio_leakage_fix();
 }
 
-static void __init zoom_reserve(void)
+static void __init latona_reserve(void)
 {
 	/* do the static reservations first */
 	memblock_remove(OMAP3_PHYS_ADDR_SMC_MEM, PHYS_ADDR_SMC_SIZE);
@@ -252,10 +252,10 @@ static void __init zoom_reserve(void)
 
 MACHINE_START(LATONA, "Latona board")
 	.boot_params	= 0x80000100,
-	.reserve	= zoom_reserve,
+	.reserve	= latona_reserve,
 	.map_io		= omap3_map_io,
-	.init_early	= omap_zoom_init_early,
+	.init_early	= latona_init_early,
 	.init_irq	= omap_init_irq,
-	.init_machine	= omap_zoom_init,
+	.init_machine	= latona_init,
 	.timer		= &omap_timer,
 MACHINE_END
