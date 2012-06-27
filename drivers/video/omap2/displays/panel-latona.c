@@ -122,16 +122,14 @@ int latona_panel_power_up(struct omap_dss_device *dssdev)
 	if(regulator_enable(latona_panel_vreg28))
 	 {
 		dev_err(&dssdev->dev, "[%s] failed to enable LCD 2.8V regulator\n", 
-		                      __func__);
-		                      
+		                      __func__);		                      
 		return -ENODEV;
 	 }
 	
 	if(regulator_enable(latona_panel_vreg18))
 	 {
 		dev_err(&dssdev->dev, "[%s] failed to enable LCD 1.8V regulator\n",
-		                      __func__);
-		                      
+		                      __func__);		                      
 		return -ENODEV;
 	 }
 
@@ -153,29 +151,25 @@ void latona_panel_power_down(void)
   regulator_put(latona_panel_vreg18);
 }
 
+void latona_panel_set_brightness(void)
+{
+  LP_SPI_CMD(0x51);
+  LP_SPI_DAT(latona_panel_bl->prop.brightness);
+}
+
 /************************* Latona panel backlight ****************************/
 static int latona_panel_bl_set_brightness(struct backlight_device *bd)
 {
-	//unsigned long flags;
-	int intensity = bd->props.brightness;
-//	int retry_count=10;
-	
-	if( intensity < 0 || intensity > 255 )
-		return;
-/*
-	while(atomic_read(&ldi_power_state)==POWER_OFF) 
-	{
-		if(--retry_count == 0)
-			break;
-		mdelay(5);
-	}
-*/	
-	current_intensity = intensity;
-	if(atomic_read(&ldi_power_state)==POWER_OFF) 
-		return;
-	aat1402_set_brightness();
+  latona_panel_bl->prop.brightness = bd->prop.brightness;
+  
+  latona_panel_set_brightness(); 
 
 	return 0;
+}
+
+static int latona_panel_bl_get_brightness(struct backlight_device *bd)
+{
+  return latona_panel_bl->prop.brightness;
 }
 
 static struct backlight_ops latona_panel_bl_ops = {
@@ -266,13 +260,14 @@ static int latona_panel_enable(struct omap_dss_device *dssdev)
 	 {
 		dev_err(&dssdev->dev, "[%s] failed to enable dpi display\n",
 		                    __func__);
-		return -ENODEV;	  
+		return status;	  
 	 }
 	
 	if(status = latona_panel_power_up(dssdev))
     return status;
     
 	latona_panel_init();
+	latona_panel_set_brightness();
 		
 	dssdev->state = OMAP_DSS_DISPLAY_ACTIVE;
 
@@ -304,11 +299,9 @@ static void latona_panel_suspend(struct omap_dss_device *dssdev)
 	dssdev->state = OMAP_DSS_DISPLAY_SUSPENDED;
 }
 
-static void latona_panel_enable(struct omap_dss_device *dssdev)
+static void latona_panel_resume(struct omap_dss_device *dssdev)
 {
   latona_panel_enable(dssdev);
-
-	dssdev->state = OMAP_DSS_DISPLAY_ACTIVE;
 }
 
 static struct omap_dss_driver latona_panel_driver = {
