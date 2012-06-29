@@ -137,9 +137,9 @@ int latona_panel_power_up(struct omap_dss_device *dssdev)
 	msleep(150);
 
 	/* reset sequence */
-	gpio_set_value(dssdev->reset_gpio, GPIO_LEVEL_LOW);	
+	gpio_set_value(dssdev->reset_gpio, 0);	
 	msleep(1);
-	gpio_set_value(dssdev->reset_gpio, GPIO_LEVEL_HIGH);
+	gpio_set_value(dssdev->reset_gpio, 1);
 	msleep(10);
 	
 	return 0;
@@ -154,13 +154,13 @@ void latona_panel_power_down(void)
 void latona_panel_set_brightness(void)
 {
   LP_SPI_CMD(0x51);
-  LP_SPI_DAT(latona_panel_bl->prop.brightness);
+  LP_SPI_DAT(latona_panel_bl->props.brightness);
 }
 
 /************************* Latona panel backlight ****************************/
 static int latona_panel_bl_set_brightness(struct backlight_device *bd)
 {
-  latona_panel_bl->prop.brightness = bd->prop.brightness;
+  latona_panel_bl->props.brightness = bd->props.brightness;
   
   latona_panel_set_brightness(); 
 
@@ -169,7 +169,7 @@ static int latona_panel_bl_set_brightness(struct backlight_device *bd)
 
 static int latona_panel_bl_get_brightness(struct backlight_device *bd)
 {
-  return latona_panel_bl->prop.brightness;
+  return latona_panel_bl->props.brightness;
 }
 
 static struct backlight_ops latona_panel_bl_ops = {
@@ -221,9 +221,9 @@ static int latona_panel_probe(struct omap_dss_device *dssdev)
 	props.max_brightness = LATONA_PANEL_BL_MAX_LV;
 
 	/* register backlight device */
-	if(latona_panel_bl = backlight_device_register("latona_panel_bl", 
+	if((latona_panel_bl = backlight_device_register("latona_panel_bl", 
 	                     &dssdev->dev, NULL, 
-	                     &latona_panel_bl_ops, &props))
+	                     &latona_panel_bl_ops, &props)))
 	 {
 		dev_err(&dssdev->dev, "[%s] failed to register backlight device\n",
 		                    __func__);
@@ -249,21 +249,21 @@ static int latona_panel_enable(struct omap_dss_device *dssdev)
 
 	if(dssdev->platform_enable)
 	 {
-		if(status = dssdev->platform_enable(dssdev))
+		if((status = dssdev->platform_enable(dssdev)))
 		 {
 			omapdss_dpi_display_disable(dssdev);
 			return status;
 		 }
    }				
 
-	if(status = omapdss_dpi_display_enable(dssdev))
+	if((status = omapdss_dpi_display_enable(dssdev)))
 	 {
 		dev_err(&dssdev->dev, "[%s] failed to enable dpi display\n",
 		                    __func__);
 		return status;	  
 	 }
 	
-	if(status = latona_panel_power_up(dssdev))
+	if((status = latona_panel_power_up(dssdev)))
     return status;
     
 	latona_panel_init();
@@ -292,16 +292,17 @@ static void latona_panel_disable(struct omap_dss_device *dssdev)
 	dssdev->state = OMAP_DSS_DISPLAY_DISABLED;
 }
 
-static void latona_panel_suspend(struct omap_dss_device *dssdev)
-{
+static int latona_panel_suspend(struct omap_dss_device *dssdev)
+{  
   latona_panel_disable(dssdev);
-
 	dssdev->state = OMAP_DSS_DISPLAY_SUSPENDED;
+	
+	return 0;
 }
 
-static void latona_panel_resume(struct omap_dss_device *dssdev)
+static int latona_panel_resume(struct omap_dss_device *dssdev)
 {
-  latona_panel_enable(dssdev);
+  return latona_panel_enable(dssdev);
 }
 
 static struct omap_dss_driver latona_panel_driver = {
@@ -349,23 +350,14 @@ static int latona_panel_spi_probe(struct spi_device *spi)
 		return status;   
    }	
 
-  /* create spi dev file */
-	status = device_create_file(&(spi->dev), &dev_attr_lcd_power);
-
-	if (status < 0)
-   {
-    dev_err(&spi->dev, "[%s] Can not create device file %s, status %d\n",
-        __func__, dev_name(&spi->dev), status);
-		
-		return status;   
-   }
-
 	return 0;
 }
 
 static int latona_panel_spi_remove(struct spi_device *spi)
 {	
-	return omap_dss_unregister_driver(&latona_panel_driver);
+	omap_dss_unregister_driver(&latona_panel_driver);
+	
+	return 0;
 }
 
 static struct spi_driver latona_panel_spi_driver = {
