@@ -308,6 +308,9 @@ int dsscomp_gralloc_queue(struct dsscomp_setup_dispc_data *d,
 		}
 		ch = channels[mgr_ix];
 
+		if (cdev && oi->cfg.ix >= cdev->num_ovls)
+			continue;
+
 		/* skip overlays on compositions we could not create */
 		if (!comp[ch])
 			continue;
