@@ -560,7 +560,7 @@ void __init latona_peripherals_init(void)
 	usb_musb_init(NULL);
 	enable_board_wakeup_source();
 	omap_serial_init();
-	latona_cam_init();
+	//latona_cam_init();
 	#ifdef CONFIG_PANEL_SIL9022
 	config_hdmi_gpio();
 	latona_hdmi_reset_enable(1);

@@ -218,8 +218,8 @@ static void __init latona_init(void)
 	omap_mux_init_gpio(LATONA_McBSP3_BT_GPIO, OMAP_PIN_OUTPUT);
 	usbhs_init(&usbhs_bdata);
 
-	board_nand_init(latona_nand_partitions, ARRAY_SIZE(latona_nand_partitions),
-						LATONA_NAND_CS, NAND_BUSWIDTH_16);
+	//board_nand_init(latona_nand_partitions, ARRAY_SIZE(latona_nand_partitions),
+						//LATONA_NAND_CS, NAND_BUSWIDTH_16);
 	latona_wifi_init();
 	latona_debugboard_init();
 	latona_peripherals_init();
