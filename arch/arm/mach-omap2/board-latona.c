@@ -5,6 +5,7 @@
  *
  * Modified from mach-omap2/board-zoom.c for Samsung Latona board
  *
+ * Aditya Patange aka "Adi_Pat" <adithemagnficent@gmail.com> 
  * Mark "Hill Beast" Kennard <komcomputers@gmail.com>
  * Phinitnan "Crackerizer" Chanasabaeng <phinitnan_c@xtony.us>
  *
@@ -25,9 +26,10 @@
 #include <linux/ti_wilink_st.h>
 #include <linux/wl12xx.h>
 
+#include <asm/setup.h>
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
-
+#include <asm/sizes.h>
 #include <plat/common.h>
 #include <plat/board.h>
 #include <plat/usb.h>
@@ -241,8 +243,22 @@ static void __init latona_reserve(void)
 	omap_reserve();
 }
 
+static void __init latona_fixup(struct machine_desc *desc,
+				    struct tag *tags, char **cmdline,
+				    struct meminfo *mi)
+{
+	mi->nr_banks = 2;
+
+	mi->bank[0].start = 0x80000000;
+	mi->bank[0].size = SZ_256M;
+
+	mi->bank[1].start = 0x90000000;
+	mi->bank[1].size = SZ_256M;
+}
+
 MACHINE_START(LATONA, "Latona board")
 	.boot_params	= 0x80000100,
+	.fixup          = latona_fixup,
 	.reserve	= latona_reserve,
 	.map_io		= omap3_map_io,
 	.init_early	= latona_init_early,
