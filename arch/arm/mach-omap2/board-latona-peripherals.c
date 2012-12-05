@@ -66,6 +66,9 @@
 #define MIN_CYCLES				(75)
 #define LCD_PANEL_ENABLE_GPIO			(7 + OMAP_MAX_GPIO_LINES)
 
+/* Atmel Touchscreen */
+#define OMAP_GPIO_TSP_INT 142
+
 /* Zoom2 has Qwerty keyboard*/
 static uint32_t board_keymap[] = {
 	KEY(0, 0, KEY_E),
@@ -578,6 +581,18 @@ static int __init omap_i2c_init(void)
 	return 0;
 }
 
+static void atmel_dev_init(void)
+{
+	printk("ATMEL DEV INIT !!! ");
+	/* Set the ts_gpio pin mux */
+	if (gpio_request(OMAP_GPIO_TSP_INT, "touch_atmel") < 0) {
+		printk(KERN_ERR "can't get synaptics pen down GPIO\n");
+		return;
+	}
+	gpio_direction_input(OMAP_GPIO_TSP_INT);
+	
+}
+
 static void enable_board_wakeup_source(void)
 {
 	/* T2 interrupt line (keypad) */
@@ -591,7 +606,7 @@ void __init latona_peripherals_init(void)
 		ARRAY_SIZE(latona_board_devices));
 	twl4030_get_scripts(&latona_t2scripts_data);
 	omap_i2c_init();
-	synaptics_dev_init();
+	atmel_dev_init();
 	platform_device_register(&omap_vwlan_device);
 	platform_device_register(&latona_disp_led);
 	usb_musb_init(NULL);
