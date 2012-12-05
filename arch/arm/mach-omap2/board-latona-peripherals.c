@@ -151,6 +151,15 @@ static struct regulator_consumer_supply latona_vmmc3_supply = {
 	.dev_name	= "omap_hsmmc.2",
 };
 
+static struct regulator_consumer_supply latona_vaux3_supply = {
+	.supply = "vaux3",
+};
+
+static struct regulator_consumer_supply latona_vaux4_supply = {
+	.supply = "vaux4",
+};
+
+
 /* VMMC1 for OMAP VDD_MMC1 (i/o) and MMC1 card */
 static struct regulator_init_data latona_vmmc1 = {
 	.constraints = {
@@ -352,6 +361,32 @@ static struct regulator_consumer_supply latona_vpll2_supplies[] = {
 	REGULATOR_SUPPLY("vdds_dsi", "omapdss_dsi1"),
 };
 
+/* VAUX3 for LCD */
+static struct regulator_init_data latona_aux3 = {
+	.constraints = {
+			.min_uV = 1800000,
+			.max_uV = 1800000,
+			.boot_on = true,
+			.valid_modes_mask = REGULATOR_MODE_NORMAL | REGULATOR_MODE_STANDBY,
+			.valid_ops_mask = REGULATOR_CHANGE_MODE | REGULATOR_CHANGE_STATUS,
+			},
+	.num_consumer_supplies = 1,
+	.consumer_supplies = &latona_vaux3_supply,
+};
+
+/* VAUX4 for LCD */
+static struct regulator_init_data latona_aux4 = {
+	.constraints = {
+			.min_uV = 2800000,
+			.max_uV = 2800000,
+			.boot_on = true,
+			.valid_modes_mask = REGULATOR_MODE_NORMAL | REGULATOR_MODE_STANDBY,
+			.valid_ops_mask = REGULATOR_CHANGE_MODE | REGULATOR_CHANGE_STATUS,
+			},
+	.num_consumer_supplies = 1,
+	.consumer_supplies = &latona_vaux4_supply,
+};
+
 static struct regulator_consumer_supply latona_vdda_dac_supply =
 	REGULATOR_SUPPLY("vdda_dac", "omapdss_venc");
 
@@ -464,6 +499,8 @@ static struct twl4030_platform_data latona_twldata = {
 	.codec		= &latona_codec_data,
 	.vmmc1          = &latona_vmmc1,
 	.vmmc2          = &latona_vmmc2,
+	.vaux3          = &latona_aux3,
+	.vaux4          = &latona_aux4,
 	.vsim           = &latona_vsim,
 	.vpll2		= &latona_vpll2,
 	.vdac		= &latona_vdac,
