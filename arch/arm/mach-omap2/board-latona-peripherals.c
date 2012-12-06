@@ -69,59 +69,11 @@
 /* Atmel Touchscreen */
 #define OMAP_GPIO_TSP_INT 142
 
-/* Zoom2 has Qwerty keyboard*/
+/* LATONA has only Volume UP/DOWN */
 static uint32_t board_keymap[] = {
-	KEY(0, 0, KEY_E),
-	KEY(0, 1, KEY_R),
-	KEY(0, 2, KEY_T),
-	KEY(0, 3, KEY_HOME),
-	KEY(0, 6, KEY_I),
-	KEY(0, 7, KEY_LEFTSHIFT),
-	KEY(1, 0, KEY_D),
-	KEY(1, 1, KEY_F),
-	KEY(1, 2, KEY_G),
-	KEY(1, 3, KEY_SEND),
-	KEY(1, 6, KEY_K),
-	KEY(1, 7, KEY_ENTER),
-	KEY(2, 0, KEY_X),
-	KEY(2, 1, KEY_C),
-	KEY(2, 2, KEY_V),
-	KEY(2, 3, KEY_END),
-	KEY(2, 6, KEY_DOT),
-	KEY(2, 7, KEY_CAPSLOCK),
-	KEY(3, 0, KEY_Z),
-	KEY(3, 1, KEY_KPPLUS),
-	KEY(3, 2, KEY_B),
-	KEY(3, 3, KEY_F1),
-	KEY(3, 6, KEY_O),
-	KEY(3, 7, KEY_SPACE),
-	KEY(4, 0, KEY_W),
-	KEY(4, 1, KEY_Y),
-	KEY(4, 2, KEY_U),
-	KEY(4, 3, KEY_F2),
-	KEY(4, 4, KEY_VOLUMEUP),
-	KEY(4, 6, KEY_L),
-	KEY(4, 7, KEY_LEFT),
-	KEY(5, 0, KEY_S),
-	KEY(5, 1, KEY_H),
-	KEY(5, 2, KEY_J),
-	KEY(5, 3, KEY_F3),
-	KEY(5, 4, KEY_UNKNOWN),
-	KEY(5, 5, KEY_VOLUMEDOWN),
-	KEY(5, 6, KEY_M),
-	KEY(5, 7, KEY_RIGHT),
-	KEY(6, 0, KEY_Q),
-	KEY(6, 1, KEY_A),
-	KEY(6, 2, KEY_N),
-	KEY(6, 3, KEY_BACKSPACE),
-	KEY(6, 6, KEY_P),
-	KEY(6, 7, KEY_UP),
-	KEY(7, 0, KEY_PROG1),	/*MACRO 1 <User defined> */
-	KEY(7, 1, KEY_PROG2),	/*MACRO 2 <User defined> */
-	KEY(7, 2, KEY_PROG3),	/*MACRO 3 <User defined> */
-	KEY(7, 3, KEY_PROG4),	/*MACRO 4 <User defined> */
-	KEY(7, 6, KEY_SELECT),
-	KEY(7, 7, KEY_DOWN)
+	KEY(2, 1, KEY_VOLUMEUP),
+	KEY(1, 1, KEY_VOLUMEDOWN),
+	0
 };
 
 static struct matrix_keymap_data board_map_data = {
@@ -131,9 +83,9 @@ static struct matrix_keymap_data board_map_data = {
 
 static struct twl4030_keypad_data latona_kp_twl4030_data = {
 	.keymap_data	= &board_map_data,
-	.rows		= 8,
-	.cols		= 8,
-	.rep		= 1,
+	.rows		= 5,
+	.cols		= 6,
+	.rep		= 0,
 };
 static struct __initdata twl4030_power_data latona_t2scripts_data;
 
