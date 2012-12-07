@@ -49,6 +49,15 @@
 #endif
 #define WAKE_LOCK_TIME (HZ*1)// 1000ms  = 1sec
 
+static unsigned short int headset_status;
+
+short int get_headset_status(void)
+{
+	SEC_HEADSET_DBG(" headset_status %d", headset_status);
+	return headset_status;
+}
+EXPORT_SYMBOL(get_headset_status);
+
 struct switch_dev switch_sendend = {
         .name = "send_end",
 };
