@@ -46,6 +46,8 @@
 #include "common-board-devices.h"
 #include "twl4030.h"
 
+#include <plat/mux_latona_rev_r08.h>
+
 #define OMAP_LATONA_WLAN_PMENA_GPIO	(101)
 #define OMAP_LATONA_WLAN_IRQ_GPIO		(162)
 #define OMAP_SYNAPTICS_GPIO			(163)
@@ -68,6 +70,90 @@
 
 /* Atmel Touchscreen */
 #define OMAP_GPIO_TSP_INT 142
+
+
+/* ZEUS Ear key and power key */
+
+static struct gpio_switch_platform_data headset_switch_data = {
+	.name = "h2w",
+	.gpio = OMAP_GPIO_DET_3_5,
+};
+
+static struct platform_device headset_switch_device = {
+	.name = "switch-gpio",
+	.dev = {
+		.platform_data = &headset_switch_data,
+		}
+};
+
+static struct resource board_ear_key_resource = {
+	.start = 0,
+	.end = 0,
+	.flags = IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHLEVEL,
+};
+static struct platform_device board_ear_key_device = {
+	.name = "sec_jack",
+	.id = -1,
+	.num_resources = 1,
+	.resource = &board_ear_key_resource,
+};
+
+static struct resource board_power_key_resources[] = {
+	[0] = {
+	       .start = 0,                                             /* Power Button */ 
+	       .end = 0,
+	       .flags = IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHLEVEL,
+	       },
+	[1] = {
+	       .start = 0,                                             /* Home Button */ 
+	       .end = 0,
+	       .flags = IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHLEVEL,
+	       },
+
+};
+
+static struct platform_device board_power_key_device = {
+	.name = "power_key_device",
+	.id = -1,
+	.num_resources = ARRAY_SIZE(board_power_key_resources),
+	.resource = board_power_key_resources,
+};
+
+static inline void __init board_init_ear_key(void)
+{
+	printk("\n EAR KEY INIT!!! \n");
+	board_ear_key_resource.start = gpio_to_irq(OMAP_GPIO_EAR_SEND_END);
+	if (gpio_request(OMAP_GPIO_EAR_SEND_END, "ear_key_irq") < 0) {
+		printk(KERN_ERR
+		       "\n FAILED TO REQUEST GPIO %d for POWER KEY IRQ \n",
+		       OMAP_GPIO_EAR_SEND_END);
+		return;
+	}
+	gpio_direction_input(OMAP_GPIO_EAR_SEND_END);
+}
+
+static inline void __init board_init_power_key(void)
+{
+	printk("\n POWER KEY INIT!!! \n");
+	board_power_key_resources[0].start = gpio_to_irq(OMAP_GPIO_KEY_PWRON);
+	if (gpio_request(OMAP_GPIO_KEY_PWRON, "power_key_irq") < 0) {
+		printk(KERN_ERR
+		       "\n FAILED TO REQUEST GPIO %d for POWER KEY IRQ \n",
+		       OMAP_GPIO_KEY_PWRON);
+		return;
+	}
+	board_power_key_resources[1].start = gpio_to_irq(OMAP_GPIO_KEY_HOME);
+	if (gpio_request(OMAP_GPIO_KEY_HOME, "home_key_irq") < 0) {
+		printk(KERN_ERR
+		       "\n FAILED TO REQUEST GPIO %d for VOLDN KEY IRQ \n",
+		       OMAP_GPIO_KEY_HOME);
+		return;
+	}
+	gpio_direction_input(OMAP_GPIO_KEY_PWRON);
+	gpio_direction_input(OMAP_GPIO_KEY_HOME);
+}
+
+/* End Zeus Ear key and power key */
 
 /* LATONA has only Volume UP/DOWN */
 static uint32_t board_keymap[] = {
@@ -160,19 +246,6 @@ static struct regulator_init_data latona_vsim = {
 	.consumer_supplies      = &latona_vsim_supply,
 };
 
-static struct gpio_switch_platform_data headset_switch_data = {
-	.name		= "h2w",
-	.gpio		= OMAP_MAX_GPIO_LINES + 2, /* TWL4030 GPIO_2 */
-};
-
-static struct platform_device headset_switch_device = {
-	.name		= "switch-gpio",
-	.id		= -1,
-	.dev		= {
-		.platform_data = &headset_switch_data,
-	}
-};
-
 static struct regulator_init_data latona_vmmc3 = {
 	.constraints = {
 		.valid_ops_mask	= REGULATOR_CHANGE_STATUS,
@@ -193,6 +266,8 @@ static struct fixed_voltage_config latona_vwlan = {
 
 static struct platform_device *latona_board_devices[] __initdata = {
 	&headset_switch_device,
+	&board_ear_key_device,
+	&board_power_key_device,
 };
 
 static struct platform_device omap_vwlan_device = {
@@ -564,6 +639,10 @@ void __init latona_peripherals_init(void)
 	usb_musb_init(NULL);
 	enable_board_wakeup_source();
 	omap_serial_init();
+/* Initialize Power KEY and HOME Key Drivers [ZEUS] */ 
+	board_init_power_key();
+	board_init_ear_key();
+/* Initialize Power KEY and HOME Key Drivers [ZEUS] */ 
 	//latona_cam_init();
 	#ifdef CONFIG_PANEL_SIL9022
 	config_hdmi_gpio();
