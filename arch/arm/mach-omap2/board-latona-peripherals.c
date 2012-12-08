@@ -613,11 +613,9 @@ static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
 };
 
 static struct i2c_board_info __initdata latona_i2c_bus3_info[] = {
-#ifdef CONFIG_PANEL_SIL9022
 	{
-		I2C_BOARD_INFO(SIL9022_DRV_NAME, SI9022_I2CSLAVEADDRESS),
+		I2C_BOARD_INFO("qt602240_ts", 0x4A),
 	},
-#endif
 };
 static int __init omap_i2c_init(void)
 {

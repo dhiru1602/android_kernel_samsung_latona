@@ -15,6 +15,9 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 
+#include <linux/i2c/atmel_mxt_ts.h>
+
+
 #include <asm/irq.h>
 #include <asm/mach/irq.h>
 //#include <asm/arch/gpio.h>
@@ -37,7 +40,7 @@
 #endif
 
 static int i2c_tsp_sensor_attach_adapter(struct i2c_adapter *adapter);
-static int i2c_tsp_sensor_probe_client(struct i2c_adapter *adapter, int address, int kind);
+static int i2c_tsp_sensor_probe_client(struct i2c_client *client,const struct i2c_device_id *id);
 static int i2c_tsp_sensor_detach_client(struct i2c_client *client);
 
 //#define TSP_SENSOR_ADDRESS		0x4b	// onegun test
@@ -53,22 +56,43 @@ extern u32 hw_revision;
 
 #define I2C_DF_NOTIFY				0x01
 
+/* Each client has this additional data */
+struct qt602240_data 
+{
+    unsigned int irq;
+    struct i2c_client *client;
+    struct input_dev *input_dev;
+    struct work_struct tsp_work;
+    struct work_struct ta_work;
+    struct qt602240_platform_data *pdata;
+    struct qt602240_info *info;
+    struct qt602240_object *object_table;
+    struct qt602240_message *object_message;	
+};
+
+
+static const struct i2c_device_id qt602240_id[] = {
+	{ "qt602240_ts", 0 },
+	{ }
+};
+MODULE_DEVICE_TABLE(i2c, qt602240_id);
 
 struct i2c_driver tsp_sensor_driver =
 {
 	//.name	= "tsp_sensor_driver",
 	.driver	= {
-		.name	= "tsp_driver",
+		.name	= "qt602240_ts",
 		.owner	= THIS_MODULE,
 	},
-	//.flags	= I2C_DF_NOTIFY | I2C_M_IGNORE_NAK,
-	.attach_adapter	= &i2c_tsp_sensor_attach_adapter,
-	//.detach_client	= &i2c_tsp_sensor_detach_client,
-	.remove	= &i2c_tsp_sensor_detach_client,
+	.probe		= i2c_tsp_sensor_probe_client,
+	.remove		= i2c_tsp_sensor_detach_client,
+	.id_table	= qt602240_id,
 };
 
 
-static struct i2c_client *g_client;
+
+
+static struct qt602240_data *g_client;
 
 #ifdef __CONFIG_ATMEL__
 #define U16	unsigned short int
@@ -86,12 +110,12 @@ int i2c_tsp_sensor_read(u16 reg, u8 *read_val, unsigned int len )
 	struct 	 i2c_msg msg[1];
 	unsigned char data[2];
 	
-	if( (g_client == NULL) || (!g_client->adapter) )
+	if( (g_client->client == NULL) || (!g_client->client->adapter) )
 	{
 		return -ENODEV;
 	}
 	
-	msg->addr 	= g_client->addr;
+	msg->addr 	= g_client->client->addr;
 	msg->flags 	= I2C_M_WR;
 	msg->len 	= 2;
 	msg->buf 	= data;
@@ -100,7 +124,7 @@ int i2c_tsp_sensor_read(u16 reg, u8 *read_val, unsigned int len )
 	
 	
 
-	err = i2c_transfer(g_client->adapter, msg, 1);
+	err = i2c_transfer(g_client->client->adapter, msg, 1);
 #if 1//for debug
 	if(g_i2c_debugging_enable == 1)
 	{
@@ -113,7 +137,7 @@ int i2c_tsp_sensor_read(u16 reg, u8 *read_val, unsigned int len )
 		msg->flags = I2C_M_RD;
 		msg->len   = len;
 		msg->buf   = read_val;
-		err = i2c_transfer(g_client->adapter, msg, 1);
+		err = i2c_transfer(g_client->client->adapter, msg, 1);
 
 #if 1//for debug
 		if(g_i2c_debugging_enable == 1)
@@ -133,8 +157,9 @@ int i2c_tsp_sensor_read(u16 reg, u8 *read_val, unsigned int len )
 		return 0;
 	}
 
-	id = i2c_adapter_id(g_client->adapter);
+	id = i2c_adapter_id(g_client->client->adapter);
 //	printk("[TSP] %s() - end\n", __FUNCTION__);
+	printk("tsp_read returning %d\n",err);
 	return err;
 }
 #else
@@ -145,25 +170,25 @@ int i2c_tsp_sensor_read(u8 reg, u8 *val, unsigned int len )
 	struct 	 i2c_msg msg[1];
 	unsigned char data[1];
 
-	if( (g_client == NULL) || (!g_client->adapter) )
+	if( (g_client->client == NULL) || (!g_client->client->adapter) )
 	{
 		return -ENODEV;
 	}
 	
-	msg->addr 	= g_client->addr;
+	msg->addr 	= g_client->client->addr;
 	msg->flags 	= I2C_M_WR;
 	msg->len 	= 1;
 	msg->buf 	= data;
 	*data       = reg;
 
-	err = i2c_transfer(g_client->adapter, msg, 1);
+	err = i2c_transfer(g_client->client->adapter, msg, 1);
 
 	if (err >= 0) 
 	{
 		msg->flags = I2C_M_RD;
 		msg->len   = len;
 		msg->buf   = val;
-		err = i2c_transfer(g_client->adapter, msg, 1);
+		err = i2c_transfer(g_client->client->adapter, msg, 1);
 	}
 
 	if (err >= 0) 
@@ -171,7 +196,7 @@ int i2c_tsp_sensor_read(u8 reg, u8 *val, unsigned int len )
 		return 0;
 	}
 
-	id = i2c_adapter_id(g_client->adapter);
+	id = i2c_adapter_id(g_client->client->adapter);
 
 	return err;
 }
@@ -186,7 +211,7 @@ int i2c_tsp_sensor_write(u16 reg
 	unsigned char data[300];
 	int i ;
 
-	if( (g_client == NULL) || (!g_client->adapter) )
+	if( (g_client->client == NULL) || (!g_client->client->adapter) )
 		return -ENODEV;
 
 	if(len +2 > I2C_MAX_SEND_LENGTH)
@@ -195,7 +220,7 @@ int i2c_tsp_sensor_write(u16 reg
 		return -ENODEV;
 	}
 		
-	msg->addr = g_client->addr;
+	msg->addr = g_client->client->addr;
 	msg->flags = I2C_M_WR;
 	msg->len = len + 2;
 	msg->buf = data;
@@ -208,7 +233,7 @@ int i2c_tsp_sensor_write(u16 reg
 		data[i+2] = *(read_val+i);
 	}
 
-	err = i2c_transfer(g_client->adapter, msg, 1);
+	err = i2c_transfer(g_client->client->adapter, msg, 1);
 
 	if (err >= 0) return 0;
 
@@ -222,72 +247,34 @@ void i2c_tsp_sensor_write_reg(u8 address, int data)
 	i2c_tsp_sensor_write(address, i2cdata, 1);
 }
 
-static int i2c_tsp_sensor_attach_adapter(struct i2c_adapter *adapter)
+static int i2c_tsp_sensor_probe_client(struct i2c_client *client,const struct i2c_device_id *id)
 {
-	int addr = 0;
-	int id = 0;
+	struct qt602240_data *data;
 
-//	if(IS_ATMEL)
-		addr = ATMEL_TSP_SENSOR_ADDRESS;
-//	else
-//		addr = CYPRESS_TSP_SENSOR_ADDRESS;
-	//return i2c_probe(adapter, &addr_data, &i2c_tsp_sensor_probe_client);
+    	int ret;
 
-	id = adapter->nr;
-	/*
-#if defined(CONFIG_MACH_NOWPLUS) || defined(CONFIG_MACH_NOWPLUS_MASS)
-	if (id == 3)
-#else
-#if (CONFIG_ACME_REV >= CONFIG_ACME_REV04)
-	if (id == 3)
-#else
-	if (id == 2)
-#endif
-#endif
-*/
-	if (id == 3)	// ryun 20091125 !!! ??? 
-		return i2c_tsp_sensor_probe_client(adapter, addr, 0);
-	return 0;
-}
+    	data = kzalloc(sizeof(struct qt602240_data), GFP_KERNEL);
 
-static int i2c_tsp_sensor_probe_client(struct i2c_adapter *adapter, int address, int kind)
-{
-	struct i2c_client *new_client;
-	int err = 0;
-	printk(KERN_DEBUG "[TSP] %s() - start\n", __FUNCTION__);	// ryun 20091126
+    	if (!data) {
+        	dev_err(&client->dev, "Failed to allocate memory\n");
+        	ret = -ENOMEM;
+        	goto err_free_mem;
+    	}
 
-	if ( !i2c_check_functionality(adapter,I2C_FUNC_SMBUS_BYTE_DATA) ) {
-		printk("byte op is not permited.\n");
-		goto ERROR0;
-	}
+	client->irq = OMAP_GPIO_TOUCH_INT;
 
-	new_client = kzalloc(sizeof(struct i2c_client), GFP_KERNEL );
+    	data->client = client;
+    	data->irq = client->irq;
 
-	if ( !new_client )	{
-		err = -ENOMEM;
-		goto ERROR0;
-	}
+	i2c_set_clientdata(client, data);
 
-	new_client->addr = address; 
-	printk(KERN_DEBUG "%s :: addr=%x\n", __FUNCTION__, address);
-	new_client->adapter = adapter;
-	new_client->driver = &tsp_sensor_driver;
-	//new_client->flags = I2C_DF_NOTIFY | I2C_M_IGNORE_NAK;
+	g_client = data;
 
-	g_client = new_client;
-
-	strlcpy(new_client->name, "tsp_driver", I2C_NAME_SIZE);
-
-//	if ((err = i2c_attach_client(new_client)))	// ryun 20091126 move to board-xxx.c
-//		goto ERROR1;
-	printk(KERN_DEBUG "[TSP] %s() - end : success\n", __FUNCTION__);	// ryun 20091126
 	return 0;
 
-//	ERROR1:
-//		printk("[TSP] %s() - end : fail !!!!!!!!!!!!!!!!!!err = %d  \n", __FUNCTION__, err);	// ryun 20091126
-//		kfree(new_client);
-	ERROR0:
-		return err;
+err_free_mem:
+    kfree(data);
+    return ret;
 }
 
 static int i2c_tsp_sensor_detach_client(struct i2c_client *client)
@@ -327,7 +314,7 @@ uint8_t read_boot_state(u8 *data)
 	rmsg.flags = I2C_M_RD;
 	rmsg.len = 1;
 	rmsg.buf = data;
-	ret = i2c_transfer(g_client->adapter, &rmsg, 1);
+	ret = i2c_transfer(g_client->client->adapter, &rmsg, 1);
 
 	if ( ret < 0 )
 	{
@@ -356,7 +343,7 @@ uint8_t boot_unlock(void)
 	wmsg.len = 2;
 	wmsg.buf = data;
 
-	ret = i2c_transfer(g_client->adapter, &wmsg, 1);
+	ret = i2c_transfer(g_client->client->adapter, &wmsg, 1);
 
 	if ( ret >= 0 )
 		return WRITE_MEM_OK;
@@ -376,7 +363,7 @@ uint8_t boot_write_mem(uint16_t ByteCount, unsigned char * Data )
 	wmsg.len = ByteCount;
 	wmsg.buf = Data;
 
-	ret = i2c_transfer(g_client->adapter, &wmsg, 1);
+	ret = i2c_transfer(g_client->client->adapter, &wmsg, 1);
 	if ( ret >= 0 )
 	{
 		return WRITE_MEM_OK;
