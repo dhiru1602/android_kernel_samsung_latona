@@ -489,4 +489,11 @@ config LEDS_TRIGGER_SLEEP
 comment "iptables trigger is under Netfilter config (LED target)"
 	depends on LEDS_TRIGGERS
 
+config LEDS_OMAP_SAMSUNG
+        tristate "LED Support for OMAP SAMSUNG LEDs"
+	default y
+        depends on LEDS_CLASS && ARCH_OMAP
+        help
+          This options enables support for the LEDs on OMAP processors.
+
 endif # NEW_LEDS
