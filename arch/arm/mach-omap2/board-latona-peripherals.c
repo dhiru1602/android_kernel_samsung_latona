@@ -46,6 +46,7 @@
 #include "hsmmc.h"
 #include "common-board-devices.h"
 #include "twl4030.h"
+#include "control.h"
 
 #include <plat/mux_latona_rev_r08.h>
 
@@ -625,6 +626,30 @@ static int __init omap_i2c_init(void)
 		latona_audio_data.hs_extmute = 1;
 		latona_audio_data.set_hs_extmute = latona_set_hs_extmute;
 	}
+
+         /* Disable OMAP 3630 internal pull-ups for I2Ci */
+	if (cpu_is_omap3630()) {
+
+		u32 prog_io;
+
+		prog_io = omap_ctrl_readl(OMAP343X_CONTROL_PROG_IO1);
+		/* Program (bit 19)=1 to disable internal pull-up on I2C1 */
+		prog_io |= OMAP3630_PRG_I2C1_PULLUPRESX;
+		/* Program (bit 0)=1 to disable internal pull-up on I2C2 */
+		prog_io |= OMAP3630_PRG_I2C2_PULLUPRESX;
+		omap_ctrl_writel(prog_io, OMAP343X_CONTROL_PROG_IO1);
+
+		prog_io = omap_ctrl_readl(OMAP36XX_CONTROL_PROG_IO2);
+		/* Program (bit 7)=1 to disable internal pull-up on I2C3 */
+		prog_io |= OMAP3630_PRG_I2C3_PULLUPRESX;
+		omap_ctrl_writel(prog_io, OMAP36XX_CONTROL_PROG_IO2);
+
+		prog_io = omap_ctrl_readl(OMAP36XX_CONTROL_PROG_IO_WKUP1);
+		/* Program (bit 5)=1 to disable internal pull-up on I2C4(SR) */
+		prog_io |= OMAP3630_PRG_SR_PULLUPRESX;
+		omap_ctrl_writel(prog_io, OMAP36XX_CONTROL_PROG_IO_WKUP1);
+	}
+
 	omap_pmic_init(1, 2400, "twl5030", INT_34XX_SYS_NIRQ, &latona_twldata);
 	omap_register_i2c_bus(2, 100, latona_i2c_bus2_info,
 			ARRAY_SIZE(latona_i2c_bus2_info));
