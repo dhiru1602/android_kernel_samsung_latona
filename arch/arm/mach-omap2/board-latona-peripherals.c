@@ -24,6 +24,7 @@
 #include <linux/mmc/host.h>
 #include <linux/synaptics_i2c_rmi.h>
 #include <linux/leds-omap4430sdp-display.h>
+#include <linux/leds.h>
 
 #include <media/v4l2-int-device.h>
 
@@ -152,8 +153,31 @@ static inline void __init board_init_power_key(void)
 	gpio_direction_input(OMAP_GPIO_KEY_PWRON);
 	gpio_direction_input(OMAP_GPIO_KEY_HOME);
 }
+/* End: Zeus Ear key and power key */
 
-/* End Zeus Ear key and power key */
+/* Samsung LEDs support */
+
+static struct led_info sec_keyled_list[] = {
+	{
+	 .name = "button-backlight",
+	 },
+};
+
+static struct led_platform_data sec_keyled_data = {
+	.num_leds = ARRAY_SIZE(sec_keyled_list),
+	.leds = sec_keyled_list,
+};
+
+static struct platform_device samsung_led_device = {
+	.name = "secLedDriver",
+	.id = -1,
+	.num_resources = 0,
+	.dev = {
+		.platform_data = &sec_keyled_data,
+		},
+};
+
+/* End: Samsung LED's support */ 
 
 /* LATONA has only Volume UP/DOWN */
 static uint32_t board_keymap[] = {
@@ -266,8 +290,9 @@ static struct fixed_voltage_config latona_vwlan = {
 
 static struct platform_device *latona_board_devices[] __initdata = {
 	&headset_switch_device,
-	&board_ear_key_device,
-	&board_power_key_device,
+	&board_ear_key_device,       /* ZEUS EAR KEY */ 
+	&board_power_key_device,     /* ZEUS POWER KEY */ 
+	&samsung_led_device,         /* SAMSUNG LEDs */ 
 };
 
 static struct platform_device omap_vwlan_device = {
@@ -639,10 +664,8 @@ void __init latona_peripherals_init(void)
 	usb_musb_init(NULL);
 	enable_board_wakeup_source();
 	omap_serial_init();
-/* Initialize Power KEY and HOME Key Drivers [ZEUS] */ 
-	board_init_power_key();
-	board_init_ear_key();
-/* Initialize Power KEY and HOME Key Drivers [ZEUS] */ 
+	board_init_power_key(); /* Initialize ZEUS Ear Key */ 
+	board_init_ear_key();   /* and POWER KEY */ 
 	//latona_cam_init();
 	#ifdef CONFIG_PANEL_SIL9022
 	config_hdmi_gpio();

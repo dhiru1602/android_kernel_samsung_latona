@@ -1,4 +1,4 @@
-
+#include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/leds.h>
@@ -8,7 +8,7 @@
 #include <linux/workqueue.h>
 #include <linux/i2c/twl.h>
 #include <linux/slab.h>
-
+#include <linux/miscdevice.h>
 #include <plat/mux.h>
 #include <mach/gpio.h>
 
@@ -28,6 +28,70 @@ struct sec_led_data {
 };
 
 static int led_state =0;
+static int bln_state=0;
+
+static int bl_timeout = 1600;
+static struct timer_list bl_timer;
+static void bl_off(struct work_struct *bl_off_work);
+static DECLARE_WORK(bl_off_work, bl_off);
+
+void bl_timer_callback(unsigned long data)
+{
+	schedule_work(&bl_off_work);
+}
+static void bl_off(struct work_struct *bl_off_work)
+{
+	if(bln_state==0)
+	{
+		gpio_set_value(OMAP_GPIO_LED_EN1, 0);
+		gpio_set_value(OMAP_GPIO_LED_EN2, 0);
+	}
+	led_state = 0;
+}
+
+static void bl_set_timeout() {
+	if (bl_timeout > 0) {
+		mod_timer(&bl_timer, jiffies + msecs_to_jiffies(bl_timeout));
+	}
+}
+
+void trigger_touchkey_led(int event)
+{
+	//event: 0-All Lights | 1-Menu Pressed | 2-Back Pressed	| 3- All Key Release
+	if(bl_timeout!=0)
+	{
+		if((event==3)&&(led_state==0)) return; //Dont lightup if keys already turned off
+
+		if((event==0)||(event==3))
+		{
+			gpio_set_value(OMAP_GPIO_LED_EN1, 1);
+			gpio_set_value(OMAP_GPIO_LED_EN2, 1);
+		}else if(event==1){
+			gpio_set_value(OMAP_GPIO_LED_EN1, 0);
+			gpio_set_value(OMAP_GPIO_LED_EN2, 1);
+		}else if(event==2){
+			gpio_set_value(OMAP_GPIO_LED_EN1, 1);
+			gpio_set_value(OMAP_GPIO_LED_EN2, 0);
+		}
+		led_state = 1;
+		bln_state = 0;
+		bl_set_timeout();
+	}
+}
+
+EXPORT_SYMBOL(trigger_touchkey_led);
+
+void suspend_touchkey_led()
+{
+	if(bln_state==0)
+	{
+		gpio_set_value(OMAP_GPIO_LED_EN1, 0);
+		gpio_set_value(OMAP_GPIO_LED_EN2, 0);
+	}
+	led_state = 0;
+}
+
+EXPORT_SYMBOL(suspend_touchkey_led);
 
 static void sec_led_set(struct led_classdev *led_cdev,
 	enum led_brightness value)
@@ -35,19 +99,22 @@ static void sec_led_set(struct led_classdev *led_cdev,
 	struct sec_led_data *led_dat =
 		container_of(led_cdev, struct sec_led_data, cdev);
     
-	// printk("[LED] %s ::: value=%d , led_state=%d\n", __func__, value, led_state);
-	if ((value == LED_OFF)&&( led_state==1 ))
+	// printk("[LED] %s ::: value=%d , led_state=%d\n", __func__, value, bln_state);
+	if ((value == LED_OFF)&&( bln_state==1))
 	{
-		gpio_set_value(led_dat->gpio1, 0);
-		gpio_set_value(led_dat->gpio2, 0);
-		led_state = 0;
-		printk(KERN_DEBUG "[LED] %s ::: OFF \n", __func__);
+		if (led_state && bl_timer.expires < jiffies)
+		{
+			gpio_set_value(led_dat->gpio1, 0);
+			gpio_set_value(led_dat->gpio2, 0);
+			printk(KERN_DEBUG "[LED] %s ::: OFF \n", __func__);
+		}
+		bln_state = 0;
 	}
-	else if ((value != LED_OFF)&&(led_state==0))
+	else if ((value != LED_OFF)&&(bln_state==0))
 	{
 		gpio_set_value(led_dat->gpio1, 1);
 		gpio_set_value(led_dat->gpio2, 1);
-		led_state = 1;
+		bln_state = 1;
 		printk(KERN_DEBUG "[LED] %s ::: ON \n", __func__);
 	}
 	else
@@ -56,6 +123,32 @@ static void sec_led_set(struct led_classdev *led_cdev,
 		return ;
 	}
 }
+
+static ssize_t bl_timeout_read(struct device *dev, struct device_attribute *attr, char *buf) {
+	return sprintf(buf,"%d\n", bl_timeout);
+}
+
+static ssize_t bl_timeout_write(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+{
+	sscanf(buf, "%d\n", &bl_timeout);
+	return size;
+}
+
+static DEVICE_ATTR(bl_timeout, S_IRUGO | S_IWUGO, bl_timeout_read, bl_timeout_write);
+
+static struct attribute *bl_led_attributes[] = {
+&dev_attr_bl_timeout.attr,
+NULL
+};
+
+static struct attribute_group bl_led_group = {
+.attrs = bl_led_attributes,
+};
+
+static struct miscdevice bl_led_device = {
+.minor = MISC_DYNAMIC_MINOR,
+.name = "notification",
+};
 
 static int sec_led_probe(struct platform_device *pdev)
 {	
@@ -90,7 +183,6 @@ static int sec_led_probe(struct platform_device *pdev)
 		led_dat->cdev.default_trigger = cur_led->default_trigger;
 		led_dat->cdev.brightness_set = sec_led_set;
 		led_dat->cdev.brightness = LED_OFF;
-		led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
 
 		ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
 		if (ret < 0) {
@@ -99,6 +191,15 @@ static int sec_led_probe(struct platform_device *pdev)
 	}
 
 	platform_set_drvdata(pdev, leds_data);
+
+	setup_timer(&bl_timer, bl_timer_callback, 0);
+
+	if (misc_register(&bl_led_device))
+		printk("%s misc_register(%s) failed\n", __FUNCTION__, bl_led_device.name);
+	else {
+		if (sysfs_create_group(&bl_led_device.this_device->kobj, &bl_led_group) < 0)
+			pr_err("failed to create sysfs group for device %s\n", bl_led_device.name);
+	}
 
 	return 0;
 
@@ -139,6 +240,7 @@ static int sec_led_shutdown(struct platform_device *pdev)
 {
 	gpio_direction_output(OMAP_GPIO_LED_EN1, 0);
 	gpio_direction_output(OMAP_GPIO_LED_EN2, 0);
+	del_timer(&bl_timer);
 
 	return 0;
 }
