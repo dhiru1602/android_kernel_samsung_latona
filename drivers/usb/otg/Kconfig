@@ -138,4 +138,22 @@ config FSL_USB2_OTG
 	help
 	  Enable this to support Freescale USB OTG transceiver.
 
+config FSA9480_MICROUSB
+	default y
+	bool "FSA9480 MicroUSB Driver"
+	depends on I2C && USB_GADGET
+
+config FSA9480_NOTIFY_USB_CONNECTION_STATE
+	bool "Notify USB Connection State"
+	depends on FSA9480_MICROUSB
+	default y
+	
+config FSA9480_GPIO_I2C
+	bool "FSA9480 MicroUSB for GPIO Emulation I2C"
+	depends on FSA9480_MICROUSB
+	
+config FSA9480_LINE_OUT
+	bool "FSA9480 MicroUSB for LINE OUT"
+	depends on FSA9480_MICROUSB
+
 endif # USB || OTG
