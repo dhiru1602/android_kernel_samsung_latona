@@ -89,7 +89,7 @@ static int g_dock;
 
 extern struct device *sio_switch_dev;
 #endif
-extern int get_hw_revision();
+extern int get_hw_revision(void);
 
 #ifdef CONFIG_FSA9480_NOTIFY_USB_CONNECTION_STATE
 #define MAX_NOTIFICATION_HANDLER	10
@@ -692,7 +692,7 @@ static void fsa9480_interrupt_init(int irq, void *dev_id)
 {
 #define FSA9480_IRQ_FLAGS (IRQF_DISABLED | IRQF_SHARED)
 
-	set_irq_type(irq, IRQ_TYPE_LEVEL_LOW/*IRQ_TYPE_EDGE_FALLING*/);
+	irq_set_irq_type(irq, IRQ_TYPE_LEVEL_LOW/*IRQ_TYPE_EDGE_FALLING*/);
 
 	if (request_irq(irq, fsa9480_interrupt, FSA9480_IRQ_FLAGS, "FSA9480 Detected", dev_id))
 	{
