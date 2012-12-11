@@ -40,6 +40,12 @@
 #include <linux/notifier.h>
 #include <linux/slab.h>
 
+#ifdef CONFIG_FSA9480_MICROUSB
+#include <linux/wakelock.h>
+#include "fsa9480_i2c.h"
+#define CARKIT_ANA_CTRL         0xBB
+#endif
+
 /* Register defines */
 
 #define MCPC_CTRL			0x30
@@ -163,7 +169,14 @@ struct twl4030_usb {
 	bool			vbus_supplied;
 	u8			asleep;
 	bool			irq_enabled;
+#ifdef CONFIG_FSA9480_MICROUSB
+	struct wake_lock         wake_lock; 
+#endif
 };
+
+#ifdef CONFIG_FSA9480_MICROUSB
+struct twl4030_usb *usb_transceiver;
+#endif
 
 /* internal define on top of container_of */
 #define xceiv_to_twl(x)		container_of((x), struct twl4030_usb, otg);
@@ -248,6 +261,17 @@ twl4030_usb_clear_bits(struct twl4030_usb *twl, u8 reg, u8 bits)
 
 static enum usb_xceiv_events twl4030_usb_linkstat(struct twl4030_usb *twl)
 {
+#ifdef CONFIG_FSA9480_MICROUSB
+	int	linkstat = USB_EVENT_NONE;
+
+	if(get_real_usbic_state() == MICROUSBIC_USB_CABLE)
+	{
+		linkstat = USB_EVENT_VBUS;
+	}
+
+	return linkstat;
+#else
+
 	int	status;
 	int	linkstat = USB_EVENT_NONE;
 
@@ -299,6 +323,7 @@ static enum usb_xceiv_events twl4030_usb_linkstat(struct twl4030_usb *twl)
 	spin_unlock_irq(&twl->lock);
 
 	return linkstat;
+#endif
 }
 
 static void twl4030_usb_set_mode(struct twl4030_usb *twl, int mode)
@@ -402,15 +427,23 @@ static void twl4030_phy_suspend(struct twl4030_usb *twl, int controller_off)
 	twl4030_phy_power(twl, 0);
 	twl->asleep = 1;
 	dev_dbg(twl->dev, "%s\n", __func__);
+#ifdef CONFIG_FSA9480_MICROUSB
+	wake_unlock(&twl->wake_lock);
+#endif
 }
 
 static void __twl4030_phy_resume(struct twl4030_usb *twl)
 {
 	twl4030_phy_power(twl, 1);
 	twl4030_i2c_access(twl, 1);
+#ifdef  CONFIG_FSA9480_NOTIFY_USB_CONNECTION_STATE	
+	/* Set CARKIT_ANA_CTRL register to 0x08 to enable ADC input*/
+	WARN_ON(twl4030_usb_write_verify(twl, CARKIT_ANA_CTRL ,0x08) < 0);
+#endif
 	twl4030_usb_set_mode(twl, twl->usb_mode);
 	if (twl->usb_mode == T2_USB_MODE_ULPI)
 		twl4030_i2c_access(twl, 0);
+
 }
 
 static void twl4030_phy_resume(struct twl4030_usb *twl)
@@ -521,8 +554,12 @@ static irqreturn_t twl4030_usb_irq(int irq, void *_twl)
 		if (status == USB_EVENT_NONE)
 			twl4030_phy_suspend(twl, 0);
 		else
+		   {
+#ifdef CONFIG_FSA9480_MICROUSB
+			wake_lock(&twl->wake_lock);
+#endif
 			twl4030_phy_resume(twl);
-
+		   }
 		atomic_notifier_call_chain(&twl->otg.notifier, status,
 				twl->otg.gadget);
 	}
@@ -645,6 +682,11 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
 	 * set_host() and/or set_peripheral() ... OTG_capable boards
 	 * need both handles, otherwise just one suffices.
 	 */
+#ifdef CONFIG_FSA9480_MICROUSB
+	usb_transceiver = twl;
+	wake_lock_init(&twl->wake_lock, WAKE_LOCK_SUSPEND, "usb_transceiver");
+	microusb_enable();
+#else
 	twl->irq_enabled = true;
 	status = request_threaded_irq(twl->irq, NULL, twl4030_usb_irq,
 			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
@@ -655,6 +697,7 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
 		kfree(twl);
 		return status;
 	}
+#endif
 
 	/* Power down phy or make it work according to
 	 * current link state.
@@ -669,6 +712,10 @@ static int __exit twl4030_usb_remove(struct platform_device *pdev)
 {
 	struct twl4030_usb *twl = platform_get_drvdata(pdev);
 	int val;
+#ifdef CONFIG_FSA9480_MICROUSB
+	microusb_disable();
+	usb_transceiver = NULL;
+#endif
 
 	free_irq(twl->irq, twl);
 	device_remove_file(twl->dev, &dev_attr_vbus);
@@ -700,6 +747,38 @@ static int __exit twl4030_usb_remove(struct platform_device *pdev)
 
 	return 0;
 }
+
+
+#ifdef CONFIG_FSA9480_MICROUSB
+void microusb_usbjig_detect(void)
+{
+	struct twl4030_usb *twl = usb_transceiver;
+
+	(void)twl4030_usb_irq(twl->irq, twl);
+}
+EXPORT_SYMBOL(microusb_usbjig_detect);
+
+void ap_usb_power_on(int on)
+{
+   struct twl4030_usb *twl = usb_transceiver;
+
+   /*set forcely usb power*/
+   if(on)
+   	{
+   	/*power on*/
+	printk("[USB] %s : Force power on\n",__func__);
+   	twl4030_phy_resume(twl);
+   	}
+   else
+   	{
+   	printk("[USB] %s : Force power off\n",__func__);
+   	twl4030_phy_suspend(twl,0);
+   	}
+}
+EXPORT_SYMBOL(ap_usb_power_on);
+#endif
+
+
 
 static struct platform_driver twl4030_usb_driver = {
 	.probe		= twl4030_usb_probe,
