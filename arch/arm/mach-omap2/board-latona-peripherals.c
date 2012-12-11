@@ -563,6 +563,16 @@ static struct twl4030_platform_data latona_twldata = {
 	.vdac		= &latona_vdac,
 };
 
+/* Pass twl5030 data as latona_i2c_bus1_info */ 
+static struct i2c_board_info __initdata latona_i2c_bus1_info[] = {
+	{
+		I2C_BOARD_INFO("twl5030", 0x48),
+		.flags		= I2C_CLIENT_WAKE,
+		.irq		= INT_34XX_SYS_NIRQ,
+		.platform_data	= &latona_twldata,
+	},
+};
+
 static void synaptics_dev_init(void)
 {
 	/* Set the ts_gpio pin mux */
@@ -606,23 +616,11 @@ static void __init board_onenand_init(void)
 }
 
 static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
+#ifdef CONFIG_FSA9480_MICROUSB
 	{
-		I2C_BOARD_INFO(SYNAPTICS_I2C_RMI_NAME,  0x20),
-		.platform_data = &synaptics_platform_data,
-		.irq = OMAP_GPIO_IRQ(OMAP_SYNAPTICS_GPIO),
-	},
-#if (defined(CONFIG_VIDEO_IMX046) || defined(CONFIG_VIDEO_IMX046_MODULE)) && \
-	defined(CONFIG_VIDEO_OMAP3)
-	{
-		I2C_BOARD_INFO(IMX046_NAME, IMX046_I2C_ADDR),
-		.platform_data = &latona_imx046_platform_data,
-	},
-#endif
-#if (defined(CONFIG_VIDEO_LV8093) || defined(CONFIG_VIDEO_LV8093_MODULE)) && \
-	defined(CONFIG_VIDEO_OMAP3)
-	{
-		I2C_BOARD_INFO(LV8093_NAME,  LV8093_AF_I2C_ADDR),
-		.platform_data = &latona_lv8093_platform_data,
+		I2C_BOARD_INFO("fsa9480", 0x25),
+		.flags = I2C_CLIENT_WAKE,
+		.irq = OMAP_GPIO_IRQ(OMAP_GPIO_JACK_NINT),
 	},
 #endif
 };
@@ -632,6 +630,7 @@ static struct i2c_board_info __initdata latona_i2c_bus3_info[] = {
 		I2C_BOARD_INFO("qt602240_ts", 0x4A),
 	},
 };
+
 static int __init omap_i2c_init(void)
 {
 	if (machine_is_latona()) {
@@ -663,9 +662,12 @@ static int __init omap_i2c_init(void)
 		omap_ctrl_writel(prog_io, OMAP36XX_CONTROL_PROG_IO_WKUP1);
 	}
 
-	omap_pmic_init(1, 2400, "twl5030", INT_34XX_SYS_NIRQ, &latona_twldata);
-	omap_register_i2c_bus(2, 100, latona_i2c_bus2_info,
+	// TODO: Check this function properly:
+	// omap_pmic_init(1, 2400, "twl5030", INT_34XX_SYS_NIRQ, &latona_twldata);
+	omap_register_i2c_bus(2, 400, latona_i2c_bus2_info,
 			ARRAY_SIZE(latona_i2c_bus2_info));
+	omap_register_i2c_bus(1, 400, latona_i2c_bus1_info,   /* Registering the 1st bus before the 2nd one causes issues */ 
+                         ARRAY_SIZE(latona_i2c_bus1_info));
 	omap_register_i2c_bus(3, 400, latona_i2c_bus3_info,
 			ARRAY_SIZE(latona_i2c_bus3_info));
 	return 0;
