@@ -89,7 +89,6 @@ static int g_dock;
 
 extern struct device *sio_switch_dev;
 #endif
-extern int get_hw_revision(void);
 
 #ifdef CONFIG_FSA9480_NOTIFY_USB_CONNECTION_STATE
 #define MAX_NOTIFICATION_HANDLER	10
@@ -314,10 +313,7 @@ void FSA9480_Enable_SPK(u8 enable)
 #endif			
 
 #ifdef CONFIG_MACH_OMAP_LATONA
-		if(get_hw_revision() >= 10)
-        	fsa9480_write(client, REGISTER_MANUALSW1, MICROUSBIC_V_AUDIO_LR);
-		else
-			fsa9480_write(client, REGISTER_MANUALSW1, MICROUSBIC_AUDIO_LR);	// D+/- switching by V_Audio_L/R			
+        	fsa9480_write(client, REGISTER_MANUALSW1, MICROUSBIC_V_AUDIO_LR);		
 #else
 		fsa9480_write(client, REGISTER_MANUALSW1, MICROUSBIC_AUDIO_LR);	// D+/- switching by V_Audio_L/R
 #endif
@@ -390,10 +386,7 @@ static void fsa9480_process_device(u8 dev1, u8 dev2, u8 attach)
 				if(microusb_usbpath > 0) // if CP USB
 					{
 					#ifdef CONFIG_MACH_OMAP_LATONA
-						if(get_hw_revision() >= 10)
-				        	 fsa9480_write(fsa9480_i2c_client, REGISTER_MANUALSW1, MICROUSBIC_AUDIO_LR);
-						else
-							 fsa9480_write(fsa9480_i2c_client, REGISTER_MANUALSW1, MICROUSBIC_V_AUDIO_LR);	// D+/- switching by V_Audio_L/R			
+				        	 fsa9480_write(fsa9480_i2c_client, REGISTER_MANUALSW1, MICROUSBIC_AUDIO_LR);			
 					#else
 						 fsa9480_write(fsa9480_i2c_client, REGISTER_MANUALSW1, MICROUSBIC_V_AUDIO_LR);	// D+/- switching by V_Audio_L/R
 					#endif
@@ -525,12 +518,9 @@ static void fsa9480_process_device(u8 dev1, u8 dev2, u8 attach)
 					DEBUG_FSA9480("FSA9480_DEV_TY2_JIG_UART_ON --- ATTACH\n");
 					MicroJigUARTOnStatus = _ATTACH;
 #ifdef CONFIG_FSA9480_LINE_OUT
-					if(get_hw_revision() >= 10)
-					{
 						set_dock_state((int)CAR_DOCK_INSERTED);
 						FSA9480_Enable_SPK(1);
 						g_dock = CAR_DOCK_INSERTED;                    
-					}
 #endif
 				}
 				else
@@ -538,11 +528,8 @@ static void fsa9480_process_device(u8 dev1, u8 dev2, u8 attach)
 					DEBUG_FSA9480("FSA9480_DEV_TY2_JIG_UART_ON --- DETACH\n");
 					MicroJigUARTOnStatus = DETACH;
 #ifdef CONFIG_FSA9480_LINE_OUT
-					if(get_hw_revision() >= 10)
-					{
-	 			       set_dock_state((int)DOCK_REMOVED);
-						g_dock = DOCK_REMOVED;
-					}
+					set_dock_state((int)DOCK_REMOVED);
+					g_dock = DOCK_REMOVED;
 #endif
 				}
 			break;
@@ -578,23 +565,21 @@ static void fsa9480_process_device(u8 dev1, u8 dev2, u8 attach)
 					{
 					DEBUG_FSA9480("FSA9480_DEV_TY2_AV --- ATTACH\n");
 #ifdef CONFIG_FSA9480_LINE_OUT
-						if(get_hw_revision() >= 10)
-						{
+						
 		                    set_dock_state((int)HOME_DOCK_INSERTED);
 							FSA9480_Enable_SPK(1);
 							g_dock = HOME_DOCK_INSERTED;
-						}
+					
 #endif
 					}
 				else
 					{
 					DEBUG_FSA9480("FSA9480_DEV_TY2_AV --- DETACH\n");
 #ifdef CONFIG_FSA9480_LINE_OUT
-						if(get_hw_revision() >= 10)
-						{
+
 							set_dock_state((int)DOCK_REMOVED);
 							g_dock = DOCK_REMOVED;
-						}
+					
 #endif
 					}
 			}
@@ -874,10 +859,7 @@ void mcirousb_usbpath_change(int usb_path)
 		if(pData != 0x1A) {
 			//mdelay(10000);
 #ifdef CONFIG_MACH_OMAP_LATONA
-		if(get_hw_revision() >= 10)
         	fsa9480_write(fsa9480_i2c_client, REGISTER_MANUALSW1, MICROUSBIC_AUDIO_LR);
-		else
-			 fsa9480_write(fsa9480_i2c_client, REGISTER_MANUALSW1, MICROUSBIC_V_AUDIO_LR);	// D+/- switching by V_Audio_L/R			
 #else
 		 fsa9480_write(fsa9480_i2c_client, REGISTER_MANUALSW1, MICROUSBIC_V_AUDIO_LR);	// D+/- switching by V_Audio_L/R
 #endif
