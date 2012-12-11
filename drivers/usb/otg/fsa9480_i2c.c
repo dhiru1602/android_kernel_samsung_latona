@@ -313,7 +313,7 @@ void FSA9480_Enable_SPK(u8 enable)
 		check_reg = reg_value;
 #endif			
 
-#if ( defined( CONFIG_MACH_SAMSUNG_LATONA ) && ( CONFIG_SAMSUNG_REL_HW_REV >= 8 ) )
+#ifdef CONFIG_MACH_OMAP_LATONA
 		if(get_hw_revision() >= 10)
         	fsa9480_write(client, REGISTER_MANUALSW1, MICROUSBIC_V_AUDIO_LR);
 		else
@@ -389,7 +389,7 @@ static void fsa9480_process_device(u8 dev1, u8 dev2, u8 attach)
 
 				if(microusb_usbpath > 0) // if CP USB
 					{
-					#if ( defined( CONFIG_MACH_SAMSUNG_LATONA ) && ( CONFIG_SAMSUNG_REL_HW_REV >= 8 ) )
+					#ifdef CONFIG_MACH_OMAP_LATONA
 						if(get_hw_revision() >= 10)
 				        	 fsa9480_write(fsa9480_i2c_client, REGISTER_MANUALSW1, MICROUSBIC_AUDIO_LR);
 						else
@@ -873,7 +873,7 @@ void mcirousb_usbpath_change(int usb_path)
 	if(usb_path) { // CP USB
 		if(pData != 0x1A) {
 			//mdelay(10000);
-#if ( defined( CONFIG_MACH_SAMSUNG_LATONA ) && ( CONFIG_SAMSUNG_REL_HW_REV >= 8 ) )
+#ifdef CONFIG_MACH_OMAP_LATONA
 		if(get_hw_revision() >= 10)
         	fsa9480_write(fsa9480_i2c_client, REGISTER_MANUALSW1, MICROUSBIC_AUDIO_LR);
 		else
