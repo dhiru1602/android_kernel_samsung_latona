@@ -44,52 +44,53 @@
 #include <linux/interrupt.h>
 
 #include "mux.h"
+#include "control.h"
 
-#define SEC_OMAP_OUTPUT_GPIO(name, val)		{name, val, (unsigned int)#name},
+#define LATONA_OMAP_OUTPUT_GPIO(name, val)		{name, val, (unsigned int)#name},
 
 static unsigned int __omap_board_output_gpio[][3] __initdata = {
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_PS_HOLD_PU, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_FM_nRST, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_CAM_CIF_NRST, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_CAM_CIF_NSTBY, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_CAM_5M_NSTBY, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_AMP_SHDN, 1)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_GPS_EN, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_GPS_NRST, 1)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_GPS_CNTL, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_CHG_EN, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_WLAN_EN, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_JIG_ON18, 0) 
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_EN_TEMP_VDD, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_VIBTONE_EN, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_TOUCH_EN, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_LCD_EN_SET, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_LED_EN1, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_LED_EN2, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_CP_RST, 1)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_IPC_MRDY, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_PDA_ACTIVE, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_PCM_SEL, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_EARPATH_SEL, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_HW_CP_INT, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_SENSOR_SDA, 1)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_SENSOR_SCL, 1)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_AP_I2C_SDA, 1)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_AP_I2C_SCL, 1)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_FM_SCL, 1)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_FM_SDA, 1)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_MASSMEMORY_EN, 1)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_FUEL_SDA, 1)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_FUEL_SCL, 1)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_ALS_EN, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_CON_CP_SEL, 0)
-	SEC_OMAP_OUTPUT_GPIO(OMAP_GPIO_MSENSE_NRST, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_PS_HOLD_PU, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_FM_nRST, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_CAM_CIF_NRST, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_CAM_CIF_NSTBY, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_CAM_5M_NSTBY, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_AMP_SHDN, 1)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_GPS_EN, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_GPS_NRST, 1)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_GPS_CNTL, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_CHG_EN, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_WLAN_EN, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_JIG_ON18, 0) 
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_EN_TEMP_VDD, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_VIBTONE_EN, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_TOUCH_EN, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_LCD_EN_SET, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_LED_EN1, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_LED_EN2, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_CP_RST, 1)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_IPC_MRDY, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_PDA_ACTIVE, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_PCM_SEL, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_EARPATH_SEL, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_HW_CP_INT, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_SENSOR_SDA, 1)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_SENSOR_SCL, 1)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_AP_I2C_SDA, 1)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_AP_I2C_SCL, 1)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_FM_SCL, 1)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_FM_SDA, 1)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_MASSMEMORY_EN, 1)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_FUEL_SDA, 1)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_FUEL_SCL, 1)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_ALS_EN, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_CON_CP_SEL, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_MSENSE_NRST, 0)
 };	/* end array __omap_output_gpio */
 
-unsigned int sec_board_output_gpio_size = ARRAY_SIZE(__omap_board_output_gpio);
-EXPORT_SYMBOL(sec_board_output_gpio_size);
-unsigned int (*sec_board_output_gpio_ptr)[3] = __omap_board_output_gpio;
-EXPORT_SYMBOL(sec_board_output_gpio_ptr);
+unsigned int latona_board_output_gpio_size = ARRAY_SIZE(__omap_board_output_gpio);
+EXPORT_SYMBOL(latona_board_output_gpio_size);
+unsigned int (*latona_board_output_gpio_ptr)[3] = __omap_board_output_gpio;
+EXPORT_SYMBOL(latona_board_output_gpio_ptr);
 
 static unsigned int __omap_wakeup_gpio[] __initdata = {
 	OMAP_GPIO_JACK_NINT,
@@ -105,10 +106,10 @@ static unsigned int __omap_wakeup_gpio[] __initdata = {
 	OMAP_GPIO_FM_INT,
 };	/* end array omap_wakeup_gpio */
 
-unsigned int sec_board_wakeup_gpio_size = ARRAY_SIZE(__omap_wakeup_gpio);
-EXPORT_SYMBOL(sec_board_wakeup_gpio_size);
-unsigned int (*sec_board_wakeup_gpio_ptr) = __omap_wakeup_gpio;
-EXPORT_SYMBOL(sec_board_wakeup_gpio_ptr);
+unsigned int latona_board_wakeup_gpio_size = ARRAY_SIZE(__omap_wakeup_gpio);
+EXPORT_SYMBOL(latona_board_wakeup_gpio_size);
+unsigned int (*latona_board_wakeup_gpio_ptr) = __omap_wakeup_gpio;
+EXPORT_SYMBOL(latona_board_wakeup_gpio_ptr);
 
 static struct omap_board_mux __omap_board_core_mux[] __initdata = {
 
@@ -830,7 +831,64 @@ static struct omap_board_mux __omap_board_core_mux[] __initdata = {
 	{.reg_offset = OMAP_MUX_TERMINATOR},
 };
 
-unsigned int sec_board_mux_size = ARRAY_SIZE(__omap_board_core_mux);
-EXPORT_SYMBOL(sec_board_mux_size);
-struct omap_board_mux *sec_board_mux_ptr = __omap_board_core_mux;
-EXPORT_SYMBOL(sec_board_mux_ptr);
+unsigned int latona_board_mux_size = ARRAY_SIZE(__omap_board_core_mux);
+EXPORT_SYMBOL(latona_board_mux_size);
+struct omap_board_mux *latona_board_mux_ptr = __omap_board_core_mux;
+EXPORT_SYMBOL(latona_board_mux_ptr);
+
+extern unsigned int latona_board_output_gpio_size;
+extern unsigned int (*latona_board_output_gpio_ptr)[3];
+extern unsigned int latona_board_wakeup_gpio_size;
+extern unsigned int *latona_board_wakeup_gpio_ptr;
+extern unsigned int latona_board_mux_size;
+extern struct omap_board_mux *latona_board_mux_ptr;
+
+int __init latona_mux_init_padconf(void)
+{
+	int ret = 0;
+	unsigned int i;
+
+	for (i = 0; i < latona_board_mux_size; i++) {
+		ret = omap_cfg_reg(i);
+		if (ret) {
+			pr_err("omap pad conf. fail : %d, %d\n", ret, i);
+		}
+	}
+
+	return ret;
+}
+
+int __init latona_mux_init_gpio_out(void)
+{
+	int ret = 0;
+	int err = 0;
+	unsigned int i = 0;
+
+	for (i = 0; i < latona_board_output_gpio_size; i++) {
+		err = gpio_request(latona_board_output_gpio_ptr[i][0],
+				   (char *)latona_board_output_gpio_ptr[i][2]);
+		if (err < 0) {
+			pr_err("can't get %s GPIO\n",
+			       (char *)latona_board_output_gpio_ptr[i][2]);
+			ret = -1;
+			goto __return;
+		}
+
+		gpio_direction_output(latona_board_output_gpio_ptr[i][0],
+				      latona_board_output_gpio_ptr[i][1]);
+	}
+
+__return:
+	return ret;
+}
+
+int __init latona_mux_set_wakeup_gpio(void)
+{
+	int ret = 0;
+	unsigned int i = 0;
+
+	for (i = 0; i < latona_board_wakeup_gpio_size; i++)
+		enable_irq_wake(OMAP_GPIO_IRQ(latona_board_wakeup_gpio_ptr[i]));
+
+	return ret;
+}

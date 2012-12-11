@@ -79,4 +79,10 @@
 #define OMAP_GPIO_AP_I2C_SDA		183
 #define OMAP_GPIO_CAM_EN2		186
 
+int latona_mux_init_padconf(void);
+
+int latona_mux_init_gpio_out(void);
+
+int latona_mux_set_wakeup_gpio(void);
+
 #endif /* _MUX_LATONA_H_ */

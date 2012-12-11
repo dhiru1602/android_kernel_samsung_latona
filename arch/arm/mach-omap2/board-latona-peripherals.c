@@ -48,8 +48,6 @@
 #include "twl4030.h"
 #include "control.h"
 
-#include <plat/mux_latona_rev_r08.h>
-
 #define OMAP_LATONA_WLAN_PMENA_GPIO	(101)
 #define OMAP_LATONA_WLAN_IRQ_GPIO		(162)
 #define OMAP_SYNAPTICS_GPIO			(163)

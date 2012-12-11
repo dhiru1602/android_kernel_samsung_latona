@@ -49,6 +49,14 @@
 
 #define WILINK_UART_DEV_NAME            "/dev/ttyO1"
 
+#ifdef CONFIG_OMAP_MUX
+extern struct omap_board_mux *latona_board_mux_ptr;
+extern struct omap_board_mux *latona_board_wk_mux_ptr;
+#else
+#define latona_board_mux_ptr		NULL
+#define latona_board_wk_mux_ptr		NULL
+#endif
+
 static void __init latona_init_early(void)
 {
 	omap2_init_common_infrastructure();
@@ -215,7 +223,10 @@ static void latona_wifi_init(void)
 
 static void __init latona_init(void)
 {
-	omap3_mux_init(board_mux, OMAP_PACKAGE_CBP);
+	omap3_mux_init(latona_board_mux_ptr, OMAP_PACKAGE_CBP);
+	latona_mux_init_gpio_out();
+	latona_mux_set_wakeup_gpio();
+
 	omap_mux_init_gpio(LATONA_EHCI_RESET_GPIO, OMAP_PIN_OUTPUT);
 	omap_mux_init_gpio(LATONA_McBSP3_BT_GPIO, OMAP_PIN_OUTPUT);
 	usbhs_init(&usbhs_bdata);
