@@ -13,6 +13,8 @@
 #include <video/omapdss.h>
 #include <plat/mux_latona_rev_r08.h>
 
+#include "board-latona-mtd.h"
+
 #define LATONA_NAND_CS    0
 
 extern int __init latona_debugboard_init(void);

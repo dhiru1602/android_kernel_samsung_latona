@@ -591,6 +591,20 @@ static struct synaptics_i2c_rmi_platform_data synaptics_platform_data[] = {
 	}
 };
 
+static struct omap_onenand_platform_data board_onenand_data = {
+	.cs		= 0,
+	.gpio_irq	= 73,
+	.dma_channel	= -1,
+	.parts		= onenand_partitions,
+	.nr_parts	= ARRAY_SIZE(onenand_partitions),
+	.flags		= ONENAND_SYNC_READWRITE,
+};
+
+static void __init board_onenand_init(void)
+{
+	gpmc_onenand_init(&board_onenand_data);
+}
+
 static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
 	{
 		I2C_BOARD_INFO(SYNAPTICS_I2C_RMI_NAME,  0x20),
@@ -681,6 +695,7 @@ void __init latona_peripherals_init(void)
 	platform_add_devices(latona_board_devices,
 		ARRAY_SIZE(latona_board_devices));
 	twl4030_get_scripts(&latona_t2scripts_data);
+	board_onenand_init();
 	omap_i2c_init();
 	atmel_dev_init();
 	platform_device_register(&omap_vwlan_device);
