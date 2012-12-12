@@ -563,16 +563,6 @@ static struct twl4030_platform_data latona_twldata = {
 	.vdac		= &latona_vdac,
 };
 
-/* Pass twl5030 data as latona_i2c_bus1_info */ 
-static struct i2c_board_info __initdata latona_i2c_bus1_info[] = {
-	{
-		I2C_BOARD_INFO("twl5030", 0x48),
-		.flags		= I2C_CLIENT_WAKE,
-		.irq		= INT_34XX_SYS_NIRQ,
-		.platform_data	= &latona_twldata,
-	},
-};
-
 static void synaptics_dev_init(void)
 {
 	/* Set the ts_gpio pin mux */
@@ -662,12 +652,9 @@ static int __init omap_i2c_init(void)
 		omap_ctrl_writel(prog_io, OMAP36XX_CONTROL_PROG_IO_WKUP1);
 	}
 
-	// TODO: Check this function properly:
-	// omap_pmic_init(1, 2400, "twl5030", INT_34XX_SYS_NIRQ, &latona_twldata);
 	omap_register_i2c_bus(2, 400, latona_i2c_bus2_info,
 			ARRAY_SIZE(latona_i2c_bus2_info));
-	omap_register_i2c_bus(1, 400, latona_i2c_bus1_info,   /* Registering the 1st bus before the 2nd one causes issues */ 
-                         ARRAY_SIZE(latona_i2c_bus1_info));
+	omap_pmic_init(1, 400, "twl5030", INT_34XX_SYS_NIRQ, &latona_twldata);	
 	omap_register_i2c_bus(3, 400, latona_i2c_bus3_info,
 			ARRAY_SIZE(latona_i2c_bus3_info));
 	return 0;
