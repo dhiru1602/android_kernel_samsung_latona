@@ -384,19 +384,19 @@ static struct platform_device latona_disp_led = {
 
 static struct omap2_hsmmc_info mmc[] = {
 	{
-		.name		= "external",
-		.mmc		= 1,
-		.caps		= MMC_CAP_4_BIT_DATA,
-		.gpio_wp	= -EINVAL,
-		.power_saving	= true,
-	},
-	{
 		.name		= "internal",
 		.mmc		= 2,
 		.caps		= MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA,
 		.gpio_cd	= -EINVAL,
 		.gpio_wp	= -EINVAL,
 		.nonremovable	= true,
+		.power_saving	= true,
+	},
+	{
+		.name		= "external",
+		.mmc		= 1,
+		.caps		= MMC_CAP_4_BIT_DATA,
+		.gpio_wp	= -EINVAL,
 		.power_saving	= true,
 	},
 	{
@@ -476,7 +476,10 @@ static int latona_twl_gpio_setup(struct device *dev,
 	int ret;
 
 	/* gpio + 0 is "mmc0_cd" (input/IRQ) */
-	mmc[0].gpio_cd = gpio + 0;
+	//mmc[0].gpio_cd = gpio + 0;
+
+	mmc[1].gpio_cd = 23;
+
 	omap2_hsmmc_init(mmc);
 
 	/* link regulators to MMC adapters ... we "know" the
