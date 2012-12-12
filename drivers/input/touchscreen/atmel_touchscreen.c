@@ -224,7 +224,7 @@ typedef struct
 } dec_input;
 
 static dec_input touch_info[MAX_TOUCH_NUM] = {0};
-#if defined(TSP_DEBUG)
+#if TSP_DEBUG
 static int prev_touch_count = 0;
 #endif
 
@@ -434,7 +434,7 @@ void clear_touch_history(void)
 		if(touch_info[i].press == 0) touch_info[i].press = -1;
 	}
 	input_sync(tsp.inputdevice);
-#if defined(TSP_DEBUG)
+#if TSP_DEBUG
 	prev_touch_count = 0;
 #endif
 }
@@ -654,7 +654,7 @@ void keyarray_handler(uint8_t * atmel_msg)
 	if( (atmel_msg[2] & 0x1) && (menu_button==0) ) // menu press
 	{
 		menu_button = 1;
-#if defined(TSP_DEBUG)
+#if TSP_DEBUG
 		printk(KERN_DEBUG "[TSP] menu_button is pressed\n");
 #endif
 		input_report_key(tsp.inputdevice, 139, DEFAULT_PRESSURE_DOWN);
@@ -664,7 +664,7 @@ void keyarray_handler(uint8_t * atmel_msg)
 	else if( (atmel_msg[2] & 0x2) && (back_button==0) ) // back press
 	{
 		back_button = 1;
-#if defined(TSP_DEBUG)
+#if TSP_DEBUG
 		printk(KERN_DEBUG "[TSP] back_button is pressed\n");                
 #endif
 		input_report_key(tsp.inputdevice, 158, DEFAULT_PRESSURE_DOWN);                
@@ -674,7 +674,7 @@ void keyarray_handler(uint8_t * atmel_msg)
 	else if( (~atmel_msg[2] & (0x1)) && menu_button==1 ) // menu_release
 	{
 		menu_button = 0;
-#if defined(TSP_DEBUG)
+#if TSP_DEBUG
 		printk(KERN_DEBUG "[TSP] menu_button is released\n");                                
 #endif
 		input_report_key(tsp.inputdevice, 139, DEFAULT_PRESSURE_UP);     
@@ -684,7 +684,7 @@ void keyarray_handler(uint8_t * atmel_msg)
 	else if( (~atmel_msg[2] & (0x2)) && back_button==1 ) // menu_release
 	{
 		back_button = 0;
-#if defined(TSP_DEBUG)
+#if TSP_DEBUG
 		printk(KERN_DEBUG "[TSP] back_button is released\n");
 #endif
 		input_report_key(tsp.inputdevice, 158, DEFAULT_PRESSURE_UP); 
@@ -885,7 +885,7 @@ void handle_multi_touch(uint8_t *atmel_msg)
 			else touch_count++;
 		}
 		input_sync(tsp.inputdevice);
-#if defined(TSP_DEBUG)
+#if TSP_DEBUG
 		if(prev_touch_count != touch_count) {
 			printk(KERN_DEBUG "[TSP] id[%d],x=%d,y=%d,%dpoint(s)\n", id, x, y, touch_count);
 			prev_touch_count = touch_count;
@@ -1379,7 +1379,7 @@ static int touchscreen_suspend(struct platform_device *pdev, pm_message_t state)
 	atmel_suspend();
 	if (menu_button == 1)
 	{
-#if defined(TSP_DEBUG)
+#if TSP_DEBUG
 		printk(KERN_DEBUG "[TSP] menu_button force released\n");                                
 #endif
 		input_report_key(tsp.inputdevice, 139, DEFAULT_PRESSURE_UP);     
@@ -1387,7 +1387,7 @@ static int touchscreen_suspend(struct platform_device *pdev, pm_message_t state)
 	}
 	if (back_button == 1)
 	{
-#if defined(TSP_DEBUG)
+#if TSP_DEBUG
 		printk(KERN_DEBUG "[TSP] back_button force released\n");
 #endif
 		input_report_key(tsp.inputdevice, 158, DEFAULT_PRESSURE_UP); 
