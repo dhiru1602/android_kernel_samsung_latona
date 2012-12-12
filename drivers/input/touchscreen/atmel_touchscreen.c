@@ -47,6 +47,9 @@
 #define TOUCH_KEYSET_T31                          31u
 #define TOUCH_XSLIDERSET_T32                      32u
 
+/* Enable Debugging */
+#define TSP_DEBUG 0
+
 
 #include <linux/errno.h>
 #include <linux/kernel.h>
@@ -221,7 +224,7 @@ typedef struct
 } dec_input;
 
 static dec_input touch_info[MAX_TOUCH_NUM] = {0};
-#if defined(CONFIG_SAMSUNG_KERNEL_DEBUG_USER)
+#if defined(TSP_DEBUG)
 static int prev_touch_count = 0;
 #endif
 
@@ -233,9 +236,9 @@ static int prev_touch_count = 0;
 	input_report_abs(tsp.inputdevice, ABS_MT_TRACKING_ID, id); \
 	input_mt_sync(tsp.inputdevice); }
 
-// ]] ryun 20100113 
 
 #ifdef ENABLE_NOISE_TEST_MODE
+
 extern ssize_t set_refer0_mode_show(struct device *dev, struct device_attribute *attr, char *buf);
 extern ssize_t set_refer1_mode_show(struct device *dev, struct device_attribute *attr, char *buf);
 extern ssize_t set_refer2_mode_show(struct device *dev, struct device_attribute *attr, char *buf);
@@ -267,6 +270,31 @@ static DEVICE_ATTR(set_delta5, S_IRUGO, set_delta5_mode_show, NULL);
 static DEVICE_ATTR(set_refer6, S_IRUGO, set_refer6_mode_show, NULL);
 static DEVICE_ATTR(set_delta6, S_IRUGO, set_delta6_mode_show, NULL);
 static DEVICE_ATTR(set_threshold, S_IRUGO, threshold_show, NULL);
+
+
+static struct attribute *noise_attr[] = {
+	&dev_attr_set_refer0.attr,
+	&dev_attr_set_delta0.attr,
+	&dev_attr_set_refer1.attr,
+	&dev_attr_set_delta1.attr,
+	&dev_attr_set_refer2.attr,
+	&dev_attr_set_delta2.attr,
+	&dev_attr_set_refer3.attr,
+	&dev_attr_set_delta3.attr,
+	&dev_attr_set_refer4.attr,
+	&dev_attr_set_delta4.attr,
+	&dev_attr_set_refer5.attr,
+	&dev_attr_set_delta5.attr,
+	&dev_attr_set_refer6.attr,
+	&dev_attr_set_delta6.attr,
+	&dev_attr_set_threshold.attr,
+	NULL
+};
+
+static struct attribute_group noise_group =  {
+	.attrs = noise_attr,
+};
+
 #endif /* ENABLE_NOISE_TEST_MODE */
 
 void read_func_for_only_single_touch(struct work_struct *work);
@@ -288,15 +316,33 @@ static irqreturn_t touchscreen_handler(int irq, void *dev_id);
 void set_touch_irq_gpio_init(void);
 void set_touch_irq_gpio_disable(void);	// ryun 20091203
 void clear_touch_history(void);
+static ssize_t bootcomplete_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t n);
 
-//samsung customisation
-static struct kobj_attribute touch_boost_attr =     __ATTR(touch_boost, 0644, ts_show, ts_store);
-static struct kobj_attribute firmware_attr =        __ATTR(set_qt_firm_update, 0220, NULL, firmware_update_store);
-static struct kobj_attribute firmware_binary_attr = __ATTR(set_qt_firm_version, 0444, firmware_version_show, NULL);
+
+static struct kobj_attribute touch_boost_attr          = __ATTR(touch_boost, 0644, ts_show, ts_store);
+static struct kobj_attribute firmware_attr             = __ATTR(set_qt_firm_update, 0220, NULL, firmware_update_store);
+static struct kobj_attribute firmware_binary_attr      = __ATTR(set_qt_firm_version, 0444, firmware_version_show, NULL);
 static struct kobj_attribute firmware_binary_read_attr = __ATTR(set_qt_firm_version_read, 0444, firmware_version_read_show, NULL);
-static struct kobj_attribute firmware_ret_attr =    __ATTR(set_qt_firm_status, 0444, firmware_ret_show, NULL);
+static struct kobj_attribute firmware_ret_attr         = __ATTR(set_qt_firm_status, 0444, firmware_ret_show, NULL);
+static struct kobj_attribute bootcomplete_attr = __ATTR(bootcomplete, 0220, NULL, bootcomplete_store);
 
-/*------------------------------ for tunning ATmel - start ----------------------------*/
+static struct attribute *sam_attr[] = {
+	&touch_boost_attr,
+	&firmware_attr,
+	&firmware_binary_attr,
+	&firmware_binary_read_attr,
+	&firmware_ret_attr,
+	&bootcomplete_attr,
+	NULL,
+};
+
+static struct attribute_group sam_group =
+{
+	.attrs = sam_attr,
+};
+
+/* Atmel sysfs functions */
+
 extern  ssize_t set_power_show(struct device *dev, struct device_attribute *attr, char *buf);
 extern  ssize_t set_power_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size);
 extern  ssize_t set_acquisition_show(struct device *dev, struct device_attribute *attr, char *buf);
@@ -314,17 +360,31 @@ extern  ssize_t set_total_store(struct device *dev, struct device_attribute *att
 extern  ssize_t set_write_show(struct device *dev, struct device_attribute *attr, char *buf);
 extern  ssize_t set_write_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size);
 
-static DEVICE_ATTR(set_power, S_IRUGO | S_IWUSR, set_power_show, set_power_store);
-static DEVICE_ATTR(set_acquisition, S_IRUGO | S_IWUSR, set_acquisition_show, set_acquisition_store);
-static DEVICE_ATTR(set_touchscreen, S_IRUGO | S_IWUSR, set_touchscreen_show, set_touchscreen_store);
-static DEVICE_ATTR(set_keyarray, S_IRUGO | S_IWUSR, set_keyarray_show, set_keyarray_store);
-static DEVICE_ATTR(set_grip , S_IRUGO | S_IWUSR, set_grip_show, set_grip_store);
-static DEVICE_ATTR(set_noise, S_IRUGO | S_IWUSR, set_noise_show, set_noise_store);
-static DEVICE_ATTR(set_total, S_IRUGO | S_IWUSR, set_total_show, set_total_store);
-static DEVICE_ATTR(set_write, S_IRUGO | S_IWUSR, set_write_show, set_write_store);
+static DEVICE_ATTR(set_power, S_IRUGO | S_IWUGO, set_power_show, set_power_store);
+static DEVICE_ATTR(set_acquisition, S_IRUGO | S_IWUGO, set_acquisition_show, set_acquisition_store);
+static DEVICE_ATTR(set_touchscreen, S_IRUGO | S_IWUGO, set_touchscreen_show, set_touchscreen_store);
+static DEVICE_ATTR(set_keyarray, S_IRUGO | S_IWUGO, set_keyarray_show, set_keyarray_store);
+static DEVICE_ATTR(set_grip , S_IRUGO | S_IWUGO, set_grip_show, set_grip_store);
+static DEVICE_ATTR(set_noise, S_IRUGO | S_IWUGO, set_noise_show, set_noise_store);
+static DEVICE_ATTR(set_total, S_IRUGO | S_IWUGO, set_total_show, set_total_store);
+static DEVICE_ATTR(set_write, S_IRUGO | S_IWUGO, set_write_show, set_write_store);
 
-static ssize_t bootcomplete_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t n);
-static struct kobj_attribute bootcomplete_attr =        __ATTR(bootcomplete, 0220, NULL, bootcomplete_store);
+static struct attribute *atmel_settings[] = {
+	&dev_attr_set_power.attr,
+	&dev_attr_set_acquisition.attr,
+	&dev_attr_set_touchscreen.attr,
+	&dev_attr_set_keyarray.attr,
+	&dev_attr_set_grip.attr,
+	&dev_attr_set_noise.attr,
+	&dev_attr_set_total.attr,
+	&dev_attr_set_write.attr,
+	NULL,
+};
+
+static struct attribute_group atmel_attr_group = {
+	.attrs = atmel_settings,
+};
+
 
 extern void bootcomplete(void);
 extern void enable_autocal_timer(unsigned int value);
@@ -374,7 +434,7 @@ void clear_touch_history(void)
 		if(touch_info[i].press == 0) touch_info[i].press = -1;
 	}
 	input_sync(tsp.inputdevice);
-#if defined(CONFIG_SAMSUNG_KERNEL_DEBUG_USER)
+#if defined(TSP_DEBUG)
 	prev_touch_count = 0;
 #endif
 }
@@ -409,9 +469,8 @@ static ssize_t ts_store(struct kobject *kobj, struct kobj_attribute *attr,
 
 	return n;
 }
-//samsung customisation
 
-//[[ ryun 20100107 for touch boost
+
 static void tsc_timer_out (unsigned long v)
 	{
 		schedule_work(&(tsp.constraint_wq));
@@ -595,7 +654,7 @@ void keyarray_handler(uint8_t * atmel_msg)
 	if( (atmel_msg[2] & 0x1) && (menu_button==0) ) // menu press
 	{
 		menu_button = 1;
-#if defined(CONFIG_SAMSUNG_KERNEL_DEBUG_USER)
+#if defined(TSP_DEBUG)
 		printk(KERN_DEBUG "[TSP] menu_button is pressed\n");
 #endif
 		input_report_key(tsp.inputdevice, 139, DEFAULT_PRESSURE_DOWN);
@@ -605,7 +664,7 @@ void keyarray_handler(uint8_t * atmel_msg)
 	else if( (atmel_msg[2] & 0x2) && (back_button==0) ) // back press
 	{
 		back_button = 1;
-#if defined(CONFIG_SAMSUNG_KERNEL_DEBUG_USER)
+#if defined(TSP_DEBUG)
 		printk(KERN_DEBUG "[TSP] back_button is pressed\n");                
 #endif
 		input_report_key(tsp.inputdevice, 158, DEFAULT_PRESSURE_DOWN);                
@@ -615,7 +674,7 @@ void keyarray_handler(uint8_t * atmel_msg)
 	else if( (~atmel_msg[2] & (0x1)) && menu_button==1 ) // menu_release
 	{
 		menu_button = 0;
-#if defined(CONFIG_SAMSUNG_KERNEL_DEBUG_USER)
+#if defined(TSP_DEBUG)
 		printk(KERN_DEBUG "[TSP] menu_button is released\n");                                
 #endif
 		input_report_key(tsp.inputdevice, 139, DEFAULT_PRESSURE_UP);     
@@ -625,7 +684,7 @@ void keyarray_handler(uint8_t * atmel_msg)
 	else if( (~atmel_msg[2] & (0x2)) && back_button==1 ) // menu_release
 	{
 		back_button = 0;
-#if defined(CONFIG_SAMSUNG_KERNEL_DEBUG_USER)
+#if defined(TSP_DEBUG)
 		printk(KERN_DEBUG "[TSP] back_button is released\n");
 #endif
 		input_report_key(tsp.inputdevice, 158, DEFAULT_PRESSURE_UP); 
@@ -826,7 +885,7 @@ void handle_multi_touch(uint8_t *atmel_msg)
 			else touch_count++;
 		}
 		input_sync(tsp.inputdevice);
-#if defined(CONFIG_SAMSUNG_KERNEL_DEBUG_USER)
+#if defined(TSP_DEBUG)
 		if(prev_touch_count != touch_count) {
 			printk(KERN_DEBUG "[TSP] id[%d],x=%d,y=%d,%dpoint(s)\n", id, x, y, touch_count);
 			prev_touch_count = touch_count;
@@ -1099,7 +1158,7 @@ EXPORT_SYMBOL(sec_class);
 
 static int __init touchscreen_probe(struct platform_device *pdev)
 {
-	int ret;
+	int ret,retval,retval_2,r;
 	int error = -1;
 //	u8 data[2] = {0,};
 
@@ -1186,140 +1245,54 @@ static int __init touchscreen_probe(struct platform_device *pdev)
 	register_early_suspend(&tsp.early_suspend);
 #endif	/* CONFIG_HAS_EARLYSUSPEND */
 
-// [[ This will create the touchscreen sysfs entry under the /sys directory
-struct kobject *ts_kobj;
-ts_kobj = kobject_create_and_add("touchscreen", NULL);
+/* ************* SYSFS INIT *********** */ 
+	
+	struct kobject *ts_kobj;
+	struct kobject *atmel_kobj;
+
+	ts_kobj = kobject_create_and_add("touchscreen", NULL);
 	if (!ts_kobj)
 		return -ENOMEM;
 
-
-	error = sysfs_create_file(ts_kobj,
-				  &touch_boost_attr.attr);
-	if (error) {
-		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
-		return error;
+	retval = sysfs_create_group(ts_kobj, &sam_group);
+	if(retval) {
+		printk(KERN_ERR "[TSP] Failed to create sysfs! \n");
+		return retval;
 	}
+	else 
+		printk(KERN_DEBUG "[TSP] sysfs Enteries Successfull ! \n");
 
-	error = sysfs_create_file(ts_kobj,
-				  &firmware_attr.attr);
-	if (error) {
-		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
-		return error;
+/* Atmel-42QT602240 Specific enteries */ 
+				
+	atmel_kobj = kobject_create_and_add("atmel_qt602240", NULL);
+	if (!atmel_kobj)	
+		return -ENOMEM;	
+	retval_2 = sysfs_create_group(atmel_kobj, &atmel_attr_group);
+	if(retval_2) 
+		{
+		printk("[TSP] Failed to create QT42602240 Sysfs! \n");
+		return ret;
 		}
-
-	error = sysfs_create_file(ts_kobj,
-				  &firmware_binary_attr.attr);
-	if (error) {
-		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
-		return error;
-		}
-
-	error = sysfs_create_file(ts_kobj,
-				  &firmware_binary_read_attr.attr);
-	if (error) {
-		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
-		return error;
-		}
-
-	error = sysfs_create_file(ts_kobj,
-				  &firmware_ret_attr.attr);
-	if (error) {
-		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
-		return error;
-		}
-
-	/*------------------------------ for tunning ATmel - start ----------------------------*/
-	error = sysfs_create_file(ts_kobj, &dev_attr_set_power.attr);
-	if (error) {
-		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
-		return error;
-	}
-	error = sysfs_create_file(ts_kobj, &dev_attr_set_acquisition.attr);
-	if (error) {
-		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
-		return error;
-	}
-	error = sysfs_create_file(ts_kobj, &dev_attr_set_touchscreen.attr);
-	if (error) {
-		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
-		return error;
-	}
-	error = sysfs_create_file(ts_kobj, &dev_attr_set_keyarray.attr);
-	if (error) {
-		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
-		return error;
-	}
-	error = sysfs_create_file(ts_kobj, &dev_attr_set_grip.attr);
-	if (error) {
-		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
-		return error;
-	}
-	error = sysfs_create_file(ts_kobj, &dev_attr_set_noise.attr);
-	if (error) {
-		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
-		return error;
-	}
-	error = sysfs_create_file(ts_kobj, &dev_attr_set_total.attr);
-	if (error) {
-		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
-		return error;
-	}
-	error = sysfs_create_file(ts_kobj, &dev_attr_set_write.attr);
-	if (error) {
-		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
-		return error;
-	}
-	/*------------------------------ for tunning ATmel - end ----------------------------*/
+	else
+		printk(KERN_DEBUG "[TSP] ATMEL Sysfs Enteries successful! \n" );
 
 #ifdef ENABLE_NOISE_TEST_MODE
-//	struct kobject *qt602240_noise_test;
-//	qt602240_noise_test = kobject_create_and_add("qt602240_noise_test", NULL);
-//	if (!qt602240_noise_test) {
-//		printk("Failed to create sysfs(qt602240_noise_test)!\n");
-//		return -ENOMEM;
-//	}
-	struct device *qt602240_noise_test = device_create(sec_class, NULL, 0, NULL, "qt602240_noise_test");
- 
-	if (device_create_file(qt602240_noise_test, &dev_attr_set_refer0.attr)< 0)
-		printk("Failed to create device file(%s)!\n", dev_attr_set_refer0.attr.name);
-	if (device_create_file(qt602240_noise_test, &dev_attr_set_delta0.attr) < 0)
-		printk("Failed to create device file(%s)!\n", dev_attr_set_delta0.attr.name);
-	if (device_create_file(qt602240_noise_test, &dev_attr_set_refer1.attr)< 0)
-		printk("Failed to create device file(%s)!\n", dev_attr_set_refer1.attr.name);
-	if (device_create_file(qt602240_noise_test, &dev_attr_set_delta1.attr) < 0)
-		printk("Failed to create device file(%s)!\n", dev_attr_set_delta1.attr.name);
-	if (device_create_file(qt602240_noise_test, &dev_attr_set_refer2.attr)< 0)
-		printk("Failed to create device file(%s)!\n", dev_attr_set_refer2.attr.name);
-	if (device_create_file(qt602240_noise_test, &dev_attr_set_delta2.attr) < 0)
-		printk("Failed to create device file(%s)!\n", dev_attr_set_delta2.attr.name);
-	if (device_create_file(qt602240_noise_test, &dev_attr_set_refer3.attr)< 0)
-		printk("Failed to create device file(%s)!\n", dev_attr_set_refer3.attr.name);
-	if (device_create_file(qt602240_noise_test, &dev_attr_set_delta3.attr) < 0)
-		printk("Failed to create device file(%s)!\n", dev_attr_set_delta3.attr.name);
-	if (device_create_file(qt602240_noise_test, &dev_attr_set_refer4.attr)< 0)
-		printk("Failed to create device file(%s)!\n", dev_attr_set_refer4.attr.name);
-	if (device_create_file(qt602240_noise_test, &dev_attr_set_delta4.attr) < 0)
-		printk("Failed to create device file(%s)!\n", dev_attr_set_delta4.attr.name);
-	if (device_create_file(qt602240_noise_test, &dev_attr_set_refer5.attr)< 0)
-		printk("Failed to create device file(%s)!\n", dev_attr_set_refer5.attr.name);
-	if (device_create_file(qt602240_noise_test, &dev_attr_set_delta5.attr) < 0)
-		printk("Failed to create device file(%s)!\n", dev_attr_set_delta5.attr.name);
-	if (device_create_file(qt602240_noise_test, &dev_attr_set_refer6.attr)< 0)
-		printk("Failed to create device file(%s)!\n", dev_attr_set_refer6.attr.name);
-	if (device_create_file(qt602240_noise_test, &dev_attr_set_delta6.attr) < 0)
-		printk("Failed to create device file(%s)!\n", dev_attr_set_delta6.attr.name);
-	if (device_create_file(qt602240_noise_test, &dev_attr_set_threshold.attr) < 0)
-		printk("Failed to create device file(%s)!\n", dev_attr_set_threshold.attr.name);
+/* Noise test enteries */ 
+	struct kobject *noise;
+	noise = kobject_create_and_add("qt602240_noise_test", NULL);
+	if(!noise)
+		{
+		 printk("[TSP] Failed to create kobj for noise test! \n");
+		 return -ENOMEM;
+		}
+	r = sysfs_create_group(noise, &noise_group);
+	if(r) {
+		printk("[TSP] Failed to create sysfs enteries for noise test! \n");
+		return r;
+		}
+	else	
+		printk("[TSP] Successfully added sysfs enteries for noise test! \n");
 #endif
-
-	error = sysfs_create_file(ts_kobj,
-				  &bootcomplete_attr.attr);
-	if (error) {
-		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
-		return error;
-	}
-
-// ]] This will create the touchscreen sysfs entry under the /sys directory
 
 #ifdef TOUCH_PROC
 	touch_proc = create_proc_entry("touch_proc", S_IFREG | S_IRUGO | S_IWUGO, 0);
@@ -1332,7 +1305,7 @@ ts_kobj = kobject_create_and_add("touchscreen", NULL);
 	{
 	        printk(" error occured in initializing touch proc file\n");
 	}
-#endif
+#endif 
 	printk(KERN_DEBUG "[TSP] success probe() !\n");
 
 	return 0;
@@ -1406,7 +1379,7 @@ static int touchscreen_suspend(struct platform_device *pdev, pm_message_t state)
 	atmel_suspend();
 	if (menu_button == 1)
 	{
-#if defined(CONFIG_SAMSUNG_KERNEL_DEBUG_USER)
+#if defined(TSP_DEBUG)
 		printk(KERN_DEBUG "[TSP] menu_button force released\n");                                
 #endif
 		input_report_key(tsp.inputdevice, 139, DEFAULT_PRESSURE_UP);     
@@ -1414,7 +1387,7 @@ static int touchscreen_suspend(struct platform_device *pdev, pm_message_t state)
 	}
 	if (back_button == 1)
 	{
-#if defined(CONFIG_SAMSUNG_KERNEL_DEBUG_USER)
+#if defined(TSP_DEBUG)
 		printk(KERN_DEBUG "[TSP] back_button force released\n");
 #endif
 		input_report_key(tsp.inputdevice, 158, DEFAULT_PRESSURE_UP); 
