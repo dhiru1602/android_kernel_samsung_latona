@@ -555,7 +555,7 @@ typedef struct
    uint8_t tchdi;              /*!< Detect integration config           */
    uint8_t average;            /*!< LCMASK Sets the filter length on the prox signal */
    uint16_t rate;               /*!< Sets the rate that prox signal must exceed */
-   uint16_t mvdthr;           /*!< movement detection threshold */
+   uint16_t mvdthr           /*!< movement detection threshold */
 } __packed touch_proximity_t23_config_t;
 
 /*! ==PROCI_ONETOUCHGESTUREPROCESSOR_T24==
@@ -786,6 +786,8 @@ static void (*application_message_handler)(void);
 /*! Message buffer holding the latest message received. */
 uint8_t *atmel_msg;
 
+/*! \brief The current address pointer. */
+static U16 address_pointer;
 
 
 unsigned char g_version=0, g_build = 0, qt60224_notfound_flag=1;
@@ -826,7 +828,7 @@ uint8_t get_build_number(uint8_t *build);
 uint8_t get_variant_id(uint8_t *variant);
 void disable_changeline_int(void);
 void enable_changeline_int(void);
-uint8_t calculate_infoblock_crc(uint32_t crc_pointer);
+uint8_t calculate_infoblock_crc(uint32_t *crc_pointer);
 uint8_t report_id_to_type(uint8_t report_id, uint8_t *instance);
 uint8_t type_to_report_id(uint8_t object_type, uint8_t instance);
 uint8_t write_power_config(gen_powerconfig_t7_config_t cfg);
@@ -945,7 +947,7 @@ void set_autocal(uint8_t value)
 	up(&g_tsp_mutex);
 }
 
-void force_disable_tsp_autocal(void)
+void force_disable_tsp_autocal()
 {
 	if((!is_boot_state && !is_suspend_state) && !qt60224_notfound_flag)
 	{
@@ -1222,14 +1224,12 @@ void restore_acquisition_config(void)
 }
 int atmel_suspend(void)
 {
-	gen_powerconfig_t7_config_t power_config = {0};
-
 	if (down_interruptible(&g_tsp_mutex))
 		return -ERESTARTSYS;
 
 	is_suspend_state = 1; // set suspend state
 	
-	
+	gen_powerconfig_t7_config_t power_config = {0};
 		/* Set power config. */
 	/* Set Idle Acquisition Interval to 32 ms. */
 	power_config.idleacqint = 0;
@@ -1436,11 +1436,6 @@ int set_all_config(all_config_setting config)
             }
             break;
             break;
-
-	    default:
-	    /* Do nothing bitch */ 
-	    break;	    
-
         }    
         
     	/* Write touchscreen (1st instance) config to chip. */
@@ -1474,12 +1469,14 @@ int set_all_config(all_config_setting config)
 }
 void atmel_touch_probe(void)
 {
+   U8 touch_chip_found = 0;
    U8 report_id, MAX_report_ID;
    U8 object_type, instance;
-   U32 crc = 0; //, stored_crc;
+   U32 crc;//, stored_crc;
    uint8_t chip_reset;
+   int count;
    int i;
-   U8 family_id, variant, build;
+   U8 version, family_id, variant, build;
 #if 0 
 	/* Power config settings. */
 	gen_powerconfig_t7_config_t power_config = {0};
@@ -1548,7 +1545,7 @@ void atmel_touch_probe(void)
 #endif
 //	printk("\n[TSP] a-2\n");
 
-	if(calculate_infoblock_crc(crc) != CRC_CALCULATION_OK)
+	if(calculate_infoblock_crc(&crc) != CRC_CALCULATION_OK)
 	{
 		/* "Calculating CRC failed, skipping check!\n" */
 		printk("[TSP][ERROR] line : %d\n", __LINE__);
@@ -1709,8 +1706,11 @@ void atmel_touch_probe(void)
   */
 uint8_t init_touch_driver(uint8_t I2C_address, void (*handler)(void))
 {
+	printk(KERN_DEBUG "[TSP] %s() - start\n", __FUNCTION__);
    int i;
+   
    int current_report_id = 0;
+   
    uint8_t tmp;
    uint16_t current_address;
    uint16_t crc_address;
@@ -1722,8 +1722,6 @@ uint8_t init_touch_driver(uint8_t I2C_address, void (*handler)(void))
    uint8_t status;
 //   U8 temp_data8;
 //   U16 temp_data16;
-
-   printk(KERN_DEBUG "[TSP] %s() - start\n", __FUNCTION__);
 
 #if 0 // __CONFIG_SAMSUNG_DEBUG__
 	uint16_t readdate;
@@ -2796,7 +2794,6 @@ uint8_t write_noisesuppression_config(uint8_t instance, procg_noisesuppression_t
 uint8_t read_simple_config(uint8_t object_type, 
                             uint8_t instance, void *cfg)
 {
-   int i;
    uint16_t object_address;
    uint8_t object_size;
    uint8_t buf[30];
@@ -2809,7 +2806,7 @@ uint8_t read_simple_config(uint8_t object_type,
       return(CFG_WRITE_FAILED);
    }
    read_mem(object_address, object_size, buf);
-   
+   int i;
    for( i=0; i<30 ; i++){
 	printk("======== [TSP] buf[%d] = %d \n", i, buf[i]);
    	}
@@ -3253,11 +3250,11 @@ U8 read_mem(U16 start, U8 size, U8 *mem)
 
 	if(status < 0)
 	{
+		printk("[TSP][ERROR] i2c_tsp_sensor_read error !!\n");
+		disable_irq(touchscreen_get_tsp_int_num());
 		int repeat_count=0;
 		unsigned char do_reset=1;
 		unsigned char resume_success=0;
-		printk("[TSP][ERROR] i2c_tsp_sensor_read error !!\n");
-		disable_irq(touchscreen_get_tsp_int_num());
 
 		do {
 			if( do_reset )
@@ -3270,7 +3267,7 @@ U8 read_mem(U16 start, U8 size, U8 *mem)
 				gpio_direction_input(OMAP_GPIO_TOUCH_INT);
 				gpio_set_value(OMAP_GPIO_TOUCH_EN, 1);
 				msleep(80); // recommended value
-				calibrate_chip();
+				//calibrate_chip(); // Removed. When i2c error occur, this function call read_mem() as Recursion Function and then goes into infinite loop.
 			}
 
 			touch_state = 0;
@@ -3384,12 +3381,11 @@ U8 write_mem(U16 start, U8 size, U8 *mem)
 //	int i2c_tsp_sensor_write(u8 reg, u8 *val, unsigned int len)
 	if(i2c_tsp_sensor_write(start, mem, size) < 0)
 	{
+		printk("[TSP][ERROR] i2c_tsp_sensor_write error !!\n");
+		disable_irq(touchscreen_get_tsp_int_num());
 		int repeat_count=0;
 		unsigned char do_reset=1;
 		unsigned char resume_success=0;
-		printk("[TSP][ERROR] i2c_tsp_sensor_write error !!\n");
-		disable_irq(touchscreen_get_tsp_int_num());
-		
 
 		do {
 			if( do_reset )
@@ -3402,7 +3398,7 @@ U8 write_mem(U16 start, U8 size, U8 *mem)
 				gpio_direction_input(OMAP_GPIO_TOUCH_INT);
 				gpio_set_value(OMAP_GPIO_TOUCH_EN, 1);
 				msleep(80); // recommended value
-				calibrate_chip();
+				//calibrate_chip(); // Removed. When i2c error occur, this function call read_mem() as Recursion Function and then goes into infinite loop.
 			}
 
 			touch_state = 0;
@@ -3528,7 +3524,7 @@ uint32_t get_stored_infoblock_crc(void)
  *         CRC_CALCULATION_OK otherwise.
  *
  */
-uint8_t calculate_infoblock_crc(uint32_t crc_pointer)
+uint8_t calculate_infoblock_crc(uint32_t *crc_pointer)
 {
    uint32_t crc = 0;
    //uint16_t 
@@ -3565,7 +3561,7 @@ PRINT_FUNCTION_ENTER;
 //   kfree(mem);
 
    /* Return only 24 bit CRC. */
-   crc_pointer = (crc & 0x00FFFFFF);
+   *crc_pointer = (crc & 0x00FFFFFF);
    PRINT_FUNCTION_EXIT;
    return(CRC_CALCULATION_OK);
 }
@@ -3792,12 +3788,6 @@ void set_specific_acquisition_config(
 			acquisition_config->atchcalsthr = 27;//15;
 		}
 		break;
-
-
-		default:
-		/* Make this fucking compiler happy */ 
-		break;
-
 	}    
 }
 void set_specific_touchscreen_config(
@@ -3817,17 +3807,12 @@ void set_specific_touchscreen_config(
 		touchscreen_config->movhysti = 3;
 		touchscreen_config->mrghyst = 5;
 		touchscreen_config->movfilter = 46;//31;
-		touchscreen_config->numtouch = MAX_TOUCH_NUM; /* TODO: CHECK FOR 10 point touch */ 
+		touchscreen_config->numtouch = MAX_TOUCH_NUM;
 		touchscreen_config->mrghyst = 5;
 		touchscreen_config->mrgthr = 40;//10;
 		touchscreen_config->jumplimit = 18;
         }
 	break;
-
-
-	default:
-	break;
-
     }    
 }
 void set_specific_keyarray_config(
@@ -3849,10 +3834,6 @@ void set_specific_keyarray_config(
 		keyarray_config->tchdi = 4; // 4;
         }
         break;
-
-	default:
-	/* Fcuking samsung */ 
-	break;
     }    
 }
 void set_specific_linearization_config(
@@ -3865,9 +3846,6 @@ void set_specific_linearization_config(
         {
         }
         break;
-
-	default:
-	break;
     }    
 }
 void set_specific_twotouch_gesture_config(
@@ -3880,9 +3858,6 @@ void set_specific_twotouch_gesture_config(
         {
         }
         break;
-	
-	default:
-	break;
     }    
 }
 void set_specific_onetouch_gesture_config(
@@ -3895,9 +3870,6 @@ void set_specific_onetouch_gesture_config(
         {
         }
         break;
-
-	default:
-	break;
     }    
 }
 
@@ -3923,9 +3895,6 @@ void set_specific_noise_suppression_config(
         	noise_suppression_config->idlegcafvalid = 3;
         }
         break;
-
-	default:
-	break; 
     }    
 }
 void set_specific_selftest_config(
@@ -3938,9 +3907,6 @@ void set_specific_selftest_config(
         {
         }
         break;
-
-	default:
-	break;
     }    
 }
 void set_specific_gripfacesuppression_config(
@@ -3966,9 +3932,6 @@ void set_specific_gripfacesuppression_config(
 		gripfacesuppression_config->supextto = 10;	
         }
         break;
-
-	default:
-	break;
     }    
 }
 void set_specific_cte_config(
@@ -3987,9 +3950,6 @@ void set_specific_cte_config(
             cte_config->voltage= 60;
         }
         break;
-
-	default:
-	break; 
     }    
 }
 
@@ -4701,7 +4661,8 @@ ssize_t set_write_show(struct device *dev, struct device_attribute *attr, char *
 }
 ssize_t set_write_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
 {
-
+	int ret, cmd_no,config_value = 0;
+	char *after;
 
 	printk(KERN_INFO "[TSP] %s : operate nothing\n", __FUNCTION__);
 
@@ -4883,6 +4844,7 @@ int set_tsp_for_ta_detect(int state)
 	uint16_t object_address;
 	uint8_t *tmp;
 	uint8_t status;
+	uint8_t object_size;
 
 	if(qt60224_notfound_flag == 1)
 	{
@@ -5102,7 +5064,7 @@ void set_frequency_hopping_table(int mode)
 		printk("\n[TSP][ERROR] GEN_POWERCONFIG_T7 object_address : %d\n", __LINE__);
 		enable_changeline_int();//enable_irq(qt602240->client->irq);
 		up(&g_tsp_mutex); 
-		/* function returns void */ 
+		return -1;
 	}
 
 	tmp = &config_normal.power_config.idleacqint;
@@ -5120,7 +5082,7 @@ void set_frequency_hopping_table(int mode)
 		printk("\n[TSP][ERROR] TOUCH_MULTITOUCHSCREEN_T9 object_address : %d\n", __LINE__);
 		enable_changeline_int();//enable_irq(qt602240->client->irq);
 		up(&g_tsp_mutex); 
-		/* Function returns void */ 
+		return -1;
 	}
 
 	tmp= &config_normal.touchscreen_config.blen;
@@ -5141,6 +5103,7 @@ void set_frequency_hopping_table(int mode)
 		printk("\n[TSP][ERROR] PROCG_NOISESUPPRESSION_T22 object_address : %d\n", __LINE__);
 		enable_changeline_int();//enable_irq(qt602240->client->irq);
 		up(&g_tsp_mutex); 
+		return -1;
 	}
 	tmp= &config_normal.noise_suppression_config.noisethr;//&noise_suppression_config.noisethr ;
 	status = write_mem(object_address+8, 1, tmp);	
