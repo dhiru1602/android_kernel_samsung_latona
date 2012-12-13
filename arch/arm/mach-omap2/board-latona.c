@@ -223,7 +223,7 @@ static void __init latona_fixup(struct machine_desc *desc,
 	mi->bank[1].size = SZ_256M;
 }
 
-MACHINE_START(LATONA, "Latona board")
+MACHINE_START(LATONA, "LATONA")
 	.boot_params	= 0x80000100,
 	.fixup          = latona_fixup,
 	.reserve	= latona_reserve,
