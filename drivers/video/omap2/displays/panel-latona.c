@@ -1771,6 +1771,7 @@ static int nt35510_spi_probe(struct spi_device *spi)
 	omap_dss_register_driver(&nt35510_driver);
 //	led_classdev_register(&spi->dev, &nt35510_backlight_led);
 	struct backlight_device *bd;
+	props.type = BACKLIGHT_RAW;
 	bd = backlight_device_register("omap_bl", &spi->dev, NULL, &aat1402_bl_ops, &props);
 	bd->props.max_brightness = 255;
 	bd->props.brightness = 125;
