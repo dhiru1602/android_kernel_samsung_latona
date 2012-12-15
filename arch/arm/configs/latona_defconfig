@@ -794,7 +794,7 @@ CONFIG_IP6_NF_RAW=y
 # CONFIG_LAPB is not set
 # CONFIG_ECONET is not set
 CONFIG_WAN_ROUTER=y
-# CONFIG_PHONET is not set
+CONFIG_PHONET=y
 # CONFIG_IEEE802154 is not set
 # CONFIG_NET_SCHED is not set
 # CONFIG_DCB is not set
