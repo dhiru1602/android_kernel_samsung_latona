@@ -533,10 +533,10 @@ static void do_spi_tasklet( unsigned long data )
 	srdy_pin = gpio_get_value( gpio_srdy );
 
 	if( srdy_pin ) {
-		set_irq_type( od->irq, IRQ_TYPE_LEVEL_LOW );
+		irq_set_irq_type( od->irq, IRQ_TYPE_LEVEL_LOW );
 	}
 	else {
-		set_irq_type( od->irq, IRQ_TYPE_LEVEL_HIGH );
+		irq_set_irq_type( od->irq, IRQ_TYPE_LEVEL_HIGH );
 		enable_irq( od->irq );
 
 		return;
@@ -858,7 +858,7 @@ static const struct file_operations ipc_spi_fops = {
 	.open = ipc_spi_open,
 	.release = ipc_spi_release,
 	.mmap = ipc_spi_mmap,
-	.ioctl = ipc_spi_ioctl,
+	.unlocked_ioctl = ipc_spi_ioctl,
 };
 
 static int _register_chrdev( struct ipc_spi *od )
