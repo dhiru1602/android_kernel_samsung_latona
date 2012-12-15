@@ -308,6 +308,10 @@ static int nt35510_panel_probe(struct omap_dss_device *dssdev)
         dssdev->panel.timings = nt35510_sonyasi_panel_timings;
 	}
 
+	/* Since some android application use physical dimension, that information should be set here */
+	dssdev->panel.width_in_um = 52000; /* physical dimension in um */
+	dssdev->panel.height_in_um = 86000; /* physical dimension in um */
+
 	return 0;
 }
 
@@ -424,6 +428,13 @@ static int nt35510_panel_check_timings(struct omap_dss_device *dssdev,
 	return dpi_check_timings(dssdev, timings);
 }
 
+static void nt35510_get_resolution(struct omap_dss_device *dssdev,
+		u16 *xres, u16 *yres)
+{
+	*yres = dssdev->panel.timings.y_res;
+	*xres = dssdev->panel.timings.x_res;
+}
+
 static struct omap_dss_driver nt35510_driver = {
 	.probe          = nt35510_panel_probe,
 	.remove         = nt35510_panel_remove,
@@ -432,6 +443,9 @@ static struct omap_dss_driver nt35510_driver = {
 	.disable        = nt35510_panel_disable,
 	.suspend        = nt35510_panel_suspend,
 	.resume         = nt35510_panel_resume,
+
+	.get_resolution	= nt35510_get_resolution,
+	.get_recommended_bpp = omapdss_default_get_recommended_bpp,
 
 	.set_timings	= nt35510_panel_set_timings,
 	.get_timings	= nt35510_panel_get_timings,
@@ -1578,7 +1592,7 @@ void nt35510_lcd_poweroff(void)
 	// turn OFF VDD3 (1.8V)
 	nt35510_lcd_LDO_off();
 
-#if 1             
+#if 0
 		omap_mux_init_signal("mcspi1_clk", OMAP_MUX_MODE7 | OMAP_PIN_INPUT_PULLDOWN);
 		omap_mux_init_signal("mcspi1_simo",  OMAP_MUX_MODE7 | OMAP_PIN_INPUT_PULLDOWN);
 		omap_mux_init_signal("mcspi1_somi", OMAP_MUX_MODE7 | OMAP_PIN_INPUT_PULLDOWN);
@@ -1592,7 +1606,7 @@ void nt35510_lcd_poweron(void)
 {
 
        u8 read=0;
-#if 1	
+#if 0
 	omap_mux_init_signal("mcspi1_clk",OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLUP);
 	omap_mux_init_signal("mcspi1_simo",OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLDOWN);
 	omap_mux_init_signal("mcspi1_somi", OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLDOWN);
