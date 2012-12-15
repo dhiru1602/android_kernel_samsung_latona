@@ -3521,7 +3521,8 @@ err :
 	ipc_spi_make_data_interrupt( int_cmd_fail, od );
 }
 
-extern void ( *onedram_cp_force_crash ) ( void );
+void ( *onedram_cp_force_crash ) ( void );
+
 static void ipc_spi_cp_force_crash( void )
 {
 	u32 int_cmd = 0;
