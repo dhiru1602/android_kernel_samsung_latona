@@ -3,6 +3,8 @@
  *
  * Modified from mach-omap2/board-zoom-peripherals.c
  *
+ * Aditya Patange "Adi_Pat" <adithemagnificent@gmail.com>
+ *
  * Mark "Hill Beast" Kennard <komcomputers@gmail.com>
  * crackerizer <github.com/crackerizer>
  *
@@ -34,16 +36,114 @@
 #include <plat/usb.h>
 #include <linux/switch.h>
 #include <mach/board-latona.h>
-
+#include <linux/irq.h>
 #include "mux.h"
 #include "hsmmc.h"
 #include "common-board-devices.h"
 #include "twl4030.h"
 #include "control.h"
+#include <linux/phone_svn/modemctl.h>
 
 /* Atmel Touchscreen */
 #define OMAP_GPIO_TSP_INT 142
 
+
+
+/* modemctl */ 
+
+static void modemctl_cfg_gpio(void);
+
+static struct modemctl_platform_data mdmctl_data = {
+	.name = "xmm",
+	.gpio_phone_active = OMAP_GPIO_PHONE_ACTIVE,
+	.gpio_pda_active = OMAP_GPIO_PDA_ACTIVE,
+	.gpio_cp_reset = OMAP_GPIO_CP_RST, // cp_rst gpio - 43
+	.gpio_reset_req_n = OMAP_GPIO_RESET_REQ_N,
+	.gpio_con_cp_sel = OMAP_GPIO_CON_CP_SEL,
+	.cfg_gpio = modemctl_cfg_gpio,
+};
+
+static void modemctl_cfg_gpio( void )
+{
+	int err = 0;
+	
+	unsigned gpio_cp_rst = mdmctl_data.gpio_cp_reset;
+	unsigned gpio_pda_active = mdmctl_data.gpio_pda_active;
+	unsigned gpio_phone_active = mdmctl_data.gpio_phone_active;
+	unsigned gpio_reset_req_n = mdmctl_data.gpio_reset_req_n;
+	unsigned gpio_con_cp_sel = mdmctl_data.gpio_con_cp_sel;
+
+	gpio_free( gpio_cp_rst );
+	err = gpio_request( gpio_cp_rst, "CP_RST" );
+	if( err ) {
+		printk( "modemctl_cfg_gpio - fail to request gpio %s : %d\n", "CP_RST", err );
+	}
+	else {
+		gpio_direction_output( gpio_cp_rst, 1 );
+	}
+
+	gpio_free( gpio_pda_active );
+	err = gpio_request( gpio_pda_active, "PDA_ACTIVE" );
+	if( err ) {
+		printk( "modemctl_cfg_gpio - fail to request gpio %s : %d\n", "PDA_ACTIVE", err );
+	}
+	else {
+		gpio_direction_output( gpio_pda_active, 0 );
+	}
+
+	gpio_free( gpio_phone_active );
+	err = gpio_request( gpio_phone_active, "PHONE_ACTIVE" );
+	if( err ) {
+		printk( "modemctl_cfg_gpio - fail to request gpio %s : %d\n", "PHONE_ACTIVE", err );
+	}
+	else {
+		gpio_direction_input( gpio_phone_active );
+	}
+
+	gpio_free( gpio_reset_req_n );
+	err = gpio_request( gpio_reset_req_n, "RESET_REQ_N" );
+	if( err ) {
+		printk( "modemctl_cfg_gpio - fail to request gpio %s : %d\n", "RESET_REQ_N", err );
+	}
+	else {
+		gpio_direction_output( gpio_reset_req_n, 0 );
+	}
+
+	gpio_free( gpio_con_cp_sel );
+	err = gpio_request( gpio_con_cp_sel, "CON_CP_SEL" );
+	if( err ) {
+		printk( "modemctl_cfg_gpio - fail to request gpio %s : %d\n", "CON_CP_SEL", err );
+	}
+	else {
+		gpio_direction_output( gpio_con_cp_sel, 0 );
+	}
+	
+	irq_set_irq_type( OMAP_GPIO_IRQ( OMAP_GPIO_PHONE_ACTIVE ), IRQ_TYPE_EDGE_BOTH );
+
+	//set_irq_type( gpio_sim_ndetect, IRQ_TYPE_EDGE_BOTH );
+}
+
+
+
+static struct resource mdmctl_res[] = {
+	[ 0 ] = {
+		.start = OMAP_GPIO_IRQ( OMAP_GPIO_PHONE_ACTIVE ), // phone active irq
+		.end = OMAP_GPIO_IRQ( OMAP_GPIO_PHONE_ACTIVE ),
+		.flags = IORESOURCE_IRQ,
+	},
+};
+
+static struct platform_device modemctl = {
+	.name = "modemctl",
+	.id = -1,
+	.num_resources = ARRAY_SIZE( mdmctl_res ),
+	.resource = mdmctl_res,
+	.dev = {
+		.platform_data = &mdmctl_data,
+	},
+};
+
+/* END: modemctl */ 
 
 /* ZEUS Ear key and power key */
 
@@ -263,6 +363,9 @@ static struct platform_device *latona_board_devices[] __initdata = {
 	&board_ear_key_device,       /* ZEUS EAR KEY */ 
 	&board_power_key_device,     /* ZEUS POWER KEY */ 
 	&samsung_led_device,         /* SAMSUNG LEDs */ 
+#ifdef CONFIG_SAMSUNG_PHONE_SVNET
+	&modemctl,                   /* MODEMCTL */
+#endif
 };
 
 static struct platform_device omap_vwlan_device = {
