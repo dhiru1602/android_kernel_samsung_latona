@@ -232,31 +232,15 @@ static void infinion_on(struct modemctl *mc)
 
 	msleep(100);
 
-	if( sec_get_param_value ){
-		sec_get_param_value( __SWITCH_SEL, &switch_sel );
+	/* Force modemctl to use PDA by default */
+	if( gpio_get_value(126) == 0 )
+	{
+		gpio_set_value(126, 1);	//uart connected with AP
+		dev_dbg( mc->dev, "%s: (%d) GPIO_UART_SEL = %d\n", __func__, __LINE__, gpio_get_value(126) );
 	}
-	else {	
-	    printk( "[SWITCH_SIO] %s : failed to set switch because there are no param\n",__func__ );
-		return;
-	}
-
-	if( switch_sel & UART_SEL_MASK ){	//PDA
-		if( gpio_get_value(126) == 0 ){
-			gpio_set_value(126, 1);	//uart connected with AP
-			dev_dbg( mc->dev, "%s: (%d) GPIO_UART_SEL = %d\n", __func__, __LINE__, gpio_get_value(126) );
-		}
-		else{
-			dev_dbg( mc->dev, "%s: (%d) GPIO_UART_SEL = %d\n", __func__, __LINE__, gpio_get_value(126) );
-		}
-	}
-	else{	//MODEM
-		if( gpio_get_value(126) == 1 ){
-			gpio_set_value(126, 0);	//uart connected with CP
-			dev_dbg( mc->dev, "%s: (%d) GPIO_UART_SEL = %d\n", __func__, __LINE__, gpio_get_value(126) );
-		}
-		else{
-			dev_dbg( mc->dev, "%s: (%d) GPIO_UART_SEL = %d\n", __func__, __LINE__, gpio_get_value(126) );
-		}
+	else
+	{
+		dev_dbg( mc->dev, "%s: (%d) GPIO_UART_SEL = %d\n", __func__, __LINE__, gpio_get_value(126) );
 	}
 
 	msleep(200);
