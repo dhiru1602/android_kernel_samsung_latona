@@ -260,6 +260,7 @@ obj-$(CONFIG_MACH_OMAP_ZOOM3)		+= board-zoom.o \
 obj-$(CONFIG_MACH_OMAP_LATONA)		+= board-latona.o \
 					   board-latona-peripherals.o \
 					   board-latona-display.o \
+					   board-latona-phone_svnet.o \
 					   board-flash.o \
 					   hsmmc.o \
 					   omapxx_apps_brd_id.o	\
