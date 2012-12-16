@@ -47,6 +47,9 @@
 #include "twl4030.h"
 #include "control.h"
 
+#include <plat/mcspi.h>
+#include <linux/spi/spi.h>
+
 /* Atmel Touchscreen */
 #define OMAP_GPIO_TSP_INT 142
 
@@ -205,6 +208,23 @@ static void ipc_spi_cfg_gpio( void )
 	irq_set_irq_type( OMAP_GPIO_IRQ( OMAP_GPIO_IPC_SRDY ), IRQ_TYPE_LEVEL_HIGH );
 }
 
+static struct omap2_mcspi_device_config board_ipc_spi_mcspi_config = {
+	.turbo_mode     =   0,
+	.single_channel =   1,
+};
+
+static struct spi_board_info board_spi_board_info[] __initdata = {
+	[ 0 ] = {
+		.modalias = "ipc_spi",
+		.bus_num = 2,
+		.chip_select = 0,
+		.max_speed_hz = 24000000,
+		.controller_data = &board_ipc_spi_mcspi_config,
+	},
+
+};
+
+/* END: IPC_SPI */
 /* END: modemctl */ 
 
 /* ZEUS Ear key and power key */
@@ -708,6 +728,7 @@ void __init latona_peripherals_init(void)
 	atmel_dev_init();
 	platform_device_register(&omap_vwlan_device);
 	usb_musb_init(&latona_musb_board_data);
+	spi_register_board_info(board_spi_board_info,ARRAY_SIZE(board_spi_board_info));
 	enable_board_wakeup_source();
 	omap_serial_init();
 	board_init_power_key(); /* Initialize ZEUS Ear Key */ 
