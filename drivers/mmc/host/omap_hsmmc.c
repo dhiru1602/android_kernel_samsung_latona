@@ -178,6 +178,10 @@
 #define OMAP_HSMMC_WRITE(base, reg, val) \
 	__raw_writel((val), (base) + OMAP_HSMMC_##reg)
 
+#if defined(CONFIG_MACH_OMAP_LATONA)
+#define OMAP_GPIO_MASSMEMORY 159
+#endif
+
 struct adma_desc_table {
 	u16 attr;
 	u16 length;
@@ -333,6 +337,55 @@ static int omap_hsmmc_1_set_power(struct device *dev, int slot, int power_on,
 	return ret;
 }
 
+#if defined(CONFIG_MACH_OMAP_LATONA)
+static int twl_iNand_set_power(struct device *dev, int slot, int power_on, int vdd)
+{
+
+	int ret = 0;
+	struct omap_hsmmc_host * host = platform_get_drvdata(to_platform_device(dev));
+
+	if (mmc_slot(host).before_set_reg)
+		mmc_slot(host).before_set_reg(dev, slot, power_on, vdd);
+
+	if(power_on) {
+		omap_writew(0x1718, 0x48002158); //! CLK
+		omap_writew(0x1718, 0x4800215a); //! CMD
+		omap_writew(0x1718, 0x4800215c); //! DAT0
+		omap_writew(0x1718, 0x4800215e); //! DAT1
+		omap_writew(0x1718, 0x48002160); //! DAT2
+		omap_writew(0x1718, 0x48002162); //! DAT3
+		omap_writew(0x1718, 0x48002164); //! DAT4
+		omap_writew(0x1718, 0x48002166); //! DAT5
+		omap_writew(0x1718, 0x48002168); //! DAT6
+		omap_writew(0x1718, 0x4800216a); //! DAT7
+
+		dev_dbg(mmc_dev(host->mmc),"Turn ON External LDO \n");
+		gpio_set_value(OMAP_GPIO_MASSMEMORY, 1);
+	}else{
+		omap_writew(0x1708, 0x48002158); //! CLK
+		omap_writew(0x1708, 0x4800215a); //! CMD
+		omap_writew(0x1708, 0x4800215c); //! DAT0
+		omap_writew(0x1708, 0x4800215e); //! DAT1
+		omap_writew(0x1708, 0x48002160); //! DAT2
+		omap_writew(0x1708, 0x48002162); //! DAT3
+		omap_writew(0x1708, 0x48002164); //! DAT4
+		omap_writew(0x1708, 0x48002166); //! DAT5
+		omap_writew(0x1708, 0x48002168); //! DAT6
+		omap_writew(0x1708, 0x4800216a); //! DAT7
+
+	        dev_dbg(mmc_dev(host->mmc),"Turn OFF External LDO\n");
+		gpio_set_value(OMAP_GPIO_MASSMEMORY, 0);
+
+		/*add 150ms to stabilize VDDF power*/
+		mdelay(50);
+		mdelay(50);
+		mdelay(50);
+	}
+
+	return ret;
+}
+#endif
+
 static int omap_hsmmc_235_set_power(struct device *dev, int slot, int power_on,
 				   int vdd)
 {
@@ -463,6 +516,13 @@ static int omap_hsmmc_reg_get(struct omap_hsmmc_host *host)
 		mmc_slot(host).set_sleep = omap_hsmmc_1_set_sleep;
 		break;
 	case OMAP_MMC2_DEVID:
+#if defined(CONFIG_MACH_OMAP_LATONA)
+		printk(KERN_INFO "%s with id%d is registered with twl_iNand_set_power \n", 
+					mmc_hostname(host->mmc), host->id);
+		mmc_slot(host).set_power = twl_iNand_set_power;
+		gpio_direction_output(OMAP_GPIO_MASSMEMORY, 1);
+		break;
+#endif
 	case OMAP_MMC3_DEVID:
 	case OMAP_MMC5_DEVID:
 		/* Off-chip level shifting, or none */
