@@ -26,6 +26,10 @@
 #include <linux/mmc/host.h>
 #include <linux/leds.h>
 
+/* modemctl and ipc_spi */
+#include <linux/phone_svn/modemctl.h>
+#include <linux/phone_svn/ipc_spi.h>
+
 #include <media/v4l2-int-device.h>
 
 #include <asm/mach-types.h>
@@ -42,7 +46,6 @@
 #include "common-board-devices.h"
 #include "twl4030.h"
 #include "control.h"
-#include <linux/phone_svn/modemctl.h>
 
 /* Atmel Touchscreen */
 #define OMAP_GPIO_TSP_INT 142
@@ -142,6 +145,65 @@ static struct platform_device modemctl = {
 		.platform_data = &mdmctl_data,
 	},
 };
+/* IPC SPI */ 
+
+static void ipc_spi_cfg_gpio( void );
+
+static struct ipc_spi_platform_data ipc_spi_data = {
+	.gpio_ipc_mrdy = OMAP_GPIO_IPC_MRDY,
+	.gpio_ipc_srdy = OMAP_GPIO_IPC_SRDY,	
+
+	.cfg_gpio = ipc_spi_cfg_gpio,
+};
+
+static struct resource ipc_spi_res[] = {
+	[ 0 ] = {
+		.start = OMAP_GPIO_IRQ( OMAP_GPIO_IPC_SRDY ),
+		.end = OMAP_GPIO_IRQ( OMAP_GPIO_IPC_SRDY ),
+		.flags = IORESOURCE_IRQ,
+	},
+};
+
+static struct platform_device ipc_spi = {
+	.name = "onedram",
+	.id = -1,
+	.num_resources = ARRAY_SIZE( ipc_spi_res ),
+	.resource = ipc_spi_res,
+	.dev = {
+		.platform_data = &ipc_spi_data,
+	},
+};
+
+static void ipc_spi_cfg_gpio( void )
+{
+	int err = 0;
+	
+	unsigned gpio_ipc_mrdy = ipc_spi_data.gpio_ipc_mrdy;
+	unsigned gpio_ipc_srdy = ipc_spi_data.gpio_ipc_srdy;
+
+	// Mux Setting -> mux_xxxx_rxx.c
+
+	gpio_free( gpio_ipc_mrdy );
+	err = gpio_request( gpio_ipc_mrdy, "IPC_MRDY" );
+	if( err ) {
+		printk( "ipc_spi_cfg_gpio - fail to request gpio %s : %d\n", "IPC_MRDY", err );
+	}
+	else {
+		gpio_direction_output( gpio_ipc_mrdy, 0 );
+	}
+
+	gpio_free( gpio_ipc_srdy );
+	err = gpio_request( gpio_ipc_srdy, "IPC_SRDY" );
+	if( err ) {
+		printk( "ipc_spi_cfg_gpio - fail to request gpio %s : %d\n", "IPC_SRDY", err );
+	}
+	else {
+		gpio_direction_input( gpio_ipc_srdy );
+	}
+	
+	// Irq Setting -
+	irq_set_irq_type( OMAP_GPIO_IRQ( OMAP_GPIO_IPC_SRDY ), IRQ_TYPE_LEVEL_HIGH );
+}
 
 /* END: modemctl */ 
 
@@ -365,6 +427,7 @@ static struct platform_device *latona_board_devices[] __initdata = {
 	&samsung_led_device,         /* SAMSUNG LEDs */ 
 #ifdef CONFIG_SAMSUNG_PHONE_SVNET
 	&modemctl,                   /* MODEMCTL */
+	&ipc_spi,		     /* IPC_SPI */
 #endif
 };
 
