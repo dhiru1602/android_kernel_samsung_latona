@@ -38,6 +38,19 @@
 
 #define DRIVER_NAME             "secChargerDev"
 
+/* USB Macros */ 
+
+#define MICROUSBIC_USB_OTG_CABLE	7
+#define MICROUSBIC_5W_CHARGER		6
+#define MICROUSBIC_JIG_UART_OFF		5
+#define MICROUSBIC_JIG_UART_ON		4
+#define MICROUSBIC_TA_CHARGER		3
+#define MICROUSBIC_USB_CHARGER		2
+#define MICROUSBIC_USB_CABLE		1
+#define MICROUSBIC_NO_DEVICE		0
+#define MICROUSBIC_PHONE_USB		-1
+#define MICROUSBIC_ATTACH		1
+#define MICROUSBIC_DETACH		0
 
 // THIS CONFIG IS SET IN BOARD_FILE.(platform_data)
 struct charger_device_config 
