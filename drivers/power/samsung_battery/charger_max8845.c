@@ -32,7 +32,6 @@
 #include <linux/mutex.h>
 #include <mach/gpio.h>
 #include <plat/mux.h>
-#include <plat/microusbic.h>
 #include <plat/omap3-gptimer12.h>
 #include "common.h"
 
