@@ -853,7 +853,7 @@ static int __devinit charger_probe( struct platform_device *pdev )
             printk( "[TA] 1. could not request irq %d, status %d\n", KUSB_CONN_IRQ, ret );
             goto usb_irq_fail;
         }
-        set_irq_type( KUSB_CONN_IRQ, IRQ_TYPE_EDGE_BOTH );
+        irq_set_irq_type( KUSB_CONN_IRQ, IRQ_TYPE_EDGE_BOTH );
 #ifdef USE_DISABLE_CONN_IRQ
         disable_irq( KUSB_CONN_IRQ );
 #endif
@@ -870,7 +870,7 @@ static int __devinit charger_probe( struct platform_device *pdev )
         printk( "[TA] 2. could not request irq %d, status %d\n", KTA_NCONN_IRQ, ret );
         goto ta_irq_fail;
     }
-    set_irq_type( KTA_NCONN_IRQ, IRQ_TYPE_EDGE_BOTH );
+    irq_set_irq_type( KTA_NCONN_IRQ, IRQ_TYPE_EDGE_BOTH );
 
 #ifdef USE_DISABLE_CONN_IRQ
     disable_irq( KTA_NCONN_IRQ );
@@ -886,7 +886,7 @@ static int __devinit charger_probe( struct platform_device *pdev )
     if ( device_config->SUPPORT_CHG_ING_IRQ )
     {
         ret = request_irq( KCHG_ING_IRQ, full_charge_isr, IRQF_DISABLED, pdev->name, di ); 
-        set_irq_type( KCHG_ING_IRQ, IRQ_TYPE_EDGE_RISING);
+        irq_set_irq_type( KCHG_ING_IRQ, IRQ_TYPE_EDGE_RISING);
         if ( ret )
         {
             printk( "[TA] 3. could not request irq2 status %d\n", ret );

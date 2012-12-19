@@ -353,7 +353,7 @@ static int fuelgauge_probe( struct i2c_client *client,
         ret = irq_to_gpio( client->irq );
         printk( "[FG] FUEL_INT_GPIO : %d \n", ret );
 
-        set_irq_type( client->irq, IRQ_TYPE_EDGE_FALLING );
+        irq_set_irq_type( client->irq, IRQ_TYPE_EDGE_FALLING );
         ret = request_irq( client->irq, low_battery_isr, IRQF_DISABLED, client->name, NULL );
         if ( ret )
         {
