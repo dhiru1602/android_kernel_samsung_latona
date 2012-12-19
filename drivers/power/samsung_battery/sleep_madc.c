@@ -4,7 +4,7 @@
 
 #include <linux/gpio.h>
 #include <plat/mux.h>
-#include "../gp2a/L_dev.h"
+
 #define PHY_VINTANA2_DEDICATED      0xA1
 #define T2_VINTANA2_2V75            0x1
 #define T2_VINTANA2_OFF             1<<6
@@ -51,6 +51,9 @@
 #define ADCIN15 15  /* VRBUS supply or speaker right or
         	         * speaker left polarization level
 		             */
+
+/* get_average_adc_value() */
+int get_average_adc_value(unsigned int * data, int count);
 
 struct madc_chrequest {
 	int channel;
@@ -300,3 +303,22 @@ s32 t2_adc_data( u8 channel)
 	return ret;
 }
 
+
+/* get_average_adc_value() */ 
+
+int get_average_adc_value(unsigned int * data, int count)
+{
+    int i=0, average, min=0xFFFFFFFF, max=0, total=0;
+    for(i=0 ; i<count ; i++)
+    {
+        if(data[i] < min)
+            min=data[i];
+        if(data[i] > max)
+            max=data[i];
+
+        total+=data[i];
+    }
+    average = (total - min -max)/(count -2);
+    return average;
+}
+EXPORT_SYMBOL(get_average_adc_value);
