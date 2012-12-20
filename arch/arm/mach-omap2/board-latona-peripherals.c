@@ -565,7 +565,6 @@ static struct twl4030_platform_data latona_twldata = {
 	.vmmc2          = &latona_vmmc2,
 	.vaux3          = &latona_aux3,
 	.vaux4          = &latona_aux4,
-	.vsim           = &latona_vsim,
 	.vpll2		= &latona_vpll2,
 	.vdac		= &latona_vdac,
 };
