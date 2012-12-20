@@ -524,6 +524,13 @@ static struct twl4030_usb_data latona_usb_data = {
 	.usb_mode	= T2_USB_MODE_ULPI,
 };
 
+static struct omap_musb_board_data latona_musb_board_data = {
+       .interface_type         = MUSB_INTERFACE_ULPI,
+       .mode                   = MUSB_PERIPHERAL,
+       .power                  = 100,
+};
+
+
 static struct twl4030_gpio_platform_data latona_gpio_data = {
 	.gpio_base	= OMAP_MAX_GPIO_LINES,
 	.irq_base	= TWL4030_GPIO_IRQ_BASE,
@@ -689,7 +696,7 @@ void __init latona_peripherals_init(void)
 	atmel_dev_init();
 	platform_device_register(&omap_vwlan_device);
 	platform_device_register(&latona_disp_led);
-	usb_musb_init(NULL);
+	usb_musb_init(&latona_musb_board_data);
 	enable_board_wakeup_source();
 	omap_serial_init();
 	board_init_power_key(); /* Initialize ZEUS Ear Key */ 
