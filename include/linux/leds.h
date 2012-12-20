@@ -84,7 +84,7 @@ extern void led_classdev_resume(struct led_classdev *led_cdev);
 
 #ifdef CONFIG_MACH_OMAP_LATONA
 extern void trigger_touchkey_led(int event);
-extern void suspend_touchkey_led();
+extern void suspend_touchkey_led(void);
 #endif
 
 /**

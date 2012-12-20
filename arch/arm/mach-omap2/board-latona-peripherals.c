@@ -22,16 +22,9 @@
 #include <linux/regulator/fixed.h>
 #include <linux/wl12xx.h>
 #include <linux/mmc/host.h>
-#include <linux/synaptics_i2c_rmi.h>
-#include <linux/leds-omap4430sdp-display.h>
 #include <linux/leds.h>
 
 #include <media/v4l2-int-device.h>
-
-#ifdef CONFIG_PANEL_SIL9022
-#include <mach/sil9022.h>
-#endif
-
 
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
@@ -50,23 +43,6 @@
 
 #define OMAP_LATONA_WLAN_PMENA_GPIO	(101)
 #define OMAP_LATONA_WLAN_IRQ_GPIO		(162)
-#define OMAP_SYNAPTICS_GPIO			(163)
-
-/* PWM output/clock enable for LCD backlight*/
-#define REG_INTBR_GPBR1				(0xc)
-#define REG_INTBR_GPBR1_PWM1_OUT_EN		(0x1 << 3)
-#define REG_INTBR_GPBR1_PWM1_OUT_EN_MASK	(0x1 << 3)
-#define REG_INTBR_GPBR1_PWM1_CLK_EN		(0x1 << 1)
-#define REG_INTBR_GPBR1_PWM1_CLK_EN_MASK	(0x1 << 1)
-
-/* pin mux for LCD backlight*/
-#define REG_INTBR_PMBR1				(0xd)
-#define REG_INTBR_PMBR1_PWM1_PIN_EN		(0x3 << 4)
-#define REG_INTBR_PMBR1_PWM1_PIN_MASK		(0x3 << 4)
-
-#define MAX_CYCLES				(0x7f)
-#define MIN_CYCLES				(75)
-#define LCD_PANEL_ENABLE_GPIO			(7 + OMAP_MAX_GPIO_LINES)
 
 /* Atmel Touchscreen */
 #define OMAP_GPIO_TSP_INT 142
@@ -121,7 +97,6 @@ static struct platform_device board_power_key_device = {
 
 static inline void __init board_init_ear_key(void)
 {
-	printk("\n EAR KEY INIT!!! \n");
 	board_ear_key_resource.start = gpio_to_irq(OMAP_GPIO_EAR_SEND_END);
 	if (gpio_request(OMAP_GPIO_EAR_SEND_END, "ear_key_irq") < 0) {
 		printk(KERN_ERR
@@ -134,7 +109,6 @@ static inline void __init board_init_ear_key(void)
 
 static inline void __init board_init_power_key(void)
 {
-	printk("\n POWER KEY INIT!!! \n");
 	board_power_key_resources[0].start = gpio_to_irq(OMAP_GPIO_KEY_PWRON);
 	if (gpio_request(OMAP_GPIO_KEY_PWRON, "power_key_irq") < 0) {
 		printk(KERN_ERR
@@ -302,86 +276,6 @@ static struct platform_device omap_vwlan_device = {
 	},
 };
 
-static struct wl12xx_platform_data latona_wlan_data __initdata = {
-	.irq = OMAP_GPIO_IRQ(OMAP_LATONA_WLAN_IRQ_GPIO),
-	/* LATONA ref clock is 26 MHz */
-	.board_ref_clock = 1,
-};
-
-static void latona_pwm_config(u8 brightness)
-{
-	u8 pwm_off = 0;
-
-	pwm_off = (MIN_CYCLES * (LED_FULL - brightness) +
-		   MAX_CYCLES * (brightness - LED_OFF)) /
-		(LED_FULL - LED_OFF);
-
-	pwm_off = clamp(pwm_off, (u8)MIN_CYCLES, (u8)MAX_CYCLES);
-
-	/* start at 0 */
-	twl_i2c_write_u8(TWL4030_MODULE_PWM1, 0, 0);
-	twl_i2c_write_u8(TWL4030_MODULE_PWM1, pwm_off, 1);
-}
-
-static void latona_pwm_enable(int enable)
-{
-	u8 gpbr1;
-
-	twl_i2c_read_u8(TWL4030_MODULE_INTBR, &gpbr1, REG_INTBR_GPBR1);
-	gpbr1 &= ~REG_INTBR_GPBR1_PWM1_OUT_EN_MASK;
-	gpbr1 |= (enable ? REG_INTBR_GPBR1_PWM1_OUT_EN : 0);
-	twl_i2c_write_u8(TWL4030_MODULE_INTBR, gpbr1, REG_INTBR_GPBR1);
-
-	twl_i2c_read_u8(TWL4030_MODULE_INTBR, &gpbr1, REG_INTBR_GPBR1);
-	gpbr1 &= ~REG_INTBR_GPBR1_PWM1_CLK_EN_MASK;
-	gpbr1 |= (enable ? REG_INTBR_GPBR1_PWM1_CLK_EN : 0);
-	twl_i2c_write_u8(TWL4030_MODULE_INTBR, gpbr1, REG_INTBR_GPBR1);
-}
-
-static void latona_set_primary_brightness(u8 brightness)
-{
-	u8 pmbr1;
-	static int latona_pwm1_config;
-	static int latona_pwm1_output_enabled;
-
-	if (latona_pwm1_config == 0) {
-		twl_i2c_read_u8(TWL4030_MODULE_INTBR, &pmbr1, REG_INTBR_PMBR1);
-
-		pmbr1 &= ~REG_INTBR_PMBR1_PWM1_PIN_MASK;
-		pmbr1 |=  REG_INTBR_PMBR1_PWM1_PIN_EN;
-		twl_i2c_write_u8(TWL4030_MODULE_INTBR, pmbr1, REG_INTBR_PMBR1);
-
-		latona_pwm1_config = 1;
-	}
-
-	if (!brightness) {
-		latona_pwm_enable(0);
-		latona_pwm1_output_enabled = 0;
-		return;
-	}
-
-	latona_pwm_config(brightness);
-	if (latona_pwm1_output_enabled == 0) {
-		latona_pwm_enable(1);
-		latona_pwm1_output_enabled = 1;
-	}
-}
-
-static struct omap4430_sdp_disp_led_platform_data latona_disp_led_data = {
-	.flags = LEDS_CTRL_AS_ONE_DISPLAY,
-	.primary_display_set = latona_set_primary_brightness,
-	.secondary_display_set = NULL,
-};
-
-
-static struct platform_device latona_disp_led = {
-	.name   =       "display_led",
-	.id     =       -1,
-	.dev    = {
-		.platform_data = &latona_disp_led_data,
-	},
-};
-
 static struct omap2_hsmmc_info mmc[] = {
 	{
 		.name		= "internal",
@@ -473,8 +367,6 @@ static struct regulator_init_data latona_vdac = {
 static int latona_twl_gpio_setup(struct device *dev,
 		unsigned gpio, unsigned ngpio)
 {
-	int ret;
-
 	/* gpio + 0 is "mmc0_cd" (input/IRQ) */
 	//mmc[0].gpio_cd = gpio + 0;
 
@@ -489,19 +381,7 @@ static int latona_twl_gpio_setup(struct device *dev,
 	latona_vsim_supply.dev = mmc[1].dev;
 	latona_vmmc2_supply.dev = mmc[0].dev;
 
-	ret = gpio_request_one(LCD_PANEL_ENABLE_GPIO, GPIOF_OUT_INIT_LOW,
-			       "lcd enable");
-	if (ret)
-		pr_err("Failed to get LCD_PANEL_ENABLE_GPIO (gpio%d).\n",
-				LCD_PANEL_ENABLE_GPIO);
-
-	return ret;
-}
-
-/* EXTMUTE callback function */
-static void latona_set_hs_extmute(int mute)
-{
-	gpio_set_value(LATONA_HEADSET_EXTMUTE_GPIO, mute);
+	return 0;
 }
 
 static int latona_batt_table[] = {
@@ -569,34 +449,6 @@ static struct twl4030_platform_data latona_twldata = {
 	.vdac		= &latona_vdac,
 };
 
-static void synaptics_dev_init(void)
-{
-	/* Set the ts_gpio pin mux */
-	omap_mux_init_signal("gpio_163", OMAP_PIN_INPUT_PULLUP);
-
-	if (gpio_request(OMAP_SYNAPTICS_GPIO, "touch") < 0) {
-		printk(KERN_ERR "can't get synaptics pen down GPIO\n");
-		return;
-	}
-	gpio_direction_input(OMAP_SYNAPTICS_GPIO);
-	gpio_set_debounce(OMAP_SYNAPTICS_GPIO, 310);
-}
-
-static int synaptics_power(int power_state)
-{
-	/* TODO: synaptics is powered by vbatt */
-	return 0;
-}
-
-static struct synaptics_i2c_rmi_platform_data synaptics_platform_data[] = {
-	{
-		.version        = 0x0,
-		.power          = &synaptics_power,
-		.flags          = SYNAPTICS_SWAP_XY,
-		.irqflags       = IRQF_TRIGGER_LOW,
-	}
-};
-
 static struct omap_onenand_platform_data board_onenand_data = {
 	.cs		= 0,
 	.gpio_irq	= 73,
@@ -629,12 +481,6 @@ static struct i2c_board_info __initdata latona_i2c_bus3_info[] = {
 
 static int __init omap_i2c_init(void)
 {
-	if (machine_is_latona()) {
-		latona_audio_data.ramp_delay_value = 3;	/* 161 ms */
-		latona_audio_data.hs_extmute = 1;
-		latona_audio_data.set_hs_extmute = latona_set_hs_extmute;
-	}
-
          /* Disable OMAP 3630 internal pull-ups for I2Ci */
 	if (cpu_is_omap3630()) {
 
@@ -668,7 +514,6 @@ static int __init omap_i2c_init(void)
 
 static void atmel_dev_init(void)
 {
-	printk("ATMEL DEV INIT !!! ");
 	/* Set the ts_gpio pin mux */
 	if (gpio_request(OMAP_GPIO_TSP_INT, "touch_atmel") < 0) {
 		printk(KERN_ERR "can't get synaptics pen down GPIO\n");
@@ -694,15 +539,10 @@ void __init latona_peripherals_init(void)
 	omap_i2c_init();
 	atmel_dev_init();
 	platform_device_register(&omap_vwlan_device);
-	platform_device_register(&latona_disp_led);
 	usb_musb_init(&latona_musb_board_data);
 	enable_board_wakeup_source();
 	omap_serial_init();
 	board_init_power_key(); /* Initialize ZEUS Ear Key */ 
 	board_init_ear_key();   /* and POWER KEY */ 
 	//latona_cam_init();
-	#ifdef CONFIG_PANEL_SIL9022
-	config_hdmi_gpio();
-	latona_hdmi_reset_enable(1);
-	#endif
 }

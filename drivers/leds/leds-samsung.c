@@ -81,7 +81,7 @@ void trigger_touchkey_led(int event)
 
 EXPORT_SYMBOL(trigger_touchkey_led);
 
-void suspend_touchkey_led()
+void suspend_touchkey_led(void)
 {
 	if(bln_state==0)
 	{
