@@ -40,8 +40,6 @@
 #include "sdram-qimonda-hyb18m512160af-6.h"
 #include "omap_ion.h"
 
-#define LATONA_EHCI_RESET_GPIO		64
-#define LATONA_McBSP3_BT_GPIO            164
 #define LATONA_BT_RESET_GPIO             109
 #define LATONA_WIFI_PMENA_GPIO		157
 #define LATONA_WIFI_IRQ_GPIO		162
@@ -69,7 +67,7 @@ static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
 	.port_mode[2]		= OMAP_USBHS_PORT_MODE_UNUSED,
 	.phy_reset		= true,
 	.reset_gpio_port[0]	= -EINVAL,
-	.reset_gpio_port[1]	= LATONA_EHCI_RESET_GPIO,
+	.reset_gpio_port[1]	= 64,
 	.reset_gpio_port[2]	= -EINVAL,
 };
 
@@ -166,8 +164,6 @@ static void __init latona_init(void)
 	latona_mux_init_gpio_out();
 	latona_mux_set_wakeup_gpio();
 
-	omap_mux_init_gpio(LATONA_EHCI_RESET_GPIO, OMAP_PIN_OUTPUT);
-	omap_mux_init_gpio(LATONA_McBSP3_BT_GPIO, OMAP_PIN_OUTPUT);
 	usbhs_init(&usbhs_bdata);
 
 	latona_wifi_init();
