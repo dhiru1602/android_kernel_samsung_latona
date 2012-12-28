@@ -47,13 +47,7 @@
 #include "omap-pcm.h"
 
 /* TWL4030 PMBR1 Register */
-#ifdef CONFIG_SND_SOC_MAX97000
 #include "../codecs/max97000.h"
-#elif CONFIG_SND_SOC_MAX9877
-#include "../codecs/max9877.h"
-#elif CONFIG_SND_SOC_YDA165
-#include "../codecs/yda165.h"
-#endif
 
 #define ZEUS_PCM_SELECT_GPIO	OMAP_GPIO_PCM_SEL
 
@@ -63,6 +57,9 @@
 #define TWL4030_GPIO6_PWM0_MUTE(value)	(value << 2)
 
 //static struct snd_soc_card snd_soc_sdp3430;
+static struct pm_qos_request_list pm_qos_handler;
+#define SET_MPU_CORE_CONSTRAINT		18
+#define CLEAR_MPU_CORE_CONSTRAINT	-1
 
 static int sdp3430_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params)
@@ -122,8 +119,6 @@ extern void omap_dpll3_errat_wa(int disable);
 
 int sdp3430_i2s_startup(struct snd_pcm_substream *substream)
 {      
-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-
 	/*        
 	  * Hold C2 as min latency constraint. Deeper states   
 	  * MPU RET/OFF is overhead and consume more power than    
@@ -133,7 +128,8 @@ int sdp3430_i2s_startup(struct snd_pcm_substream *substream)
 	  */     
 
 	  if (!snd_hw_latency++) { 
-	  	omap_pm_set_max_mpu_wakeup_lat(&substream->latency_pm_qos_req, 18);        
+		pm_qos_update_request(&pm_qos_handler,
+						SET_MPU_CORE_CONSTRAINT);
 
 	  	/*           
 	  	  * As of now for MP3 playback case need to enable dpll3 
@@ -152,13 +148,12 @@ int sdp3430_i2s_startup(struct snd_pcm_substream *substream)
 
 int sdp3430_i2s_shutdown(struct snd_pcm_substream *substream)
 {    
-	struct snd_soc_pcm_runtime *rtd = substream->private_data;	
-
 	/* remove latency constraint */       
 	snd_hw_latency--;     
 
 	if (!snd_hw_latency) {   
-		omap_pm_set_max_mpu_wakeup_lat(&substream->latency_pm_qos_req, -1);     
+		pm_qos_update_request(&pm_qos_handler,
+						CLEAR_MPU_CORE_CONSTRAINT);
 		printk("sdp3430_i2s_shutdown \n");
 		omap_dpll3_errat_wa(1);    
 	}   
@@ -255,16 +250,8 @@ static int sdp3430_twl4030_init(struct snd_soc_pcm_runtime *rtd)
 	if (ret)
 		return ret;
 
-#ifdef CONFIG_SND_SOC_MAX97000
        /* add MAX97000 specific controls */
 	ret = max97000_add_controls(codec);
-#elif CONFIG_SND_SOC_MAX9877
-	printk(KERN_NOTICE "MAX 9877 AMPLIFIER\n");
-	ret = max9877_add_controls(codec);
-#elif CONFIG_SND_SOC_YDA165
-	printk(KERN_NOTICE "YDA165 AMPLIFIER\n");
-	ret = yda165_add_controls(codec);
-#endif
 
 	if (ret)
 	{
@@ -362,7 +349,6 @@ static struct platform_device *sdp3430_snd_device;
 static int __init sdp3430_soc_init(void)
 {
 	int ret;
-	u8 pin_mux;
 
     printk(KERN_EMERG " %s : %s : %i \n", __FILE__, __FUNCTION__, __LINE__);
 
@@ -382,6 +368,8 @@ static int __init sdp3430_soc_init(void)
 
 	platform_set_drvdata(sdp3430_snd_device, &snd_soc_sdp3430);
 
+	pm_qos_add_request(&pm_qos_handler, PM_QOS_CPU_DMA_LATENCY,
+					CLEAR_MPU_CORE_CONSTRAINT);
 
 	ret = platform_device_add(sdp3430_snd_device);
 	if (ret)
