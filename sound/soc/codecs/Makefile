@@ -183,3 +183,8 @@ obj-$(CONFIG_SND_SOC_MAX97000)   += snd-soc-max97000.o
 obj-$(CONFIG_SND_SOC_TPA6130A2)	+= snd-soc-tpa6130a2.o
 obj-$(CONFIG_SND_SOC_WM2000)	+= snd-soc-wm2000.o
 obj-$(CONFIG_SND_SOC_WM9090)	+= snd-soc-wm9090.o
+
+# Samsung Audio Gain Control.
+obj-$(CONFIG_MACH_OMAP_LATONA)	+= sec_gain_latona.o
+
+obj-y   += sec_gain_dummy_driver.o
