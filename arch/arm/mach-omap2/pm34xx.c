@@ -350,6 +350,21 @@ static void restore_table_entry(void)
 	set_cr(control_reg_value);
 }
 
+/* modified for mp3 current -- begin */
+void omap_dpll3_errat_wa(int disable)
+{
+	/* enable/disable autoidle */
+	if (!disable)
+		omap2_cm_rmw_mod_reg_bits(OMAP3430_AUTO_CORE_DPLL_MASK,
+					0x1, PLL_MOD, CM_AUTOIDLE);
+	else
+		omap2_cm_rmw_mod_reg_bits(OMAP3430_AUTO_CORE_DPLL_MASK,
+					0x0, PLL_MOD, CM_AUTOIDLE);
+	return;
+}
+EXPORT_SYMBOL(omap_dpll3_errat_wa);
+/* modified for mp3 current -- end */
+
 void omap_sram_idle(bool suspend)
 {
 	/* Variable to tell what needs to be saved and restored

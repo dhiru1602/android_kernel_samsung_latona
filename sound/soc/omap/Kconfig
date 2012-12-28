@@ -101,7 +101,7 @@ config SND_OMAP_SOC_AM3517EVM
 
 config SND_OMAP_SOC_SDP3430
 	tristate "SoC Audio support for Texas Instruments SDP3430"
-	depends on TWL4030_CORE && SND_OMAP_SOC && MACH_OMAP_3430SDP
+	depends on TWL4030_CORE && SND_OMAP_SOC && (MACH_OMAP_3430SDP || MACH_OMAP_LATONA)
 	select SND_OMAP_SOC_MCBSP
 	select SND_SOC_TWL4030
 	help
