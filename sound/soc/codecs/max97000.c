@@ -27,7 +27,7 @@
 #include "max97000.h"
 
 #define MAX97000_NAME "max97000"
-#define SEC_MAX97000_DEBUG 1
+#define SEC_MAX97000_DEBUG 0
 
 #if SEC_MAX97000_DEBUG
 #define P(format,...)\

@@ -502,6 +502,9 @@ int twl6030_unregister_notifier(struct notifier_block *nb,
 #define DEV_GRP_P3		0x4	/* P3: all peripheral devices */
 #define DEV_GRP_ALL             0x7     /* P1/P2/P3: all devices */
 
+#define	DEV_GRP_BELONG_NONE	DEV_GRP_NULL
+#define	DEV_GRP_BELONG_P1	(DEV_GRP_P1 << 5)
+
 /* Resource groups */
 #define RES_GRP_RES		0x0	/* Reserved */
 #define RES_GRP_PP		0x1	/* Power providers */
@@ -865,6 +868,9 @@ int twl4030_sih_setup(int module);
 #define TWL4030_VAUX4_REMAP		0x25
 #define TWL4030_VAUX4_DEDICATED		0x26
 
+#define TWL4030_VINTANA2_DEV_GRP	0x43
+#define TWL4030_VINTANA2_DEDICATED	0x46
+
 static inline int twl4030charger_usb_en(int enable) { return 0; }
 
 /*----------------------------------------------------------------------*/
@@ -947,5 +953,9 @@ static inline int twl4030charger_usb_en(int enable) { return 0; }
 #define TWL6025_REG_VIO		60
 
 #define TWL6030_REG_CLK32KAUDIO	61
+
+#define REMAP_OFF		0
+#define REMAP_SLEEP		8
+#define REMAP_ACTIVE		14
 
 #endif /* End of __TWL4030_H */
