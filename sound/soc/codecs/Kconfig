@@ -382,6 +382,12 @@ config SND_SOC_LM4857
 config SND_SOC_MAX9877
 	tristate
 
+config SND_SOC_MAX97000
+        tristate "MAX97000 amp support"
+
+config SND_SOC_MAX97000_USE_GPIO_I2C
+        tristate "MAX97000 amp gpio i2c support"
+
 config SND_SOC_TPA6130A2
 	tristate
 

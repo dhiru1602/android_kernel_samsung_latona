@@ -258,7 +258,62 @@
 #define TWL4030_VIBRA_SEL		0x10
 #define TWL4030_VIBRA_DIR_SEL		0x20
 
+/* TWL4030_REG_SW_SHADOW (0x4A) Fields */
+#define TWL4030_HFL_EN			0x01
+#define TWL4030_HFR_EN			0x02
+
+#define TWL4030_DAI_HIFI		0
+#define TWL4030_DAI_VOICE		1
+#define TWL4030_DAI_CLOCK		2
+
+#define TWL4030_SAME_DEVICE	0x10
+#define VOICE_RECOGNITION		1
+
+extern int twl4030_is_rec_8k_enable(void);
+extern int get_sec_gain_test_mode(void);
+int twl4030_write(struct snd_soc_codec *codec,	unsigned int reg, unsigned int value);
+int twl4030_modify(struct snd_soc_codec *codec, unsigned int reg, unsigned int value, unsigned int mask);
+
+typedef enum{
+	OFF=0,  
+	RCV,
+	SPK,
+	HP3P,
+	HP4P,
+	BT,
+	SPK_HP,
+	EXTRA_SPEAKER,
+}playback_device;
+
+typedef enum{
+	MIC_OFF=0,  
+	MAIN_MIC,
+	SUB_MIC,
+	HP_MIC,
+	BT_MIC,
+}capture_device;
+
+typedef enum{
+	PLAY_BACK = 0,
+	VOICE_CALL,
+	VOICE_MEMO,
+	VT_CALL,
+	VOIP_CALL,
+	FM_RADIO,
+	IDLE_MODE,
+	MIC_MUTE,   // hskwon-ss-db05, to support mic mute/unmute for CTS test
+	LOOP_BACK,
+#ifdef VOICE_RECOGNITION
+    VR_MODE,
+#endif
+}twl4030_path_mode; 
+
 /* TWL4030 codec resource IDs */
+typedef struct {
+    unsigned char reg;
+    unsigned char value;
+}twl4030_codec_setting;
+
 enum twl4030_codec_res {
 	TWL4030_CODEC_RES_POWER = 0,
 	TWL4030_CODEC_RES_APLL,
@@ -269,8 +324,20 @@ int twl4030_codec_disable_resource(enum twl4030_codec_res id);
 int twl4030_codec_enable_resource(enum twl4030_codec_res id);
 unsigned int twl4030_codec_get_mclk(void);
 
-extern int twl4030_cpu_enable_ext_clock(struct snd_soc_codec *codec,
-	struct snd_soc_dai *codec_dai);
-extern int twl4030_cpu_disable_ext_clock(struct snd_soc_codec *codec,
-	struct snd_soc_dai *codec_dai);
+extern int twl4030_get_codec_mode(void);
+extern int twl4030_is_rec_8k_enable(void);
+extern int get_sec_gain_test_mode(void);
+
+/*TWL4030 BT_PCM_SEL*/
+#define PCM_SEL OMAP_GPIO_PCM_SEL
+#define BT_SEL_PCM_MODE 1
+#define BT_SEL_I2S_MODE 2
+#define BT_SEL_LOW_MODE 3
+
+//[for gain setting
+#define APPLY_AUDIOTEST_APP //for gain setting from ini file
+#define APPLY_GAIN_INIT_FROM_INI //for gain setting from ini file when boot up only
+#define GAIN_INIT_MUSIC_SPK	-11
+#define GAIN_INIT_MUSIC_EAR	-12
+//]
 #endif	/* End of __TWL4030_CODEC_H__ */

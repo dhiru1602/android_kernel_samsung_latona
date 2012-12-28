@@ -471,6 +471,11 @@ static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
 		.irq = OMAP_GPIO_IRQ(OMAP_GPIO_JACK_NINT),
 	},
 #endif
+#if defined(CONFIG_SND_SOC_MAX97000)
+	{
+		I2C_BOARD_INFO("max97000", 0x4d),
+	},
+#endif
 };
 
 static struct i2c_board_info __initdata latona_i2c_bus3_info[] = {
