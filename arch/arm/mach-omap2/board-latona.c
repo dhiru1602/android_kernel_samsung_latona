@@ -127,22 +127,6 @@ fail:
 	return ret;
 }
 
-static void config_wlan_mux(void)
-{
-	/* WLAN PW_EN and IRQ */
-	omap_mux_init_gpio(LATONA_WIFI_PMENA_GPIO, OMAP_PIN_OUTPUT);
-	omap_mux_init_gpio(LATONA_WIFI_IRQ_GPIO, OMAP_PIN_INPUT |
-				OMAP_PIN_OFF_WAKEUPENABLE);
-
-	/* MMC3 */
-	omap_mux_init_signal("etk_clk.sdmmc3_clk", OMAP_PIN_INPUT_PULLUP);
-	omap_mux_init_signal("mcspi1_cs1.sdmmc3_cmd", OMAP_PIN_INPUT_PULLUP);
-	omap_mux_init_signal("etk_d4.sdmmc3_dat0", OMAP_PIN_INPUT_PULLUP);
-	omap_mux_init_signal("etk_d5.sdmmc3_dat1", OMAP_PIN_INPUT_PULLUP);
-	omap_mux_init_signal("etk_d6.sdmmc3_dat2", OMAP_PIN_INPUT_PULLUP);
-	omap_mux_init_signal("etk_d3.sdmmc3_dat3", OMAP_PIN_INPUT_PULLUP);
-}
-
 static struct wl12xx_platform_data latona_wlan_data __initdata = {
 	.irq = OMAP_GPIO_IRQ(LATONA_WIFI_IRQ_GPIO),
 	.board_ref_clock = WL12XX_REFCLOCK_38,
@@ -150,7 +134,6 @@ static struct wl12xx_platform_data latona_wlan_data __initdata = {
 
 static void latona_wifi_init(void)
 {
-	config_wlan_mux();
 	if (wl12xx_set_platform_data(&latona_wlan_data))
 		pr_err("Error setting wl12xx data\n");
 }
