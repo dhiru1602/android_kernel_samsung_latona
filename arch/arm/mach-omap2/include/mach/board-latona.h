@@ -17,6 +17,9 @@
 
 #define LATONA_NAND_CS    0
 
+#define LATONA_WIFI_PMENA_GPIO		160
+#define LATONA_WIFI_IRQ_GPIO		99
+
 extern int __init latona_debugboard_init(void);
 extern void __init latona_peripherals_init(void);
 extern void __init latona_display_init(void);

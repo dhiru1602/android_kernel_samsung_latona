@@ -41,8 +41,6 @@
 #include "omap_ion.h"
 
 #define LATONA_BT_RESET_GPIO             109
-#define LATONA_WIFI_PMENA_GPIO		157
-#define LATONA_WIFI_IRQ_GPIO		162
 
 #define WILINK_UART_DEV_NAME            "/dev/ttyO1"
 
@@ -147,8 +145,7 @@ static void config_wlan_mux(void)
 
 static struct wl12xx_platform_data latona_wlan_data __initdata = {
 	.irq = OMAP_GPIO_IRQ(LATONA_WIFI_IRQ_GPIO),
-	.board_ref_clock = WL12XX_REFCLOCK_26,
-	.board_tcxo_clock = WL12XX_TCXOCLOCK_26,
+	.board_ref_clock = WL12XX_REFCLOCK_38,
 };
 
 static void latona_wifi_init(void)

@@ -41,9 +41,6 @@
 #include "twl4030.h"
 #include "control.h"
 
-#define OMAP_LATONA_WLAN_PMENA_GPIO	(101)
-#define OMAP_LATONA_WLAN_IRQ_GPIO		(162)
-
 /* Atmel Touchscreen */
 #define OMAP_GPIO_TSP_INT 142
 
@@ -254,7 +251,7 @@ static struct regulator_init_data latona_vmmc3 = {
 static struct fixed_voltage_config latona_vwlan = {
 	.supply_name		= "vwl1271",
 	.microvolts		= 1800000, /* 1.8V */
-	.gpio			= OMAP_LATONA_WLAN_PMENA_GPIO,
+	.gpio			= LATONA_WIFI_PMENA_GPIO,
 	.startup_delay		= 70000, /* 70msec */
 	.enable_high		= 1,
 	.enabled_at_boot	= 0,
