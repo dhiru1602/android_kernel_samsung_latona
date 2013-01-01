@@ -416,7 +416,8 @@ static void enable_charging( bool is_sleep )
 {
     // CHG_EN is low active
     if ( is_sleep )
-        omap_set_gpio_dataout_in_sleep( KCHG_EN_GPIO, 0 );
+	printk(KERN_DEBUG "[%s] FIXME: omap_set_gpio_dataout_in_sleep \n",__func__);
+       //FIXME: omap_set_gpio_dataout_in_sleep( KCHG_EN_GPIO, 0 );
     else
         gpio_set_value( KCHG_EN_GPIO, 0 ); 
 
@@ -427,7 +428,8 @@ static void disable_charging( bool is_sleep )
 {
     // CHG_EN is low active
     if ( is_sleep )
-        omap_set_gpio_dataout_in_sleep( KCHG_EN_GPIO, 1 ); 
+	printk(KERN_DEBUG "[%s] FIXME: omap_set_gpio_dataout_in_sleep \n",__func__);
+       //FIXME: omap_set_gpio_dataout_in_sleep( KCHG_EN_GPIO, 1 ); 
     else
         gpio_set_value( KCHG_EN_GPIO, 1 ); 
 
