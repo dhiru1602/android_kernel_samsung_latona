@@ -247,6 +247,9 @@ static void __init _omap2_map_common_io(void)
 	 * mdesc->map_io(), but we must also do it here because of the CPU
 	 * revision check below.
 	 */
+
+	omap_l2cache_enable();
+
 	local_flush_tlb_all();
 	flush_cache_all();
 

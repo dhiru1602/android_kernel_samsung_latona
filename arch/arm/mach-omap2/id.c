@@ -624,3 +624,17 @@ void __init omap2_set_globals_tap(struct omap_globals *omap2_globals)
 	else
 		tap_prod_id = 0x0208;
 }
+
+void __init omap_l2cache_enable(void)
+{
+	u32 l2_val;
+
+	asm volatile("mrc p15, 0, %0, c1, c0, 1":"=r" (l2_val));
+	if ((l2_val & 0x2) == 0) {
+		printk(KERN_WARNING "L2 CACHE is not enabled in bootloader. "
+				"Enabled L2 CACHE.\n");
+		l2_val |= 0x2;
+		asm volatile("mcr p15, 0, %0, c1, c0, 1"::"r" (l2_val));
+	} else
+		printk(KERN_WARNING "L2 CACHE is enabled in bootloader\n");
+}

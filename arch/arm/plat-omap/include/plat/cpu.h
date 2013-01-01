@@ -483,6 +483,7 @@ IS_OMAP_TYPE(3517, 0x3517)
 
 int omap_chip_is(struct omap_chip_id oci);
 void omap2_check_revision(void);
+void omap_l2cache_enable(void);
 
 /*
  * Runtime detection of OMAP3 features
