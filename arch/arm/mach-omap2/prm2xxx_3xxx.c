@@ -235,3 +235,79 @@ u32 omap3_prm_vcvp_rmw(u32 mask, u32 bits, u8 offset)
 {
 	return omap2_prm_rmw_mod_reg_bits(mask, bits, OMAP3430_GR_MOD, offset);
 }
+
+#ifdef CONFIG_MACH_OMAP_LATONA
+
+#define	DEFAULT_BASE	0x0
+#define PRM_BASE	0x1
+#define PRCM_MPU_BASE	0x2
+#define CM2_BASE	0x3
+#define BASE_ID_SHIFT	13
+#define BASE_ID_MASK	0x3
+#define MOD_MASK	0x1FFF
+#define PRM_BASE_ID		(PRM_BASE << BASE_ID_SHIFT)
+#define PRCM_MPU_BASE_ID	(PRCM_MPU_BASE << BASE_ID_SHIFT)
+#define CM2_BASE_ID		(CM2_BASE << BASE_ID_SHIFT)
+
+static u32 __omap_prcm_read(void __iomem *base, s16 module, u16 reg);
+static void __omap_prcm_write(u32 value, void __iomem *base, s16 module, u16 reg);
+
+static u32 __omap_prcm_read(void __iomem *base, s16 module, u16 reg)
+{
+	BUG_ON(!base);
+	return __raw_readl(base + module + reg);
+}
+
+static void __omap_prcm_write(u32 value, void __iomem *base,
+						s16 module, u16 reg)
+{
+	BUG_ON(!base);
+	__raw_writel(value, base + module + reg);
+}
+
+/* Read a register in a CM module */
+u32 cm_read_mod_reg(s16 module, u16 idx)
+{
+	u32 base = 0;
+
+	base = abs(module) >> BASE_ID_SHIFT;
+	module &= MOD_MASK;
+
+	switch (base) {
+	case PRM_BASE:
+		return __omap_prcm_read(prm_base, module, idx);
+	case CM2_BASE:
+		return __omap_prcm_read(cm2_base, module, idx);
+	case DEFAULT_BASE:
+		return __omap_prcm_read(cm_base, module, idx);
+	default:
+		pr_err("Unknown CM submodule base\n");
+	}
+	return 0;
+}
+
+void cm_write_mod_reg(u32 val, s16 module, u16 idx)
+{
+	u32 base = 0;
+
+	base = abs(module) >> BASE_ID_SHIFT;
+	module &= MOD_MASK;
+
+	switch (base) {
+	case PRM_BASE:
+		__omap_prcm_write(val, prm_base, module, idx);
+		break;
+	case CM2_BASE:
+		__omap_prcm_write(val, cm2_base, module, idx);
+		break;
+	case DEFAULT_BASE:
+		__omap_prcm_write(val, cm_base, module, idx);
+		break;
+	default:
+		pr_err("Unknown CM submodule base\n");
+		break;
+	}
+}
+
+#endif
+
