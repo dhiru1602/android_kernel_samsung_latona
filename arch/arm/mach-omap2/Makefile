@@ -261,6 +261,7 @@ obj-$(CONFIG_MACH_OMAP_LATONA)		+= board-latona.o \
 					   board-latona-peripherals.o \
 					   board-latona-display.o \
 					   board-latona-phone_svnet.o \
+					   omap3-gptimer12.o \
 					   board-flash.o \
 					   hsmmc.o \
 					   omapxx_apps_brd_id.o	\
