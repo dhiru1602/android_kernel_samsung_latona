@@ -232,15 +232,15 @@ static void infinion_on(struct modemctl *mc)
 
 	msleep(100);
 
-	/* Force modemctl to use PDA by default */
-	if( gpio_get_value(126) == 0 )
+	/* Force modemctl to use MODEM by default */
+	if( gpio_get_value(126) == 1 )
 	{
-		gpio_set_value(126, 1);	//uart connected with AP
-		dev_dbg( mc->dev, "%s: (%d) GPIO_UART_SEL = %d\n", __func__, __LINE__, gpio_get_value(126) );
+			gpio_set_value(126, 0);	//uart connected with CP
+			dev_dbg( mc->dev, "%s: (%d) GPIO_UART_SEL = %d\n", __func__, __LINE__, gpio_get_value(126) );
 	}
 	else
 	{
-		dev_dbg( mc->dev, "%s: (%d) GPIO_UART_SEL = %d\n", __func__, __LINE__, gpio_get_value(126) );
+			dev_dbg( mc->dev, "%s: (%d) GPIO_UART_SEL = %d\n", __func__, __LINE__, gpio_get_value(126) );
 	}
 
 	msleep(200);
