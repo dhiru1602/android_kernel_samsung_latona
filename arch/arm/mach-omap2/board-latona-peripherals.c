@@ -544,6 +544,9 @@ void __init latona_peripherals_init(void)
 	atmel_dev_init();
 	platform_device_register(&omap_vwlan_device);
 	usb_musb_init(&latona_musb_board_data);
+#ifdef CONFIG_SAMSUNG_BATTERY
+	latona_battery_init();
+#endif 
 #ifdef CONFIG_SAMSUNG_PHONE_SVNET
 	latona_phone_svnet_init(); /* Initialize Phone SVNET Drivers */ 
 #endif
