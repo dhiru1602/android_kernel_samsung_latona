@@ -481,6 +481,13 @@ static struct i2c_board_info __initdata latona_i2c_bus3_info[] = {
 	{
 		I2C_BOARD_INFO("qt602240_ts", 0x4A),
 	},
+#ifdef CONFIG_SAMSUNG_BATTERY
+	{
+		I2C_BOARD_INFO("secFuelgaugeDev", 0x36),
+		.flags = I2C_CLIENT_WAKE,
+		.irq = OMAP_GPIO_IRQ(OMAP_GPIO_FUEL_INT_N),
+	},
+#endif
 };
 
 static int __init omap_i2c_init(void)
