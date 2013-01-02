@@ -22,9 +22,10 @@
 #include <mach/gpio.h>
 #include <linux/power_supply.h>
 #include "common.h"
+#include <plat/mux_latona_rev_r08.h>
 
 #if defined(CONFIG_USE_GPIO_I2C)
-    #include <plat/i2c-omap-gpio.h>
+#include <linux/i2c/i2c-omap-gpio.h>
 #endif    
 
 #define DRIVER_NAME "secFuelgaugeDev"

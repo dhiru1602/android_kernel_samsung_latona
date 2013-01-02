@@ -5,7 +5,7 @@
 
 #include <mach/gpio.h>
 #include <mach/hardware.h>
-#include "mux.h"
+#include "../../../arch/arm/mach-omap2/mux.h"
 
 typedef struct __OMAP_GPIO_I2C_WR_DATA {
 	u8 reg_len;
