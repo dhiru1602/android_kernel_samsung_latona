@@ -29,21 +29,7 @@ static struct omap_dm_timer *battery_timer;
 struct gptimer12_manager timer_manager[MAX_GPTIMER12_INSTANCE];
 unsigned int gptimer12_count;
 static volatile u32 cm_val=0;
-#if 0
-int init_gptimer12 (void);
-EXPORT_SYMBOL(init_gptimer12);
 
-int finish_gptimer12 (void);
-EXPORT_SYMBOL(finish_gptimer12);
-
-int request_gptimer12(struct gptimer12_timer *timer);
-EXPORT_SYMBOL(request_gptimer12);
-
-int release_gptimer12(struct gptimer12_timer *timer);
-EXPORT_SYMBOL(release_gptimer12);
-
-int expire_gptier12(void);
-#endif
 static int prcm_wakeup_event_control ( u32 reg_bit, u8 operation )
 {
 	volatile u32 prcm_val=0;
@@ -59,14 +45,17 @@ static int prcm_wakeup_event_control ( u32 reg_bit, u8 operation )
 	return 0;
 }
 
-//static irqreturn_t timer_interrupt(int irq, void *dev_id); DELETE this
 
 int init_gptimer12 ( void )
 {
 	gptimer12_count = 0;
 	memset( &timer_manager, 0, sizeof( timer_manager ) );
-	battery_timer = omap_dm_timer_request_specific(12);
-	BUG_ON( battery_timer == NULL );
+	battery_timer = omap_dm_timer_request();
+		if(battery_timer == NULL)
+		{
+			printk(KERN_DEBUG "[%s] No available GPTIMERs for battery_timer \n",__func__);
+			return -1;
+		}
 
 	omap_dm_timer_set_source( battery_timer, OMAP_TIMER_SRC_32_KHZ );
 	//battery_timer_irq.dev_id = (void *)battery_timer;
