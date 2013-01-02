@@ -706,6 +706,9 @@ static int __devinit twl4030_madc_probe(struct platform_device *pdev)
 	if (!madc)
 		return -ENOMEM;
 
+	/* Copy the pointer to device struct */
+	madc->dev = &pdev->dev;
+
 	/*
 	 * Phoenix provides 2 interrupt lines. The first one is connected to
 	 * the OMAP. The other one can be connected to the other processor such
@@ -733,7 +736,7 @@ static int __devinit twl4030_madc_probe(struct platform_device *pdev)
 	ret = twl_i2c_write_u8(TWL4030_MODULE_MAIN_CHARGE,
 			       regval, TWL4030_BCI_BCICTL1);
 	if (ret) {
-		dev_err(&pdev->dev, "unable to write reg BCI Ctl1 0x%X\n",
+		dev_err(&pdev->dev, "unable to write reg BCI CTL1 0x%X\n",
 			TWL4030_BCI_BCICTL1);
 		goto err_i2c;
 	}
