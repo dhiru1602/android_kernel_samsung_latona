@@ -500,6 +500,12 @@ config I2C_OMAP
 	  Like OMAP1510/1610/1710/5912 and OMAP242x.
 	  For details see http://www.ti.com/omap.
 
+config USE_GPIO_I2C
+	bool "OMAP GPIO I2C Bitbangin Protocol"
+	default n
+	help
+	 say Y here if you want to avail the I2C emulation for GPIOs using bit-banging mechanism.
+
 config I2C_PASEMI
 	tristate "PA Semi SMBus interface"
 	depends on PPC_PASEMI && PCI

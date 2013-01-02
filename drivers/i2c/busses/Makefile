@@ -83,4 +83,6 @@ obj-$(CONFIG_I2C_STUB)		+= i2c-stub.o
 obj-$(CONFIG_SCx200_ACB)	+= scx200_acb.o
 obj-$(CONFIG_SCx200_I2C)	+= scx200_i2c.o
 
+obj-$(CONFIG_USE_GPIO_I2C)      += i2c-omap-gpio.o
+
 ccflags-$(CONFIG_I2C_DEBUG_BUS) := -DDEBUG
