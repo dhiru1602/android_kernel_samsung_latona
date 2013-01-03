@@ -40,8 +40,6 @@
 #include "sdram-qimonda-hyb18m512160af-6.h"
 #include "omap_ion.h"
 
-#define LATONA_BT_RESET_GPIO             109
-
 #define WILINK_UART_DEV_NAME            "/dev/ttyO1"
 
 #ifdef CONFIG_OMAP_MUX
@@ -81,10 +79,10 @@ static int plat_kim_resume(struct platform_device *pdev)
 
 /* wl127x BT, FM, GPS connectivity chip */
 struct ti_st_plat_data wilink_pdata = {
-	.nshutdown_gpio = 109,
+	.nshutdown_gpio = OMAP_GPIO_BT_NRST,
 	.dev_name = WILINK_UART_DEV_NAME,
 	.flow_cntrl = 1,
-	.baud_rate = 3686400,
+	.baud_rate = 3000000,
 	.suspend = plat_kim_suspend,
 	.resume = plat_kim_resume,
 };
@@ -110,19 +108,19 @@ static int wl127x_vio_leakage_fix(void)
 
 	pr_info(" wl127x_vio_leakage_fix\n");
 
-	ret = gpio_request(LATONA_BT_RESET_GPIO, "wl127x_bten");
+	ret = gpio_request(OMAP_GPIO_BT_NRST, "wl127x_bten");
 	if (ret < 0) {
 		pr_err("wl127x_bten gpio_%d request fail",
-			LATONA_BT_RESET_GPIO);
+			OMAP_GPIO_BT_NRST);
 		goto fail;
 	}
 
-	gpio_direction_output(LATONA_BT_RESET_GPIO, 1);
+	gpio_direction_output(OMAP_GPIO_BT_NRST, 1);
 	mdelay(10);
-	gpio_direction_output(LATONA_BT_RESET_GPIO, 0);
+	gpio_direction_output(OMAP_GPIO_BT_NRST, 0);
 	udelay(64);
 
-	gpio_free(LATONA_BT_RESET_GPIO);
+	gpio_free(OMAP_GPIO_BT_NRST);
 fail:
 	return ret;
 }
