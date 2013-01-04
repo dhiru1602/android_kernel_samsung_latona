@@ -428,7 +428,7 @@ int fuelgauge_init( void )
     int ret;
 
 #if defined(CONFIG_USE_GPIO_I2C)
-    fuelgauge_i2c_client = omap_gpio_i2c_init(OMAP_GPIO_FUEL_SDA,OMAP_GPIO_FUEL_SCL, 0x36, 100);
+    fuelgauge_i2c_client = omap_gpio_i2c_init(OMAP_GPIO_FUEL_SDA,OMAP_GPIO_FUEL_SCL, 0x36, 10);
 
     if(fuelgauge_i2c_client == NULL)
     {
