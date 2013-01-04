@@ -660,6 +660,10 @@ static int __init parse_tag_revision(const struct tag *tag)
 
 __tagtable(ATAG_REVISION, parse_tag_revision);
 
+
+extern void manipulate_cmdline(char *default_command_line,
+                                const char *tag_command_line, size_t size);
+
 static int __init parse_tag_cmdline(const struct tag *tag)
 {
 #if defined(CONFIG_CMDLINE_EXTEND)
@@ -669,8 +673,10 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 #elif defined(CONFIG_CMDLINE_FORCE)
 	pr_warning("Ignoring tag cmdline (using the default kernel command line)\n");
 #else
-	strlcpy(default_command_line, tag->u.cmdline.cmdline,
-		COMMAND_LINE_SIZE);
+	/*strlcpy(default_command_line, tag->u.cmdline.cmdline,
+		COMMAND_LINE_SIZE);*/
+	manipulate_cmdline(default_command_line, tag->u.cmdline.cmdline,
+                        COMMAND_LINE_SIZE);
 #endif
 	return 0;
 }

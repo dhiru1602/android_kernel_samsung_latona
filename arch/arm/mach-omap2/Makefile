@@ -264,7 +264,8 @@ obj-$(CONFIG_MACH_OMAP_LATONA)		+= board-latona.o \
 					   hsmmc.o \
 					   omapxx_apps_brd_id.o	\
 					   mux_latona_rev_r08.o \
-					   board-latona-vibrator.o
+					   board-latona-vibrator.o \
+					   board-latona-cmdline.o
 obj-$(CONFIG_MACH_OMAP_3630SDP)		+= board-3630sdp.o \
 					   board-zoom-peripherals.o \
 					   board-zoom-display.o \
