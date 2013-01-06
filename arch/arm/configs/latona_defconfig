@@ -1072,6 +1072,10 @@ CONFIG_MTD_ONENAND_OMAP2=y
 CONFIG_HAVE_IDE=y
 # CONFIG_IDE is not set
 
+
+# Input Orientation Sensor
+CONFIG_INPUT_ORIENTATION=y
+
 #
 # SCSI device support
 #
