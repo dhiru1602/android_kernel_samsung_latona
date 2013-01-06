@@ -27,7 +27,8 @@
 #include <linux/types.h>
 #include <linux/workqueue.h>
 #include <linux/slab.h>
-#include <plat/i2c-omap-gpio.h>
+#include <linux/i2c/i2c-omap-gpio.h>
+#include <mach/board-latona.h>
 
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 #include <linux/earlysuspend.h>
