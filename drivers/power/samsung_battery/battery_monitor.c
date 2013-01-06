@@ -191,7 +191,8 @@ extern s32 t2_adc_data( u8 channel );
 
 extern unsigned long long sched_clock( void );
 
-extern u32 sec_bootmode;
+//TODO: parse cmdline to get bootmode
+//extern u32 sec_bootmode;
 
 static bool boot_complete = false;
 static int boot_monitor_count = 0;
@@ -975,9 +976,10 @@ static int battery_monitor_core( bool is_sleep )
         if ( sec_bci.battery.monitor_duration > MONITOR_RECHG_VOL_DURATION )
             sec_bci.battery.monitor_duration = MONITOR_RECHG_VOL_DURATION;
 
-		if(sec_bootmode == 5) // offmode charging
+		//TODO: parse cmdline to get bootmode
+		/*if(sec_bootmode == 5) // offmode charging
 			rechg_voltage = CHARGE_RECHG_VOLTAGE_OFFMODE;
-		else
+		else*/
 			rechg_voltage = CHARGE_RECHG_VOLTAGE;
 
         if (sec_bci.battery.battery_level_vol <= rechg_voltage )
@@ -1283,7 +1285,8 @@ static int __devinit battery_probe( struct platform_device *pdev )
 
     struct battery_device_info *di;
 
-    pr_info( "[BM] Battery Probe... bootmode = %d\n\n");
+    //TODO: parse cmdline to get bootmode
+    pr_info( "[BM] Battery Probe... bootmode = ?\n\n");
 
     this_dev = &pdev->dev;
 
