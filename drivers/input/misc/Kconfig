@@ -600,4 +600,9 @@ config INPUT_BMA222_POSITION
 	    6: bottom, lower-right
 	    7: bottom, lower-left
 
+config INPUT_ORIENTATION
+	tristate "Yamaha Orientation Sensor"
+	depends on I2C
+	default n
+
 endif
