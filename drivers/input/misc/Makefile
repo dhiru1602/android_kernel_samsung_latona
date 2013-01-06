@@ -56,3 +56,4 @@ obj-$(CONFIG_INPUT_BMA180)		+= bma180.o
 obj-$(CONFIG_INPUT_MPU3050)		+= mpu3050.o
 obj-$(CONFIG_INPUT_TSL2771)		+= tsl2771.o
 obj-$(CONFIG_INPUT_ZEUS_POWER_KEY)      += zeus_powerbutton.o
+obj-$(CONFIG_INPUT_BMA222)              += yas_acc_kernel_driver.o

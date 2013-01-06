@@ -1076,6 +1076,10 @@ CONFIG_HAVE_IDE=y
 # Input Orientation Sensor
 CONFIG_INPUT_ORIENTATION=y
 
+# Accelerometer Sensor
+CONFIG_INPUT_BMA222=y
+CONFIG_INPUT_BMA222_POSITION=2
+
 #
 # SCSI device support
 #

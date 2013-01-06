@@ -580,4 +580,24 @@ config INPUT_GPIO_VOLUME_KEY
 	help
 	  Say Y hear if you use volume key reporting via GPIO pin.
 
+config INPUT_BMA222
+	tristate "Bosch Sensortec BMA222 Acceleration Sensor"
+	depends on I2C
+	default n
+
+config INPUT_BMA222_POSITION
+	int "BMA222 Mounting Position on Board"
+	depends on INPUT_BMA222
+	default "0"
+	help
+	  Chip mounting position (pin 1).
+	    0: top, upper-left
+	    1: top, upper-right
+	    2: top, lower-right
+	    3: top, lower-left
+	    4: bottom, upper-left
+	    5: bottom, upper-right
+	    6: bottom, lower-right
+	    7: bottom, lower-left
+
 endif
