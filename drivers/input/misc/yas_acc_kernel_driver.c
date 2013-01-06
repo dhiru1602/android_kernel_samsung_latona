@@ -37,7 +37,7 @@
 
 #define __LINUX_KERNEL_DRIVER__
 #include <linux/yas.h>
-#include "yas_acc_driver.c"
+#include "yas_acc_driver-bma222.c"
 
 #define YAS_ACC_KERNEL_VERSION                                                        "3.0.401"
 #define YAS_ACC_KERNEL_NAME                                                   "accelerometer"
