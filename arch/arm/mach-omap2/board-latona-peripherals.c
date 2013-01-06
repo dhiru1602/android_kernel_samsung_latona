@@ -493,12 +493,6 @@ static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
 	{
 		I2C_BOARD_INFO("cam_pmic", CAM_PMIC_I2C_ADDR),
 	},
-};
-
-static struct i2c_board_info __initdata latona_i2c_bus3_info[] = {
-	{
-		I2C_BOARD_INFO("qt602240_ts", 0x4A),
-	},
 #ifdef CONFIG_SAMSUNG_BATTERY
 	{
 		I2C_BOARD_INFO("secFuelgaugeDev", 0x36),
@@ -506,6 +500,12 @@ static struct i2c_board_info __initdata latona_i2c_bus3_info[] = {
 		.irq = OMAP_GPIO_IRQ(OMAP_GPIO_FUEL_INT_N),
 	},
 #endif
+};
+
+static struct i2c_board_info __initdata latona_i2c_bus3_info[] = {
+	{
+		I2C_BOARD_INFO("qt602240_ts", 0x4A),
+	},
 };
 
 static int __init omap_i2c_init(void)
