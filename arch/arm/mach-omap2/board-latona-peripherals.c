@@ -500,6 +500,11 @@ static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
 		.irq = OMAP_GPIO_IRQ(OMAP_GPIO_FUEL_INT_N),
 	},
 #endif
+#ifdef CONFIG_INPUT_YAS529
+	{
+		I2C_BOARD_INFO("geomagnetic", 0x2E),
+	},
+#endif
 };
 
 static struct i2c_board_info __initdata latona_i2c_bus3_info[] = {
