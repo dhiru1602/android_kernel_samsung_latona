@@ -99,7 +99,6 @@ static void prev2resz_resz_callback(unsigned long status,
 static int prev2resz_ioc_set_config(struct prev2resz_fhdl *fh)
 {
 	struct isp_node *pipe = &fh->pipe;
-	struct isp_device *isp = dev_get_drvdata(fh->isp);
 	int rval, rest;
 
 	if (pipe->in.image.pixelformat != V4L2_PIX_FMT_SBGGR16 &&
@@ -135,7 +134,6 @@ static int prev2resz_ioc_set_config(struct prev2resz_fhdl *fh)
 		return rval;
 	/* Update return parameters */
 	pipe->in.crop = fh->prev.out.crop;
-	isp->pipeline.prv = fh->prev;
 
 	/* Setup parameters for Resizer input */
 	fh->resz.in			= fh->prev.out;
@@ -154,7 +152,6 @@ static int prev2resz_ioc_set_config(struct prev2resz_fhdl *fh)
 		return rval;
 	/* Update return parameters */
 	pipe->out = fh->resz.out;
-	isp->pipeline.rsz = fh->resz;
 
 	return 0;
 }
@@ -174,6 +171,10 @@ static int prev2resz_ioc_run_engine(struct prev2resz_fhdl *fh)
 
 	rval = isppreview_config_inlineoffset(fh->isp_prev,
 				fh->prev.in.image.bytesperline);
+	if (rval != 0)
+		return rval;
+
+	rval = isppreview_set_outaddr(fh->isp_prev, fh->dst_buff_addr);
 	if (rval != 0)
 		return rval;
 
@@ -267,17 +268,10 @@ static int prev2resz_vbq_setup(struct videobuf_queue *q, unsigned int *cnt,
 	if (q->type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
 		*size = fhdl->pipe.out.image.bytesperline *
 			fhdl->pipe.out.image.height;
-	else if (q->type == V4L2_BUF_TYPE_VIDEO_OUTPUT) {
-		if (fhdl->pipe.in.image.pixelformat != V4L2_PIX_FMT_SBGGR16 &&
-		    fhdl->pipe.in.image.pixelformat !=
-						V4L2_PIX_FMT_SGRBG10DPCM8) {
-			*size = fhdl->pipe.in.image.width *
-			   fhdl->pipe.in.image.height * 2;
-		} else {
-			*size = fhdl->pipe.in.image.width *
-			   fhdl->pipe.in.image.height;
-		}
-	} else
+	else if (q->type == V4L2_BUF_TYPE_VIDEO_OUTPUT) 
+		*size = fhdl->pipe.in.image.bytesperline *
+			fhdl->pipe.in.image.height;
+	else
 		return -EINVAL;
 
 	return 0;
@@ -339,15 +333,8 @@ static int prev2resz_vbq_prepare(struct videobuf_queue *q,
 		spin_unlock(&fhdl->dst_vbq_lock);
 	} else if (q->type == V4L2_BUF_TYPE_VIDEO_OUTPUT) {
 		spin_lock(&fhdl->src_vbq_lock);
-		if (fhdl->pipe.in.image.pixelformat != V4L2_PIX_FMT_SBGGR16 &&
-		    fhdl->pipe.in.image.pixelformat !=
-						V4L2_PIX_FMT_SGRBG10DPCM8) {
-			vb->size = fhdl->pipe.in.image.width *
-			   fhdl->pipe.in.image.height * 2;
-		} else {
-			vb->size = fhdl->pipe.in.image.width *
+		vb->size = fhdl->pipe.in.image.bytesperline *
 			   fhdl->pipe.in.image.height;
-		}
 		vb->width = fhdl->pipe.in.image.width;
 		vb->height = fhdl->pipe.in.image.height;
 		vb->bsize = vb->size;

@@ -159,7 +159,7 @@ enum isp_callback_type {
 	CBK_HIST_DONE,
 	CBK_HS_VS,
 	CBK_LSC_ISR,
-	CBK_CATCHALL,
+	//CBK_CATCHALL,
 	CBK_CSIA,
 	CBK_CSIB,
 	CBK_END,
@@ -551,7 +551,8 @@ void isp_g_fmt_cap(struct device *dev, struct v4l2_pix_format *pix);
 
 int isp_s_fmt_cap(struct device *dev, struct v4l2_pix_format *pix_input,
 		  struct v4l2_pix_format *pix_output,
-		  enum isp_interface_type sensor_isp_if);
+		  enum isp_interface_type sensor_isp_if,
+		  int sensor_index);
 
 int isp_g_bounds(struct device *dev, struct v4l2_rect *bounds);
 

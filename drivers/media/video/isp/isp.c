@@ -49,8 +49,11 @@
 #include "isp_dfs.h"
 #endif
 
+#undef ZEUS_720P //for 720p_Patch[[]]
 static struct platform_device *omap3isp_pdev;
 static int isp_complete_reset = 1;
+int flag_720p = 0;
+static int sensor_index;
 
 static void isp_save_ctx(struct device *dev);
 
@@ -84,6 +87,16 @@ static const struct v4l2_fmtdesc isp_formats[] = {
 		.description = "Bayer10 (GrR/BGb)",
 		.pixelformat = V4L2_PIX_FMT_SBGGR10,
 	},
+#ifdef ZEUS_CAM
+	{
+		.description	= "JPEG(without header)+ JPEG",
+		.pixelformat	= V4L2_PIX_FMT_JPEG,
+	},
+	{
+		.description	= "JPEG(without header)+ YUV",
+		.pixelformat	= V4L2_PIX_FMT_MJPEG,
+	}
+#endif
 };
 
 /**
@@ -384,6 +397,7 @@ static void isp_release_resources(struct device *dev)
  * @max_wait: Max retry count in us for wait for idle/busy transition.
  * @priv: Function parameter to send to busy check function.
  **/
+#ifndef ZEUS_CAM
 static int isp_wait(struct device *dev, int (*busy)(void *), int wait_for_busy,
 		    int max_wait, void *priv)
 {
@@ -416,7 +430,7 @@ static int ispccdc_sbl_wait_idle(struct isp_ccdc_device *isp_ccdc, int max_wait)
 
 	return isp_wait(dev, ispccdc_sbl_busy, 0, max_wait, isp_ccdc);
 }
-
+#endif
 /**
  * isp_adjust_bandwidth - Adjust ISP clock to get maximum bandwidth.
  * @dev: Device pointer specific to the OMAP3 ISP.
@@ -445,9 +459,9 @@ static void isp_adjust_bandwidth(struct device *dev)
 
 		deviders = isp_get_upscale_ratio(in_width, in_height,
 						 out_width, out_height);
-
+/* CSI Module Not Used
 		isp_csi_set_vp_freq(&isp->isp_csi, deviders->csi2_div);
-
+*/
 		ispccdc_config_vp_freq(&isp->isp_ccdc, deviders->ccdc_div);
 	} else {
 		/* Make adjustment depending of the pixel clock */
@@ -632,6 +646,10 @@ u32 isp_set_xclk(struct device *dev, u32 xclk, u8 xclksel)
 {
 	u32 divisor;
 	u32 currentxclk;
+
+//      [Latona] Added for censor backward compatibilty	
+	if(dev == NULL)
+		dev = &omap3isp_pdev->dev;	
 	struct isp_device *isp = dev_get_drvdata(dev);
 
 	if (xclk >= isp->mclk) {
@@ -682,7 +700,7 @@ EXPORT_SYMBOL(isp_set_xclk);
 static void isp_power_settings(struct device *dev, int idle)
 {
 	if (idle) {
-		isp_reg_writel(dev,
+		isp_reg_writel(dev,ISP_SYSCONFIG_AUTOIDLE |
 			       (ISP_SYSCONFIG_MIDLEMODE_SMARTSTANDBY <<
 				ISP_SYSCONFIG_MIDLEMODE_SHIFT),
 			       OMAP3_ISP_IOMEM_MAIN, ISP_SYSCONFIG);
@@ -702,7 +720,7 @@ static void isp_power_settings(struct device *dev, int idle)
 			       ISP_CTRL);
 
 	} else {
-		isp_reg_writel(dev,
+		isp_reg_writel(dev,ISP_SYSCONFIG_AUTOIDLE |
 			       (ISP_SYSCONFIG_MIDLEMODE_FORCESTANDBY <<
 				ISP_SYSCONFIG_MIDLEMODE_SHIFT),
 			       OMAP3_ISP_IOMEM_MAIN, ISP_SYSCONFIG);
@@ -744,6 +762,12 @@ static void isp_power_settings(struct device *dev, int idle)
 int isp_configure_interface(struct device *dev,
 			    struct isp_interface_config *config)
 {
+//      [Latona] Added for censor backward compatibilty
+
+       printk(" isp_configure_interface\n");
+	if(dev == NULL)
+		dev = &omap3isp_pdev->dev;
+	
 	struct isp_device *isp = dev_get_drvdata(dev);
 	u32 ispctrl_val = isp_reg_readl(dev, OMAP3_ISP_IOMEM_MAIN, ISP_CTRL);
 	int r;
@@ -760,6 +784,7 @@ int isp_configure_interface(struct device *dev,
 
 	switch (config->ccdc_par_ser) {
 	case ISP_PARLL:
+		printk("ispccdc: isp_configure_interface: CPI\n");
 		ispctrl_val |= ISPCTRL_PAR_SER_CLK_SEL_PARALLEL;
 		ispctrl_val |= config->u.par.par_clk_pol
 			<< ISPCTRL_PAR_CLK_POL_SHIFT;
@@ -818,9 +843,11 @@ int isp_configure_interface(struct device *dev,
 		if (config->u.csi.use_mem_read)
 			ispctrl_val |= ISPCTRL_SBL_SHARED_RPORTA
 				       | ISPCTRL_SBL_RD_RAM_EN;
+	/* CSI Module Not Used
 		r = isp_csi_configure_interface(&isp->isp_csi, &config->u.csi);
 		if (r)
 			return r;
+	*/
 		break;
 	case ISP_NONE:
 		ispctrl_val &= ~ISPCTRL_SBL_SHARED_RPORTA;
@@ -840,7 +867,8 @@ int isp_configure_interface(struct device *dev,
 	ispccdc_set_wenlog(&isp->isp_ccdc, config->wenlog);
 	ispccdc_set_raw_offset(&isp->isp_ccdc, config->raw_fmt_in);
 
-	isp->mclk = config->cam_mclk;
+// 	[Latona] FIXED for avoid reset of mclk clock 
+//	isp->mclk = config->cam_mclk;
 	isp_enable_mclk(dev);
 
 	isp_adjust_bandwidth(dev);
@@ -861,12 +889,14 @@ void isp_hist_dma_done(struct device *dev)
 		if (isp_hist_busy(&isp->isp_hist))
 			isp_hist_mark_invalid_buf(&isp->isp_hist);
 	}
+/*
 	if (irqdis->isp_callbk[CBK_CATCHALL]) {
 		irqdis->isp_callbk[CBK_CATCHALL](
 			HIST_DONE,
 			irqdis->isp_callbk_arg1[CBK_CATCHALL],
 			irqdis->isp_callbk_arg2[CBK_CATCHALL]);
 	}
+*/
 }
 
 static void isp_buf_process(struct device *dev, struct isp_bufs *bufs);
@@ -921,7 +951,7 @@ static irqreturn_t isp_isr(int irq, void *_pdev)
 
 	spin_lock_irqsave(&isp->lock, flags);
 	wait_hs_vs = bufs->wait_hs_vs;
-	if (irqstatus & CCDC_VD0 && bufs->wait_hs_vs)
+	if (irqstatus & HS_VS /* CCDC_VD0 */&& bufs->wait_hs_vs)
 		bufs->wait_hs_vs--;
 
 	/* Decrement value also with CSI2 Rx only case*/
@@ -1073,7 +1103,7 @@ static irqreturn_t isp_isr(int irq, void *_pdev)
 		 * If CCDC is writing to memory stop CCDC here
 		 * preventig to write to any of our buffers.
 		 */
-		if (CCDC_CAPTURE(isp) || isp->config->u.csi.use_mem_read)
+		if (CCDC_CAPTURE(isp)/* || isp->config->u.csi.use_mem_read*/ )
 			ispccdc_enable(&isp->isp_ccdc, 0);
 	}
 
@@ -1200,14 +1230,14 @@ static irqreturn_t isp_isr(int irq, void *_pdev)
 		if (ret != HIST_BUF_DONE)
 			irqstatus &= ~HIST_DONE;
 	}
-
+/*
 	if (irqdis->isp_callbk[CBK_CATCHALL]) {
 		irqdis->isp_callbk[CBK_CATCHALL](
 			irqstatus,
 			irqdis->isp_callbk_arg1[CBK_CATCHALL],
 			irqdis->isp_callbk_arg2[CBK_CATCHALL]);
 	}
-
+*/
 out_ignore_buff:
 	spin_unlock_irqrestore(&isp->lock, flags);
 
@@ -1215,7 +1245,9 @@ out_ignore_buff:
 		ispccdc_lsc_pref_comp_handler(&isp->isp_ccdc);
 		if (isp->config->u.csi.use_mem_read) {
 			isp_adjust_bandwidth(dev);
+/* CSI Module Not Used
 			isp_csi_lcm_readport_enable(&isp->isp_csi, 1);
+*/
 		}
 	}
 
@@ -1377,14 +1409,14 @@ static int __isp_disable_modules(struct device *dev, int suspend)
 			break;
 		}
 	}
-	/* We can disable lsc now, If an error ocured during
-	 * stopping of the LSC sw reset the isp */
-	if (ispccdc_enable_lsc(&isp->isp_ccdc, 0) < 0)
-		reset = 1;
+	/* We can disable lsc now */
+	ispccdc_enable_lsc(&isp->isp_ccdc, 0);
+
 	/*
 	 * We need to stop all the modules after CCDC or they'll
 	 * never stop since they may not get a full frame from CCDC.
 	 */
+#ifndef ZEUS_CAM
 	if (suspend) {
 		isp_af_suspend(&isp->isp_af);
 		isph3a_aewb_suspend(&isp->isp_h3a);
@@ -1407,7 +1439,23 @@ static int __isp_disable_modules(struct device *dev, int suspend)
 			break;
 		}
 	}
-
+#else
+  /*
+   * We need to stop all the modules after CCDC first or they'll
+   * never stop since they may not get a full frame from CCDC.
+   */  
+	ispresizer_enable(&isp->isp_res, 0);
+	timeout = jiffies + ISP_STOP_TIMEOUT;
+	while (ispresizer_busy(&isp->isp_res)) {
+		if (time_after(jiffies, timeout)) {
+			printk(KERN_ERR "%s: can't stop non-ccdc modules\n",
+					__func__);
+			reset = 1;
+			break;
+		}
+		msleep(1);
+  	}
+#endif
 	/* Let's stop CCDC now. */
 	ispccdc_enable(&isp->isp_ccdc, 0);
 
@@ -1425,8 +1473,10 @@ static int __isp_disable_modules(struct device *dev, int suspend)
 			"(%s) isp_complete_reset\n", __func__);
 		isp_complete_reset = 1;
 	}
+/* CSI Module Not Used
 	isp_csi_if_enable(&isp->isp_csi, 0);
 	isp_csi_lcm_readport_enable(&isp->isp_csi, 0);
+*/
 	isp_csi2_enable(&isp->isp_csi2, 0);
 	isp_buf_init(dev);
 
@@ -1465,19 +1515,25 @@ static void isp_resume_modules(struct device *dev)
 {
 	struct isp_device *isp = dev_get_drvdata(dev);
 
+#ifndef ZEUS_CAM
 	isp_hist_resume(&isp->isp_hist);
 	isph3a_aewb_resume(&isp->isp_h3a);
 	isp_af_resume(&isp->isp_af);
+#endif 
 
 	if (isp->running == ISP_RUNNING) {
 		if (isp->pipeline.modules & OMAP_ISP_CCDC)
 			ispccdc_enable(&isp->isp_ccdc, 1);
+#ifdef ZEUS_CAM
 		if (isp->pipeline.modules & OMAP_ISP_RESIZER)
 			ispresizer_enable(&isp->isp_res, 1);
+#endif
 		if (isp->pipeline.modules & OMAP_ISP_PREVIEW)
 			isppreview_enable(&isp->isp_prev, 1);
+/* 	CSI Module Not Used
 		isp_csi_if_enable(&isp->isp_csi, 1);
 		isp_csi2_enable(&isp->isp_csi2, 1);
+*/
 	}
 }
 
@@ -1522,9 +1578,11 @@ void isp_stop(struct device *dev)
 	int reset;
 
 	isp->running = ISP_STOPPING;
+	flag_720p = 0;
 	isp_disable_interrupts(dev);
 	synchronize_irq(((struct isp_device *)dev_get_drvdata(dev))->irq_num);
 	reset = isp_stop_modules(dev);
+	isp_buf_init(dev);
 	isp->running = ISP_STOPPED;
 	if (!reset)
 		return;
@@ -1607,7 +1665,7 @@ static int isp_try_pipeline(struct device *dev,
 			pipe->modules = OMAP_ISP_PREVIEW |
 					OMAP_ISP_RESIZER |
 					OMAP_ISP_CCDC;
-			if (isp->revision <= ISP_REVISION_2_0) {
+			if (isp->revision <= ISP_REVISION_RAPXXX) {
 				pipe->prv.out.path = PREVIEW_MEM;
 				pipe->rsz.in.path = RSZ_MEM_YUV;
 			} else {
@@ -1633,7 +1691,9 @@ static int isp_try_pipeline(struct device *dev,
 			if (pix_input->pixelformat == V4L2_PIX_FMT_SGBRG10)
 				pipe->ccdc_in = CCDC_RAW_GBRG;
 		} else if (pix_input->pixelformat == V4L2_PIX_FMT_YUYV ||
-			   pix_input->pixelformat == V4L2_PIX_FMT_UYVY) {
+			   pix_input->pixelformat == V4L2_PIX_FMT_UYVY ||
+			   pix_input->pixelformat == V4L2_PIX_FMT_JPEG ||
+			   pix_input->pixelformat == V4L2_PIX_FMT_MJPEG) {
 			pipe->ccdc_in = CCDC_YUV_SYNC;
 			pipe->ccdc_out = CCDC_OTHERS_MEM;
 		} else
@@ -1799,7 +1859,7 @@ static int isp_s_pipeline(struct device *dev,
 		return rval;
 
 	ispccdc_request(&isp->isp_ccdc);
-	ispccdc_s_pipeline(&isp->isp_ccdc, &pipe);
+	ispccdc_s_pipeline(&isp->isp_ccdc, &pipe,sensor_index);
 
 	if (pipe.modules & OMAP_ISP_PREVIEW) {
 		isppreview_request(&isp->isp_prev);
@@ -1820,10 +1880,15 @@ static int isp_s_pipeline(struct device *dev,
 
 void isp_set_hs_vs(struct device *dev, int hs_vs)
 {
+//	[Latona] Added for censor backward compatibilty
+	if(dev == NULL)
+		dev = &omap3isp_pdev->dev;
+		
 	struct isp_device *isp = dev_get_drvdata(dev);
 	struct isp_bufs *bufs = &isp->bufs;
 
 	bufs->wait_hs_vs = hs_vs;
+	isp->config->wait_hs_vs = bufs->wait_hs_vs; //JWWON
 	return;
 }
 EXPORT_SYMBOL(isp_set_hs_vs);
@@ -1920,6 +1985,7 @@ static void isp_buf_process(struct device *dev, struct isp_bufs *bufs)
 	if (ISP_BUFS_IS_EMPTY(bufs))
 		return;
 
+#ifndef ZEUS_CAM
 	if (CCDC_CAPTURE(isp)) {
 		if (ispccdc_sbl_wait_idle(&isp->isp_ccdc, 1000)) {
 			ispccdc_enable(&isp->isp_ccdc, 1);
@@ -1927,6 +1993,7 @@ static void isp_buf_process(struct device *dev, struct isp_bufs *bufs)
 			return;
 		}
 	}
+#endif
 
 	/* We had at least one buffer in queue. */
 	buf = ISP_BUF_DONE(bufs);
@@ -1934,18 +2001,39 @@ static void isp_buf_process(struct device *dev, struct isp_bufs *bufs)
 
 	if (!last) {
 		/* Set new buffer address. */
-		isp_set_buf(dev, ISP_BUF_NEXT_DONE(bufs));
+		if((sensor_index == 2) || (isp->pipeline.out_pix.width == 1280)) {
+			if( !ispccdc_busy(&isp->isp_ccdc) )
+				isp_set_buf(dev, ISP_BUF_NEXT_DONE(bufs));
+			else {
+				while(ispccdc_busy(&isp->isp_ccdc));
+				isp_set_buf(dev, ISP_BUF_NEXT_DONE(bufs));
+			}
+		} else
+			isp_set_buf(dev, ISP_BUF_NEXT_DONE(bufs));
+			
 		if (CCDC_CAPTURE(isp))
 			ispccdc_enable(&isp->isp_ccdc, 1);
 	} else {
 		/* Tell ISP not to write any of our buffers. */
 		if (CCDC_CAPTURE(isp))
 			isp_disable_interrupts(dev);
+#ifndef ZEUS_CAM	// not required to comment, but just for test purpose			
+		if (RAW_CAPTURE(isp))
+			ispccdc_enable(&isp->isp_ccdc, 0);
+			ispresizer_enable(&isp->isp_res, 0);
+#else
+		ispccdc_enable(&isp->isp_ccdc, 0);
+#ifdef ZEUS_720P
+		ispresizer_enable(&isp->isp_res, 0);
+#endif
+#endif
+#ifndef ZEUS_CAM
 		if (isp->pipeline.modules == OMAP_ISP_CSIARX) {
 			isp_csi2_ctx_config_enabled(&isp->isp_csi2, 0, false);
 			isp_csi2_ctx_update(&isp->isp_csi2, 0, false);
 			isp_csi2_irq_ctx_set(&isp->isp_csi2, false);
 		}
+#endif
 	}
 
 	/* Mark the current buffer as done. */
@@ -2027,7 +2115,7 @@ int isp_buf_queue(struct device *dev, struct videobuf_buffer *vb,
 		 * different way
 		 */
 		if (isp->config->u.csi.use_mem_read) {
-			bufs->wait_hs_vs = 0;
+			//bufs->wait_hs_vs = 0;
 			/*
 			 * In case of pipeline with temporary buffer, "Resizer"
 			 * will be enabled when "Preview" is done.
@@ -2051,7 +2139,8 @@ int isp_buf_queue(struct device *dev, struct videobuf_buffer *vb,
 
 			if (ispccdc_is_enabled(&isp->isp_ccdc)) {
 				isp_adjust_bandwidth(dev);
-				isp_csi_lcm_readport_enable(&isp->isp_csi, 1);
+				/* CSI Module Not Used
+				isp_csi_lcm_readport_enable(&isp->isp_csi, 1);*/
 			}
 		} else {
 			if (isp->pipeline.modules & OMAP_ISP_CCDC)
@@ -2094,7 +2183,7 @@ int isp_vbq_setup(struct device *dev, struct videobuf_queue *vbq,
 	struct isp_device *isp = dev_get_drvdata(dev);
 
 	if (CCDC_PREV_RESZ_CAPTURE(isp) &&
-		isp->revision <= ISP_REVISION_2_0)
+		isp->revision <= ISP_REVISION_RAPXXX)
 		return isp_tmp_buf_alloc(dev, &isp->pipeline);
 
 	return 0;
@@ -2518,14 +2607,30 @@ EXPORT_SYMBOL(isp_g_fmt_cap);
  * value of isp_s_pipeline if there is an error.
  **/
 int isp_s_fmt_cap(struct device *dev, struct v4l2_pix_format *pix_input,
-		  struct v4l2_pix_format *pix_output,
-		  enum isp_interface_type sensor_isp_if)
+ 		  struct v4l2_pix_format *pix_output,
+		  enum isp_interface_type sensor_isp_if,
+		  int index)
 {
 	struct isp_device *isp = dev_get_drvdata(dev);
-
+#ifdef ZEUS_CAM
+	 if((pix_input->pixelformat == V4L2_PIX_FMT_JPEG && pix_output->pixelformat == V4L2_PIX_FMT_JPEG) ||
+	    (pix_input->pixelformat == V4L2_PIX_FMT_MJPEG && pix_output->pixelformat == V4L2_PIX_FMT_MJPEG))
+	{
+		pix_input->width = JPEG_CAPTURE_WIDTH_IN_OMAP;
+		pix_input->height = JPEG_CAPTURE_HEIGHT;
+		pix_output->width = JPEG_CAPTURE_WIDTH_IN_OMAP;
+		pix_output->height = JPEG_CAPTURE_HEIGHT;
+	}
+#endif
+	if ((pix_output->width == 1280) && (pix_output->height == 720))
+		flag_720p = 1;
+	else
+		flag_720p = 0;
 	if (!isp->ref_count)
 		return -EINVAL;
-
+	
+	sensor_index = index;
+	
 	return isp_s_pipeline(dev, pix_input, pix_output, sensor_isp_if);
 }
 EXPORT_SYMBOL(isp_s_fmt_cap);
@@ -2638,6 +2743,17 @@ int isp_try_fmt_cap(struct device *dev, struct v4l2_pix_format *pix_input,
 {
 	struct isp_pipeline pipe;
 	int rval;
+	/* Added for JPEG Capture */
+#ifdef ZEUS_CAM
+	 if((pix_input->pixelformat == V4L2_PIX_FMT_JPEG && pix_output->pixelformat == V4L2_PIX_FMT_JPEG) ||
+	    (pix_input->pixelformat == V4L2_PIX_FMT_MJPEG && pix_output->pixelformat == V4L2_PIX_FMT_MJPEG))
+	{
+		pix_input->width = JPEG_CAPTURE_WIDTH_IN_OMAP;
+		pix_input->height = JPEG_CAPTURE_HEIGHT;
+		pix_output->width = JPEG_CAPTURE_WIDTH_IN_OMAP;
+		pix_output->height = JPEG_CAPTURE_HEIGHT;
+	}
+#endif
 
 	pipe.in_pix = *pix_input;
 	pipe.out_pix = *pix_output;
@@ -2683,11 +2799,15 @@ static void isp_save_ctx(struct device *dev)
 	ispccdc_save_context(dev);
 	if (isp->iommu)
 		iommu_save_ctx(isp->iommu);
-	isp_hist_save_context(dev);
-	isph3a_save_context(dev);
-	isppreview_save_context(dev);
+#ifdef ZEUS_720P 
 	ispresizer_save_context(dev);
+#endif
+#ifndef ZEUS_CAM
+	isppreview_save_context(dev);
+	isp_hist_save_context(dev);
+	isph3a_save_context(dev);	
 	ispcsi2_save_context(dev);
+#endif
 }
 
 /**
@@ -2705,11 +2825,15 @@ static void isp_restore_ctx(struct device *dev)
 	ispccdc_restore_context(dev);
 	if (isp->iommu)
 		iommu_restore_ctx(isp->iommu);
+#ifdef ZEUS_720P  
+	ispresizer_restore_context(dev);
+#endif
+#ifndef ZEUS_CAM
 	isp_hist_restore_context(dev);
 	isph3a_restore_context(dev);
 	isppreview_restore_context(dev);
-	ispresizer_restore_context(dev);
 	ispcsi2_restore_context(dev);
+#endif	
 }
 
 /**
@@ -2728,17 +2852,22 @@ static int isp_enable_clocks(struct device *dev)
 		dev_err(dev, "clk_enable cam_ick failed\n");
 		goto out_clk_enable_ick;
 	}
+#ifndef ZEUS_CAM
 	r = clk_enable(isp->csi2_fck);
 	if (r) {
 		dev_err(dev, "clk_enable csi2_fck failed\n");
 		goto out_clk_enable_csi2_fclk;
 	}
+#endif
 	return 0;
 
+#ifndef ZEUS_CAM
 out_clk_enable_csi2_fclk:
-	clk_disable(isp->cam_ick);
+	clk_disable(isp->csi2_fck);
+#endif  
 out_clk_enable_ick:
-	return r;
+	clk_disable(isp->cam_ick);
+ 	return r;
 }
 
 int isp_enable_mclk(struct device *dev)
@@ -2785,7 +2914,9 @@ static void isp_disable_clocks(struct device *dev)
 	struct isp_device *isp = dev_get_drvdata(dev);
 
 	clk_disable(isp->cam_ick);
+#ifndef ZEUS_CAM
 	clk_disable(isp->csi2_fck);
+#endif
 }
 
 /**
@@ -2858,9 +2989,10 @@ int isp_put(void)
 	if (isp->ref_count) {
 		if (--isp->ref_count == 0) {
 			isp_save_ctx(&pdev->dev);
-			if (isp->revision <= ISP_REVISION_2_0)
+			if (isp->revision <= ISP_REVISION_RAPXXX)
 				isp_tmp_buf_free(&pdev->dev);
 			isp_release_resources(&pdev->dev);
+			isp_disable_mclk(isp);
 			isp_disable_clocks(&pdev->dev);
 		}
 	}
@@ -2883,6 +3015,7 @@ void isp_save_context(struct device *dev, struct isp_reg *reg_list)
 	for (; next->reg != ISP_TOK_TERM; next++)
 		next->val = isp_reg_readl(dev, next->mmio_range, next->reg);
 }
+EXPORT_SYMBOL(isp_save_context);
 
 /**
  * isp_restore_context - Restores the values of the ISP module registers.
@@ -2897,6 +3030,7 @@ void isp_restore_context(struct device *dev, struct isp_reg *reg_list)
 	for (; next->reg != ISP_TOK_TERM; next++)
 		isp_reg_writel(dev, next->val, next->mmio_range, next->reg);
 }
+EXPORT_SYMBOL(isp_restore_context);
 
 /**
  * isp_remove - Remove ISP platform device
@@ -2914,17 +3048,20 @@ static int isp_remove(struct platform_device *pdev)
 #ifdef CONFIG_VIDEO_OMAP34XX_ISP_DEBUG_FS
 	isp_dfs_shutdown();
 #endif
+
+#ifndef ZEUS_CAM
 	isp_csi2_cleanup(&pdev->dev);
-	isp_csi_cleanup(&pdev->dev);
 	isp_af_exit(&pdev->dev);
+	isph3a_aewb_cleanup(&pdev->dev);
+	isp_hist_cleanup(&pdev->dev);
+#endif
+#ifdef ZEUS_720P
 	isp_resizer_cleanup(&pdev->dev);
-	isp_preview_cleanup(&pdev->dev);
+#endif
 	isp_get();
 	if (isp->iommu)
 		iommu_put(isp->iommu);
 	isp_put();
-	isph3a_aewb_cleanup(&pdev->dev);
-	isp_hist_cleanup(&pdev->dev);
 	isp_ccdc_cleanup(&pdev->dev);
 
 	clk_put(isp->cam_ick);
@@ -2969,9 +3106,10 @@ static int isp_suspend(struct platform_device *pdev, pm_message_t state)
 	struct isp_device *isp = platform_get_drvdata(pdev);
 	int reset;
 
+	mutex_lock(&(isp->isp_mutex));
 	DPRINTK_ISPCTRL("isp_suspend: starting\n");
 
-	WARN_ON(mutex_is_locked(&isp->isp_mutex));
+	//WARN_ON(mutex_is_locked(&isp->isp_mutex));
 
 	if (isp->ref_count == 0)
 		goto out;
@@ -2988,6 +3126,7 @@ static int isp_suspend(struct platform_device *pdev, pm_message_t state)
 out:
 	DPRINTK_ISPCTRL("isp_suspend: done\n");
 
+	mutex_unlock(&(isp->isp_mutex));
 	return 0;
 }
 
@@ -3015,6 +3154,8 @@ static int isp_resume(struct platform_device *pdev)
 		goto out;
 	isp_restore_ctx(&pdev->dev);
 	isp_resume_modules(&pdev->dev);
+	isp_enable_interrupts(&pdev->dev);
+	isp_start(&pdev->dev);
 
 out:
 	DPRINTK_ISPCTRL("isp_resume: done\n");
@@ -3117,12 +3258,14 @@ static int isp_probe(struct platform_device *pdev)
 		ret_err = PTR_ERR(isp->dpll4_m5_ck);
 		goto out_clk_get_dpll4_m5_ck;
 	}
+#ifndef ZEUS_CAM
 	isp->csi2_fck = clk_get(&camera_dev, "csi2_96m_fck");
 	if (IS_ERR(isp->csi2_fck)) {
 		dev_err(isp->dev, "clk_get csi2_96m_fck failed\n");
 		ret_err = PTR_ERR(isp->csi2_fck);
 		goto out_clk_get_csi2_fclk;
 	}
+#endif
 	isp->l3_ick = clk_get(&camera_dev, "l3_ick");
 	if (IS_ERR(isp->l3_ick)) {
 		dev_err(isp->dev, "clk_get l3_ick failed\n");
@@ -3167,13 +3310,17 @@ static int isp_probe(struct platform_device *pdev)
 		goto out_iommu_get;
 
 	isp_ccdc_init(&pdev->dev);
+#ifndef ZEUS_CAM
 	isp_hist_init(&pdev->dev);
 	isph3a_aewb_init(&pdev->dev);
 	isp_preview_init(&pdev->dev);
-	isp_resizer_init(&pdev->dev);
 	isp_af_init(&pdev->dev);
 	isp_csi_init(&pdev->dev);
 	isp_csi2_init(&pdev->dev);
+#endif
+#ifdef ZEUS_720P
+	isp_resizer_init(&pdev->dev);
+#endif
 
 	isp_get();
 	isp_power_settings(&pdev->dev, 1);
@@ -3187,7 +3334,9 @@ out_iommu_get:
 out_request_irq:
 	clk_put(isp->l3_ick);
 out_clk_get_l3_ick:
+#ifndef ZEUS_CAM
 	clk_put(isp->csi2_fck);
+#endif
 out_clk_get_csi2_fclk:
 	clk_put(isp->dpll4_m5_ck);
 out_clk_get_dpll4_m5_ck:

@@ -43,7 +43,6 @@
 
 #include "omap34xxcam.h"
 #include "isp/isp.h"
-
 #include <linux/ktime.h>
 
 #define OMAP34XXCAM_VERSION KERNEL_VERSION(0, 0, 0)
@@ -285,10 +284,9 @@ static int omap34xxcam_vbq_prepare(struct videobuf_queue *vbq,
 	 */
 	if (vb->baddr) {
 		/* This is a userspace buffer. */
-		if (vdev->pix.sizeimage > vb->bsize) {
+		if (vdev->pix.sizeimage > vb->bsize)
 			/* The buffer isn't big enough. */
 			return -EINVAL;
-		}
 	} else {
 		if (vb->state != VIDEOBUF_NEEDS_INIT
 		    && vdev->pix.sizeimage > vb->bsize)
@@ -437,6 +435,35 @@ static int vidioc_g_fmt_vid_cap(struct file *file, void *_fh,
 	return 0;
 }
 
+#ifdef ZEUS_CAM //JWWON
+static int try_pix_parm(struct omap34xxcam_videodev *vdev,
+  struct v4l2_pix_format *best_pix_in,
+  struct v4l2_pix_format *wanted_pix_out,
+  struct v4l2_fract *best_ival)
+{
+  struct device *isp = vdev->cam->isp;
+  struct v4l2_frmsizeenum frms;
+
+  //printk("[%s:%d] Start\n",__func__,__LINE__);
+  if (vidioc_int_enum_framesizes(vdev->vdev_sensor, &frms) < 0)
+  {
+    printk("vidioc_int_enum_framesizes failed return\n");
+    return -EINVAL;
+  }
+
+  best_pix_in->pixelformat = wanted_pix_out->pixelformat;
+  best_pix_in->width       = frms.discrete.width;
+  best_pix_in->height      = frms.discrete.height;
+  if(isp_try_fmt_cap(isp,best_pix_in, wanted_pix_out,
+  			vdev->vdev_sensor_config.isp_if) < 0)
+  {
+    printk("isp_try_fmt_cap failed\n");
+    return -EINVAL;
+  }
+  //printk("[%s:%d] End\n",__func__,__LINE__);
+  return 0;
+}
+#else
 static int try_pix_parm(struct omap34xxcam_videodev *vdev,
 			struct v4l2_pix_format *best_pix_in,
 			struct v4l2_pix_format *wanted_pix_out,
@@ -471,6 +498,12 @@ static int try_pix_parm(struct omap34xxcam_videodev *vdev,
 			break;
 		dev_dbg(&vdev->vfd->dev, "trying fmt %8.8x (%d)\n",
 			fmtd.pixelformat, fmtd_index);
+#ifdef ZEUS_CAM
+    //dev_info(&vdev->vfd->dev, "wanted fmt %8.8x (%8.8x) \n", wanted_pix_out->pixelformat,fmtd.pixelformat);
+		// want to skip the remaining "try" if it is not same format! Is it ok?
+		if (wanted_pix_out->pixelformat != fmtd.pixelformat)
+			continue;
+#endif
 		/*
 		 * Get supported resolutions.
 		 */
@@ -647,6 +680,7 @@ do_it_now:
 
 	return 0;
 }
+#endif
 
 static int s_pix_parm(struct omap34xxcam_videodev *vdev,
 		      struct v4l2_pix_format *best_pix,
@@ -658,16 +692,38 @@ static int s_pix_parm(struct omap34xxcam_videodev *vdev,
 	struct v4l2_format fmt;
 	struct v4l2_format old_fmt;
 	u32 pixclk = 0;
-	int rval;
+	int rval = 0;
 
+#ifdef ZEUS_CAM
+	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	fmt.fmt.pix = *pix;
+	rval = vidioc_int_s_fmt_cap(vdev->vdev_sensor, &fmt);
+	if (rval)
+	{
+		printk("vidioc_int_s_fmt_cap failed return\n");
+		return rval;
+	}
 	rval = try_pix_parm(vdev, best_pix, pix, best_ival);
 	if (rval)
 		return rval;
 
 	rval = isp_s_fmt_cap(isp, best_pix, pix,
-			     vdev->vdev_sensor_config.isp_if);
+			     vdev->vdev_sensor_config.isp_if,vdev->vfd->minor);
 	if (rval)
 		return rval;
+#else
+	rval = try_pix_parm(vdev, best_pix, pix, best_ival);
+	if (rval)
+	{
+		printk("try_pix_parm failed return\n");
+		return rval;
+	}
+	rval = isp_s_fmt_cap(best_pix, pix);
+	if (rval)
+	{
+		printk("isp_s_fmt_cap failed return\n");
+		return rval;
+	}
 
 	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	fmt.fmt.pix = *best_pix;
@@ -679,6 +735,7 @@ static int s_pix_parm(struct omap34xxcam_videodev *vdev,
 	a.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	a.parm.capture.timeperframe = *best_ival;
 	rval = vidioc_int_s_parm(vdev->vdev_sensor, &a);
+#endif
 
 	vidioc_int_priv_g_pixclk_active(vdev->vdev_sensor, &pixclk);
 	isp_set_ccdc_vp_clock(isp, pixclk);
@@ -705,6 +762,7 @@ static int vidioc_s_fmt_vid_cap(struct file *file, void *_fh,
 	struct v4l2_fract timeperframe;
 	int rval;
 
+	//printk("[%s:%d] Start",__func__,__LINE__);
 	if (vdev->vdev_sensor == v4l2_int_device_dummy())
 		return -EINVAL;
 
@@ -725,6 +783,7 @@ static int vidioc_s_fmt_vid_cap(struct file *file, void *_fh,
 out:
 	mutex_unlock(&vdev->mutex);
 
+	//printk("[%s:%d] End",__func__,__LINE__);
 	return rval;
 }
 
@@ -832,10 +891,30 @@ static int vidioc_qbuf(struct file *file, void *_fh, struct v4l2_buffer *b)
 {
 	struct v4l2_fh *vfh = _fh;
 	struct omap34xxcam_fh *ofh = to_omap34xxcam_fh(vfh);
+  int rval = 0;
+  int recnt = 0;
 
-	return videobuf_qbuf(&ofh->vbq, b);
+  while(recnt < 10)
+  {
+    rval = videobuf_qbuf(&ofh->vbq, b);
+    if (rval == -EINVAL)
+    {
+      printk("vidioc_qbuf failed!!\n");
+      return -EINVAL;
+    }
+    else if (rval == -EBUSY)
+    {
+      recnt++;
+      printk("vidioc_qbuf retry cnt : %d!!\n", recnt);
+    }
+    else
+    {
+      break;
+    }
+  }
+
+  return rval;
 }
-
 /**
  * vidioc_dqbuf - V4L2 dequeue buffer IOCTL handler
  * @file: ptr. to system file structure
@@ -851,8 +930,41 @@ static int vidioc_dqbuf(struct file *file, void *_fh, struct v4l2_buffer *b)
 {
 	struct v4l2_fh *vfh = _fh;
 	struct omap34xxcam_fh *ofh = to_omap34xxcam_fh(vfh);
+	int rval = 0;
+	int recnt = 0;
+	while(recnt < 10)
+	{
+		rval = videobuf_dqbuf(&ofh->vbq, b, file->f_flags & O_NONBLOCK);
+		/*
+		* This is a hack. We don't want to show -EIO or -EINVAL to the user
+		* space. Requeue the buffer and try again if we're not doing
+		* this in non-blocking mode.
+		*/
+		if (rval == -EINVAL)
+		{
+			printk("vidioc_dqbuf failed!!\n");
+			return -EINVAL;
+		}
+		else if (rval == -EIO)
+		{
+			rval = videobuf_qbuf(&ofh->vbq, b);
+			if ( !rval && !(file->f_flags & O_NONBLOCK))
+			{
+				recnt++;
+				printk("vidioc_dqbuf retry cnt : %d!!\n", recnt);
+			}
+			else
+ 			{
+ 				return -EAGAIN;
+			}
+		}
+		else
+		{
+			break;
+		}
+	}
 
-	return videobuf_dqbuf(&ofh->vbq, b, file->f_flags & O_NONBLOCK);
+	return rval;
 }
 
 static void omap34xxcam_event_queue(struct omap34xxcam_fh *fh, u32 type)
@@ -867,6 +979,8 @@ static void omap34xxcam_event_queue(struct omap34xxcam_fh *fh, u32 type)
 	v4l2_event_queue(fh->vdev->vfd, &event);
 }
 
+//CSR OMAPS00227592 START 
+/*
 static void omap34xxcam_event_cb(unsigned long status, int (*arg1)
 				 (struct videobuf_buffer *vb), void *arg2)
 {
@@ -884,7 +998,8 @@ static void omap34xxcam_event_cb(unsigned long status, int (*arg1)
 
 	wake_up_all(&fh->vdev->poll_event);
 }
-
+*/
+//CSR OMAPS00227592 END
 
 /**
  * vidioc_streamon - V4L2 streamon IOCTL handler
@@ -913,27 +1028,41 @@ static int vidioc_streamon(struct file *file, void *_fh, enum v4l2_buf_type i)
 		goto out;
 	}
 
+#ifndef ZEUS_CAM
 	rval = omap34xxcam_slave_power_set(vdev, V4L2_POWER_ON,
-					   OMAP34XXCAM_SLAVE_POWER_ALL);
+					   OMAP34XXCAM_SLAVE_POWER_SENSOR_LENS);
 	if (rval) {
 		dev_dbg(&vdev->vfd->dev,
 			"omap34xxcam_slave_power_set failed\n");
 		goto out;
 	}
+#endif
 
+//CSR OMAPS00227592 START 
+/*
 	isp_set_callback(isp, CBK_CATCHALL, omap34xxcam_event_cb,
 			 (void *)vfh, NULL);
+*/			 
+//CSR OMAPS00227592 END
+
 	isp_start(isp);
 
 	rval = videobuf_streamon(&ofh->vbq);
 	if (rval) {
 		isp_stop(isp);
+#ifndef ZEUS_CAM
 		omap34xxcam_slave_power_set(
-			vdev, V4L2_POWER_STANDBY,
-			OMAP34XXCAM_SLAVE_POWER_ALL);
+			vdev, V4L2_POWER_OFF,
+			OMAP34XXCAM_SLAVE_POWER_SENSOR_LENS);
+#endif
 	} else
 		vdev->cam->streaming = file;
+#ifdef ZEUS_CAM
+		// call sensor streamon
+		vidioc_int_streamon(vdev->slave[OMAP34XXCAM_SLAVE_SENSOR]);
 
+#endif
+	isp_start(isp);
 out:
 	mutex_unlock(&vdev->mutex);
 
@@ -966,16 +1095,43 @@ static int vidioc_streamoff(struct file *file, void *_fh, enum v4l2_buf_type i)
 		isp_stop(isp);
 
 	rval = videobuf_streamoff(q);
-	if (!rval) {
-		isp_unset_callback(isp, CBK_CATCHALL);
-		vdev->cam->streaming = NULL;
+	if (rval)
+	{
+		printk("vidioc_streamoff is failed!!");
+#ifndef ZEUS_CAM
+		omap34xxcam_slave_power_set(
+			vdev, V4L2_POWER_OFF,
+			OMAP34XXCAM_SLAVE_POWER_SENSOR_LENS);
+#endif
+	}
+	else
+	{
+#ifdef ZEUS_CAM
+		// call sensor streamoff
+		vidioc_int_streamoff(vdev->slave[OMAP34XXCAM_SLAVE_SENSOR]);
+#endif
 
-		omap34xxcam_slave_power_set(vdev, V4L2_POWER_STANDBY,
-					    OMAP34XXCAM_SLAVE_POWER_ALL);
+		vdev->cam->streaming = NULL;
 	}
 
 	mutex_unlock(&vdev->mutex);
 
+	return rval;
+}
+
+static int vidioc_g_exif(struct file *file, void *_fh, struct v4l2_exif *a)
+{
+	struct v4l2_fh *vfh = _fh;
+	struct omap34xxcam_fh *ofh = to_omap34xxcam_fh(vfh);
+	struct omap34xxcam_videodev *vdev = ofh->vdev;
+	int rval = EINVAL;
+
+	mutex_lock(&vdev->mutex);
+	if (vdev->vdev_sensor_config.sensor_isp) 
+	{
+		rval = vidioc_int_g_exif(vdev->vdev_sensor,a);
+	}
+	mutex_unlock(&vdev->mutex);
 	return rval;
 }
 
@@ -1197,6 +1353,9 @@ static int vidioc_s_ext_ctrls(struct file *file, void *_fh,
 			}
 		}
 
+		if(ctrl.id == V4L2_CID_FW_UPDATE)  // [SEC_BSP quartz.jang] added for firmware update return value
+			break;
+
 		if (rval)
 			rval = isp_s_ctrl(isp, &ctrl);
 
@@ -1267,20 +1426,23 @@ static int vidioc_s_parm(struct file *file, void *_fh,
 	if (vdev->vdev_sensor == v4l2_int_device_dummy())
 		return -EINVAL;
 
+	//printk("[%s:%d] Start\n",__func__,__LINE__);
 	mutex_lock(&vdev->mutex);
 
 	vdev->want_timeperframe = a->parm.capture.timeperframe;
 
-	if (vdev->cam->streaming) {
-		rval = vidioc_int_s_parm(vdev->vdev_sensor, a);
-	} else {
-		pix_tmp = vdev->want_pix;
-		rval = s_pix_parm(vdev, &pix_tmp_sensor, &pix_tmp,
-				  &a->parm.capture.timeperframe);
-	}
+  /* modified for image capture to get the streamparm */
+#ifdef ZEUS_CAM
+	rval = vidioc_int_s_parm(vdev->vdev_sensor, a);
+#else
+	pix_tmp = vdev->want_pix;
+	rval = s_pix_parm(vdev, &pix_tmp_sensor, &pix_tmp,
+										&a->parm.capture.timeperframe);
+#endif
 
 	mutex_unlock(&vdev->mutex);
 
+	//printk("[%s:%d] End\n",__func__,__LINE__);
 	return rval;
 }
 
@@ -1403,11 +1565,12 @@ static int vidioc_s_crop(struct file *file, void *_fh, struct v4l2_crop *a)
 		return -EINVAL;
 
 	mutex_lock(&vdev->mutex);
-
+#ifndef ZEUS_CAM //AJAY
 	if (vdev->vdev_sensor_config.sensor_isp)
 		rval = vidioc_int_s_crop(vdev->vdev_sensor, a);
 	else
-		rval = isp_s_crop(isp, a);
+#endif
+		rval = isp_s_crop(a, &vdev->pix);
 
 	mutex_unlock(&vdev->mutex);
 
@@ -1429,6 +1592,7 @@ static int vidioc_enum_framesizes(struct file *file, void *_fh,
 	if (vdev->vdev_sensor == v4l2_int_device_dummy())
 		return -EINVAL;
 
+	//printk("[%s:%d] Start",__func__,__LINE__);
 	mutex_lock(&vdev->mutex);
 
 	if (vdev->vdev_sensor_config.sensor_isp) {
@@ -1460,6 +1624,7 @@ static int vidioc_enum_framesizes(struct file *file, void *_fh,
 
 done:
 	mutex_unlock(&vdev->mutex);
+	//printk("[%s:%d] End",__func__,__LINE__);
 	return rval;
 }
 
@@ -1509,9 +1674,9 @@ static int vidioc_enum_frameintervals(struct file *file, void *_fh,
 		 */
 		dist = min(frms.discrete.width, frmi->width)
 		     * min(frms.discrete.height, frmi->height);
-		dist = frms.discrete.width *frms.discrete.height
-		     + frmi->width *frmi->height
-		     -2*dist;
+		dist = frms.discrete.width * frms.discrete.height
+		     + frmi->width * frmi->height
+		     - 2*dist;
 
 		if (dist < max_dist) {
 			width = frms.discrete.width;
@@ -1591,8 +1756,9 @@ int vidioc_unsubscribe_event(struct v4l2_fh *vfh,
  * feedback. The request is then passed on to the ISP private IOCTL handler,
  * isp_handle_private()
  */
+ 	
 static long vidioc_default(struct file *file, void *_fh,
-			   bool valid_prio, int cmd, void *arg)
+         bool valid_prio, int cmd, void *arg)
 {
 	struct v4l2_fh *vfh = file->private_data;
 	struct omap34xxcam_fh *ofh = to_omap34xxcam_fh(vfh);
@@ -1816,6 +1982,7 @@ static int omap34xxcam_open(struct file *file)
 		if (v4l2_event_alloc(&ofh->vfh, 16) < 0)
 			goto out_fh_get;
 	}
+	
 	v4l2_fh_add(&ofh->vfh);
 
 
@@ -1840,14 +2007,29 @@ static int omap34xxcam_open(struct file *file)
 			goto out_isp_get;
 		}
 		cam->isp = isp;
-		if (omap34xxcam_slave_power_set(vdev, V4L2_POWER_STANDBY,
+		if (omap34xxcam_slave_power_set(vdev, V4L2_POWER_ON,
 						OMAP34XXCAM_SLAVE_POWER_ALL)) {
 			dev_err(&vdev->vfd->dev, "can't power up slaves\n");
 			rval = -EBUSY;
 			goto out_slave_power_set_standby;
 		}
-	}
+#ifdef ZEUS_CAM
+		/* Initialize Slaves */
+		for (i = 0; i <= OMAP34XXCAM_SLAVE_FLASH; i++) {
+			if (!vdev->slave[i])
+				continue;
 
+			vidioc_int_init(vdev->slave[i]);
+		}
+#else
+		omap34xxcam_slave_power_set(
+			vdev, V4L2_POWER_STANDBY,
+			OMAP34XXCAM_SLAVE_POWER_SENSOR);
+		omap34xxcam_slave_power_suggest(
+			vdev, V4L2_POWER_STANDBY,
+			OMAP34XXCAM_SLAVE_POWER_LENS);
+#endif
+	}
 	if (vdev->vdev_sensor == v4l2_int_device_dummy() || !first_user)
 		goto out_no_pix;
 
@@ -1923,13 +2105,23 @@ static int omap34xxcam_release(struct file *file)
 	int i;
 	struct videobuf_queue *q = &ofh->vbq;
 
+#ifdef ZEUS_CAM
+/* DeInitialize Slaves */
+	for (i = 0; i <= OMAP34XXCAM_SLAVE_FLASH; i++)
+	{
+		if (!vdev->slave[i])
+			continue;
+
+		vidioc_int_deinit(vdev->slave[i]);
+	}
+#endif
 	mutex_lock(&vdev->mutex);
 	if (vdev->cam->streaming == file) {
 		isp_stop(isp);
 		videobuf_streamoff(&ofh->vbq);
-		isp_unset_callback(isp, CBK_CATCHALL);
-		omap34xxcam_slave_power_set(vdev, V4L2_POWER_STANDBY,
-					    OMAP34XXCAM_SLAVE_POWER_ALL);
+//		isp_unset_callback(isp, CBK_CATCHALL);
+//		omap34xxcam_slave_power_set(vdev, V4L2_POWER_STANDBY,
+//					    OMAP34XXCAM_SLAVE_POWER_ALL);
 		vdev->cam->streaming = NULL;
 	}
 
@@ -2035,6 +2227,7 @@ static const struct v4l2_ioctl_ops omap34xxcam_ioctl_ops = {
 	.vidioc_dqbuf			= vidioc_dqbuf,
 	.vidioc_streamon		= vidioc_streamon,
 	.vidioc_streamoff		= vidioc_streamoff,
+	.vidioc_g_exif			= vidioc_g_exif,	
 	.vidioc_enum_input		= vidioc_enum_input,
 	.vidioc_g_input			= vidioc_g_input,
 	.vidioc_s_input			= vidioc_s_input,
@@ -2109,7 +2302,8 @@ static int omap34xxcam_device_register(struct v4l2_int_device *s)
 		}
 		vdev->cam->isp = isp;
 	}
-	rval = vidioc_int_dev_init(s);
+	rval = omap34xxcam_slave_power_set(vdev, V4L2_POWER_ON,
+					   1 << hwc.dev_type);
 	if (rval)
 		goto err_omap34xxcam_slave_init;
 	if (hwc.dev_type == OMAP34XXCAM_SLAVE_SENSOR) {

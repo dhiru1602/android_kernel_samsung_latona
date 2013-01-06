@@ -116,7 +116,7 @@
 #define ISP_32B_BOUNDARY_BUF		0xFFFFFFE0
 #define ISP_32B_BOUNDARY_OFFSET		0x0000FFE0
 
-#define CM_CAM_MCLK_HZ			172800000	/* Hz */
+#define CM_CAM_MCLK_HZ			192000000	/* Hz */
 
 /* ISP Submodules offset */
 

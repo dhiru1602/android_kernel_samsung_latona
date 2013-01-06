@@ -219,6 +219,10 @@ int ispdss_configure(struct isp_node *pipe, ispdss_callback callback,
   * as argument. if this buffer is not already mapped to ISP address space we
   * use physical address to map it, otherwise only the index is used.
   **/
+
+extern int flag_720p;
+int shift_var = 0;
+
 int ispdss_begin(struct isp_node *pipe, u32 input_buffer_index,
 		 int output_buffer_index, u32 out_off, u32 out_phy_add,
 		 u32 in_phy_add, u32 in_off)
@@ -296,10 +300,15 @@ int ispdss_begin(struct isp_node *pipe, u32 input_buffer_index,
 
 	isp_start(dev_ctx.isp);
 
+	if(flag_720p)
+		shift_var = 8;
+	else
+		shift_var = 0;
+
 	/* WA: Slowdown ISP Resizer to reduce used memory bandwidth */
 	isp_reg_and_or(dev_ctx.isp, OMAP3_ISP_IOMEM_SBL, ISPSBL_SDR_REQ_EXP,
 		       ~ISPSBL_SDR_REQ_RSZ_EXP_MASK,
-		       ISPDSS_RSZ_EXPAND_720p << ISPSBL_SDR_REQ_RSZ_EXP_SHIFT);
+			shift_var << ISPSBL_SDR_REQ_RSZ_EXP_SHIFT);
 
 	ispresizer_enable(isp_res, 1);
 

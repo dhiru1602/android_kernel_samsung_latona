@@ -215,7 +215,8 @@ void ispccdc_set_wenlog(struct isp_ccdc_device *isp_ccdc, u32 wenlog);
 int ispccdc_try_pipeline(struct isp_ccdc_device *isp_ccdc,
 			 struct isp_pipeline *pipe);
 int ispccdc_s_pipeline(struct isp_ccdc_device *isp_ccdc,
-		       struct isp_pipeline *pipe);
+		       struct isp_pipeline *pipe,
+			   int sensor_index);
 void ispccdc_set_raw_offset(struct isp_ccdc_device *isp_ccdc,
 			    enum ispccdc_raw_fmt raw_fmt);
 void ispccdc_enable(struct isp_ccdc_device *isp_ccdc, u8 enable);
@@ -230,7 +231,7 @@ int ispccdc_request(struct isp_ccdc_device *isp_ccdc);
 int ispccdc_free(struct isp_ccdc_device *isp_ccdc);
 void ispccdc_save_context(struct device *dev);
 void ispccdc_restore_context(struct device *dev);
-int ispccdc_enable_lsc(struct isp_ccdc_device *isp_ccdc, u8 enable);
+void ispccdc_enable_lsc(struct isp_ccdc_device *isp_ccdc, u8 enable);
 int ispccdc_lsc_delay_stop(struct isp_ccdc_device *isp_ccdc);
 void ispccdc_lsc_state_handler(struct isp_ccdc_device *isp_ccdc,
 			unsigned long status);

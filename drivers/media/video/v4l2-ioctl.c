@@ -1904,6 +1904,16 @@ static long __video_do_ioctl(struct file *file,
 		ret = ops->vidioc_log_status(file, fh);
 		break;
 	}
+	case VIDIOC_G_EXIF:
+	{
+		struct v4l2_exif *p=arg;
+
+		memset(p,0,sizeof(*p));
+		if (!ops->vidioc_g_exif)
+			break;
+		ret=ops->vidioc_g_exif(file, fh, p);
+		break;
+	}	
 #ifdef CONFIG_VIDEO_ADV_DEBUG
 	case VIDIOC_DBG_G_REGISTER:
 	{

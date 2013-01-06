@@ -492,9 +492,6 @@ static void __ispccdc_enable_lsc(struct isp_ccdc_device *isp_ccdc, u8 enable)
 		       ISPCCDC_LSC_CONFIG,
 		       ~ISPCCDC_LSC_ENABLE,
 		       enable ? ISPCCDC_LSC_ENABLE : 0);
-
-	/* If LSC is enabled set flag for delayed stop */
-	isp_ccdc->lsc_delay_stop = enable ? 1 : 0;
 }
 
 /**
@@ -502,10 +499,9 @@ static void __ispccdc_enable_lsc(struct isp_ccdc_device *isp_ccdc, u8 enable)
  * @isp_ccdc: Pointer to ISP CCDC device.
  * @enable: 0 Disables LSC, 1 Enables LSC.
  **/
-int ispccdc_enable_lsc(struct isp_ccdc_device *isp_ccdc, u8 enable)
+void ispccdc_enable_lsc(struct isp_ccdc_device *isp_ccdc, u8 enable)
 {
 	struct device *dev = to_device(isp_ccdc);
-	int err;
 	if (enable) {
 		isp_reg_writel(dev, IRQ0ENABLE_CCDC_LSC_PREF_COMP_IRQ |
 			       IRQ0ENABLE_CCDC_LSC_DONE_IRQ,
@@ -528,10 +524,6 @@ int ispccdc_enable_lsc(struct isp_ccdc_device *isp_ccdc, u8 enable)
 			      IRQ0ENABLE_CCDC_LSC_DONE_IRQ));
 	}
 	isp_ccdc->lsc_enable = enable;
-
-	err = isp_ccdc->lsc_delay_stop ? -1 : 0;
-
-	return err;
 }
 
 /**
@@ -1020,7 +1012,8 @@ int ispccdc_try_pipeline(struct isp_ccdc_device *isp_ccdc,
 
 	pipe->ccdc_out_w_img = pipe->ccdc_out_w;
 	/* Round up to nearest 32 pixels. */
-	pipe->ccdc_out_w = ALIGN(pipe->ccdc_out_w, PHY_ADDRESS_ALIGN);
+	/* removed align this is not valid*/
+//	pipe->ccdc_out_w = ALIGN(pipe->ccdc_out_w, PHY_ADDRESS_ALIGN);
 
 	isp_ccdc->lsc_request_enable = isp_ccdc->lsc_request_user;
 
@@ -1040,7 +1033,8 @@ int ispccdc_try_pipeline(struct isp_ccdc_device *isp_ccdc,
  * validate the requested dimensions.
  **/
 int ispccdc_s_pipeline(struct isp_ccdc_device *isp_ccdc,
-		       struct isp_pipeline *pipe)
+		       struct isp_pipeline *pipe,
+			   int sensor_index)
 {
 	struct device *dev = to_device(isp_ccdc);
 	int rval;
@@ -1076,13 +1070,71 @@ int ispccdc_s_pipeline(struct isp_ccdc_device *isp_ccdc,
 		OMAP3_ISP_IOMEM_CCDC,
 		ISPCCDC_HORZ_INFO);
 	ispccdc_config_outlineoffset(isp_ccdc, pipe->ccdc_out_w * 2, 0, 0);
-	isp_reg_writel(dev, (((pipe->ccdc_out_h - 2) &
-			 ISPCCDC_VDINT_0_MASK) <<
-			ISPCCDC_VDINT_0_SHIFT) |
-		       ((50 & ISPCCDC_VDINT_1_MASK) <<
-			ISPCCDC_VDINT_1_SHIFT),
-		       OMAP3_ISP_IOMEM_CCDC,
-		       ISPCCDC_VDINT);
+
+#if 0
+	printk("[%s:%d] pipe->ccdc_out_h : %d, pipc->ccdc_out_w : %d, sensor_index = %d", 
+	      __func__, __LINE__,pipe->ccdc_out_h, pipe->ccdc_out_w, sensor_index);
+#endif
+	if(pipe->ccdc_out_h == 144 && pipe->ccdc_out_w == 176 && sensor_index == 2)
+	{
+		isp_reg_writel(dev,(((pipe->ccdc_out_h - 10) &
+				 ISPCCDC_VDINT_0_MASK) <<
+				ISPCCDC_VDINT_0_SHIFT) |
+			       ((ISPCCDC_VDINT_1_MASK) <<
+				ISPCCDC_VDINT_1_SHIFT),
+			       OMAP3_ISP_IOMEM_CCDC,
+			       ISPCCDC_VDINT);
+	}
+	else if(pipe->ccdc_out_h == 480 && pipe->ccdc_out_w == 640 && sensor_index == 2)
+	{
+		isp_reg_writel(dev,(((pipe->ccdc_out_h - 90) &
+				 ISPCCDC_VDINT_0_MASK) <<
+				ISPCCDC_VDINT_0_SHIFT) |
+			       ((ISPCCDC_VDINT_1_MASK) <<
+				ISPCCDC_VDINT_1_SHIFT),
+			       OMAP3_ISP_IOMEM_CCDC,
+			       ISPCCDC_VDINT);
+	}
+	else if(pipe->ccdc_out_h == 240 && pipe->ccdc_out_w == 320 && sensor_index == 2)
+	{
+		isp_reg_writel(dev,(((pipe->ccdc_out_h - 30) &
+				 ISPCCDC_VDINT_0_MASK) <<
+				ISPCCDC_VDINT_0_SHIFT) |
+			       ((ISPCCDC_VDINT_1_MASK) <<
+				ISPCCDC_VDINT_1_SHIFT),
+			       OMAP3_ISP_IOMEM_CCDC,
+			       ISPCCDC_VDINT);
+	}
+	else if(pipe->ccdc_out_h == 288 && pipe->ccdc_out_w == 352 && sensor_index == 2)
+	{
+		isp_reg_writel(dev,(((pipe->ccdc_out_h - 30) &
+				 ISPCCDC_VDINT_0_MASK) <<
+				ISPCCDC_VDINT_0_SHIFT) |
+			       ((ISPCCDC_VDINT_1_MASK) <<
+				ISPCCDC_VDINT_1_SHIFT),
+			       OMAP3_ISP_IOMEM_CCDC,
+			       ISPCCDC_VDINT);
+	}
+	else if(pipe->ccdc_out_h == 720 && pipe->ccdc_out_w == 1280)
+	{
+		isp_reg_writel(dev,(((pipe->ccdc_out_h - 100) &
+				 ISPCCDC_VDINT_0_MASK) <<
+				ISPCCDC_VDINT_0_SHIFT) |
+			       ((ISPCCDC_VDINT_1_MASK) <<
+				ISPCCDC_VDINT_1_SHIFT),
+			       OMAP3_ISP_IOMEM_CCDC,
+			       ISPCCDC_VDINT);
+	}
+	else
+	{	
+		isp_reg_writel(dev, (((pipe->ccdc_out_h - 2) &
+				 ISPCCDC_VDINT_0_MASK) <<
+				ISPCCDC_VDINT_0_SHIFT) |
+				   ((50 & ISPCCDC_VDINT_1_MASK) <<
+				ISPCCDC_VDINT_1_SHIFT),
+				   OMAP3_ISP_IOMEM_CCDC,
+				   ISPCCDC_VDINT);
+	}
 
 	if (pipe->ccdc_out == CCDC_OTHERS_MEM) {
 		isp_reg_writel(dev, 0, OMAP3_ISP_IOMEM_CCDC,
