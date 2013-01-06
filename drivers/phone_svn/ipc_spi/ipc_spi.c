@@ -55,6 +55,9 @@
 #include <linux/irq.h>
 
 #include <linux/workqueue.h>
+#ifdef CONFIG_SVNET_WHITELIST
+    #include <linux/wakelock.h>
+#endif
 
 
 #define DRVNAME "onedram"
@@ -100,6 +103,10 @@ enum {
 
 #define MAX_BUF_SIZE				2044
 #define DEF_BUF_SIZE				MAX_BUF_SIZE
+
+#ifdef CONFIG_SVNET_WHITELIST
+     #define DEFAULT_ISR_WAKE_TIME	(HZ/2)
+#endif
 
 static struct spi_device *p_ipc_spi = NULL;
 
@@ -164,6 +171,10 @@ struct ipc_spi {
 
 	int irq;
 	struct tasklet_struct tasklet;
+
+#ifdef CONFIG_SVNET_WHITELIST
+	struct wake_lock wlock;
+#endif
 
 	struct completion comp;
 	atomic_t ref_sem;
@@ -568,6 +579,10 @@ static irqreturn_t ipc_spi_irq_handler( int irq, void *data ) // SRDY Rising EDG
 
 	disable_irq_nosync( od->irq );
 	dev_dbg( od->dev, "(%d) disable irq.\n", __LINE__ );
+
+#ifdef CONFIG_SVNET_WHITELIST
+	wake_lock_timeout(&od->wlock, DEFAULT_ISR_WAKE_TIME);
+#endif
 
 #if 0
 	struct list_head *l;
@@ -3612,6 +3627,12 @@ static int __devinit ipc_spi_platform_probe( struct platform_device *pdev )
 	_init_data(od);
 
 	pdata->cfg_gpio();
+
+#ifdef CONFIG_SVNET_WHITELIST
+	/* make wake lock for SRDY isr event
+	 * to prevent to sleep before run thread */
+	wake_lock_init(&od->wlock, WAKE_LOCK_SUSPEND, "ipc_spi");
+#endif
 
 	tasklet_init( &od->tasklet, do_spi_tasklet, ( unsigned long )od );
 
