@@ -44,6 +44,13 @@
 #include "twl4030.h"
 #include "control.h"
 
+#include "../../../drivers/media/video/cam_pmic.h"
+#include "../../../drivers/media/video/ce147.h"
+#include "../../../drivers/media/video/s5ka3dfx.h"
+
+struct ce147_platform_data omap_board_ce147_platform_data;
+struct s5ka3dfx_platform_data omap_board_s5ka3dfx_platform_data;
+
 /* Atmel Touchscreen */
 #define OMAP_GPIO_TSP_INT 142
 
@@ -475,6 +482,17 @@ static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
 		I2C_BOARD_INFO("max97000", 0x4d),
 	},
 #endif
+	{
+		I2C_BOARD_INFO(CE147_DRIVER_NAME, CE147_I2C_ADDR),
+		.platform_data = &omap_board_ce147_platform_data,
+	},
+	{
+		I2C_BOARD_INFO(S5KA3DFX_DRIVER_NAME, S5KA3DFX_I2C_ADDR),
+		.platform_data = &omap_board_s5ka3dfx_platform_data,
+	},
+	{
+		I2C_BOARD_INFO("cam_pmic", CAM_PMIC_I2C_ADDR),
+	},
 };
 
 static struct i2c_board_info __initdata latona_i2c_bus3_info[] = {

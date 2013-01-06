@@ -65,6 +65,31 @@ struct isp_pipeline;
 						 */
 #define NUM_BUFS		VIDEO_MAX_FRAME
 
+#ifdef CONFIG_MACH_OMAP_LATONA
+#define ZEUS_CAM
+#endif
+
+#ifdef ZEUS_CAM
+#define JPEG_CAPTURE_WIDTH  1536
+#define JPEG_CAPTURE_WIDTH_IN_OMAP JPEG_CAPTURE_WIDTH/ISP_BYTES_PER_PIXEL
+#define JPEG_CAPTURE_HEIGHT 2300
+#define YUV_CAPTURE_WIDTH	1280
+#define YUV_CAPTURE_HEIGHT	960
+
+#define is_isppreview_enabled()		0
+#define is_ispresizer_enabled()		0 // disabled for now, may need to enable
+#else
+#ifndef CONFIG_ARCH_OMAP3410
+#define USE_ISP_PREVIEW
+#define USE_ISP_RESZ
+#define is_isppreview_enabled()		1
+#define is_ispresizer_enabled()		1
+#else
+#define is_isppreview_enabled()		0
+#define is_ispresizer_enabled()		0
+#endif
+#endif /* end of ZEUS_CAM */
+
 #define ISP_REVISION_2_0	0x20
 #define ISP_REVISION_2_1	0x21
 #define ISP_REVISION_RAPXXX	0xF0

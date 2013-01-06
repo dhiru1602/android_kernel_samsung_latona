@@ -489,6 +489,27 @@ config VIDEO_TCM825X
 	  This is a driver for the Toshiba TCM825x VGA camera sensor.
 	  It is used for example in Nokia N800.
 
+#zeus camera support
+config VIDEO_CAM_PMIC
+	tristate "CAM PMIC"
+	#depends on I2C && VIDEO_V4L2
+
+config VIDEO_CAM_CE147
+	tristate "CAM CE147"
+	depends on I2C && VIDEO_V4L2
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the
+	  CE147 camera.  It is to work with the TI OMAP3 
+          camera controller.
+
+config VIDEO_CAM_S5KA3DFX
+	tristate "CAM S5KA3DFX"
+	depends on I2C && VIDEO_V4L2
+	---help---
+	  This is a Video4Linux2 sensor-level driver for the
+	  S5KA3DFX camera.  It is to work with the TI OMAP3
+          camera controller.
+
 config VIDEO_IMX046
 	tristate "Sony IMX046 sensor driver (8MP)"
 	depends on I2C && VIDEO_V4L2

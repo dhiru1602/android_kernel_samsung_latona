@@ -104,6 +104,7 @@ enum v4l2_power {
 	V4L2_POWER_OFF = 0,
 	V4L2_POWER_ON,
 	V4L2_POWER_STANDBY,
+	V4L2_POWER_RESUME,
 };
 
 /* Slave interface type. */
@@ -178,6 +179,7 @@ enum v4l2_int_ioctl_num {
 	vidioc_int_s_fmt_cap_num,
 	vidioc_int_try_fmt_cap_num,
 	vidioc_int_queryctrl_num,
+	vidioc_int_deinit_num,
 	vidioc_int_querymenu_num,
 	vidioc_int_g_ctrl_num,
 	vidioc_int_s_ctrl_num,
@@ -189,6 +191,11 @@ enum v4l2_int_ioctl_num {
 	vidioc_int_querystd_num,
 	vidioc_int_s_std_num,
 	vidioc_int_s_video_routing_num,
+	vidioc_int_streamon_num, 
+        vidioc_int_streamoff_num,
+        vidioc_int_s_strobe_num, 
+        vidioc_int_g_strobe_num,
+        vidioc_int_g_exif_num,
 
 	/*
 	 *
