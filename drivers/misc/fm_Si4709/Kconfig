@@ -1,0 +1,10 @@
+config FMRADIO
+	tristate "Si4709 FM radio"
+	default n
+	help
+		Si4709 FM radio
+
+config FMRADIO_USE_GPIO_I2C
+	tristate "Si4709 FM radio I2C"
+	default n
+
