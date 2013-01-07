@@ -38,7 +38,7 @@ static struct file_operations Si4709_fops =
 {
     .owner = THIS_MODULE,
     .open = Si4709_open,
-    .ioctl = Si4709_ioctl,
+    .unlocked_ioctl = Si4709_ioctl,
     .release = Si4709_release,
 };
 
@@ -714,7 +714,7 @@ void debug_ioctls(void)
         return ret; 	  	
     }
     
-	set_irq_type(Si4709_IRQ, IRQ_TYPE_EDGE_FALLING);
+	irq_set_irq_type(Si4709_IRQ, IRQ_TYPE_EDGE_FALLING);
 
 	if( (ret = request_irq(Si4709_IRQ, Si4709_isr, IRQF_DISABLED, "Si4709", (void *)NULL)) < 0 ) 
 	{

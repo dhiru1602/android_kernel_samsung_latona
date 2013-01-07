@@ -18,7 +18,7 @@
 #include <asm/mach/irq.h>
 #include <asm/io.h>
 #include <linux/delay.h>
-#include <linux/timed_output.h>
+#include "../../staging/android/timed_output.h"
 
 #include <linux/kernel.h>
 #include <linux/time.h>
@@ -42,9 +42,10 @@
 #include "Si4709_main.h"
 #include "Si4709_dev.h"
 #include "common.h"
+#include <mach/board-latona.h>
 
 #if defined(CONFIG_FMRADIO_USE_GPIO_I2C)
-#include <plat/i2c-omap-gpio.h>
+#include <linux/i2c/i2c-omap-gpio.h>
 #endif
 
 enum
