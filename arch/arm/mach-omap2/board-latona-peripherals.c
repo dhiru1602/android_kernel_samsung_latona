@@ -505,6 +505,9 @@ static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
 		I2C_BOARD_INFO("geomagnetic", 0x2E),
 	},
 #endif
+	{
+		I2C_BOARD_INFO("Si4709_driver", 0x10),			
+	},
 };
 
 static struct i2c_board_info __initdata latona_i2c_bus3_info[] = {
