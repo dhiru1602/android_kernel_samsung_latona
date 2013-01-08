@@ -39,6 +39,7 @@
 #include "mux.h"
 #include "sdram-qimonda-hyb18m512160af-6.h"
 #include "omap_ion.h"
+#include "control.h"
 
 #define WILINK_UART_DEV_NAME            "/dev/ttyS1"
 
@@ -136,11 +137,57 @@ static void latona_wifi_init(void)
 		pr_err("Error setting wl12xx data\n");
 }
 
+#define GPIO_MSECURE_PIN_ON_HS		1	//TI Patch: MSECURE Pin mode change
+
+static int __init msecure_init(void)
+{
+	int ret = 0;
+
+	//printk("*****msecure_init++\n"); //TI Patch: MSECURE Pin mode change
+#ifdef CONFIG_RTC_DRV_TWL4030
+	/* 3430ES2.0 doesn't have msecure/gpio-22 line connected to T2 */
+	if (omap_type() == OMAP2_DEVICE_TYPE_GP || GPIO_MSECURE_PIN_ON_HS)  //TI Patch: MSECURE Pin mode change
+	{
+		void __iomem *msecure_pad_config_reg =
+		    omap_ctrl_base_get() + 0x5EC;
+		int mux_mask = 0x04;
+		u16 tmp;
+
+		printk("msecure_pin setting: GPIO  %d, %d\n", omap_type(), GPIO_MSECURE_PIN_ON_HS); //TI Patch: MSECURE Pin mode change
+
+		ret = gpio_request(OMAP_GPIO_SYS_DRM_MSECURE, "msecure");
+		if (ret < 0) {
+			printk(KERN_ERR "msecure_init: can't"
+			       "reserve GPIO:%d !\n",
+			       OMAP_GPIO_SYS_DRM_MSECURE);
+			goto out;
+		}
+		/*
+		 * TWL4030 will be in secure mode if msecure line from OMAP
+		 * is low. Make msecure line high in order to change the
+		 * TWL4030 RTC time and calender registers.
+		 */
+		tmp = __raw_readw(msecure_pad_config_reg);
+		tmp &= 0xF8;	/* To enable mux mode 03/04 = GPIO_RTC */
+		tmp |= mux_mask;	/* To enable mux mode 03/04 = GPIO_RTC */
+		__raw_writew(tmp, msecure_pad_config_reg);
+
+		gpio_direction_output(OMAP_GPIO_SYS_DRM_MSECURE, 1);
+	}
+out:	
+	//printk("*****msecure_init--\n"); //TI Patch: MSECURE Pin mode change
+#endif
+
+	return ret;
+}
+
 static void __init latona_init(void)
 {
 	omap3_mux_init(latona_board_mux_ptr, OMAP_PACKAGE_CBP);
 	latona_mux_init_gpio_out();
 	latona_mux_set_wakeup_gpio();
+
+	msecure_init();
 
 	usbhs_init(&usbhs_bdata);
 
