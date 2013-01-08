@@ -27,7 +27,6 @@ struct cmdline_parameter {
 
 static struct cmdline_parameter cmdline_parameters[] __initdata = {
         {"omapfb.vram", "0:5M", 0},
-        {"console", "ttyO2,115200n8", 0},
         {"vram", "16M", 1},
         {"androidboot.hardware", "latona", 1},
 };

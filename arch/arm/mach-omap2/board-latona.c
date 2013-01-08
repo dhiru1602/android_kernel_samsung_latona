@@ -40,7 +40,7 @@
 #include "sdram-qimonda-hyb18m512160af-6.h"
 #include "omap_ion.h"
 
-#define WILINK_UART_DEV_NAME            "/dev/ttyO1"
+#define WILINK_UART_DEV_NAME            "/dev/ttyS1"
 
 #ifdef CONFIG_OMAP_MUX
 extern struct omap_board_mux *latona_board_mux_ptr;
