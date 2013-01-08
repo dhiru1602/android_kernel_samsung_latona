@@ -33,7 +33,7 @@
 #include <linux/kdev_t.h>
 #include <linux/workqueue.h>
 #include <linux/timer.h>
-#include <mach/sec_param.h>
+#include <mach/board-latona.h>
 
 #include <linux/phone_svn/modemctl.h>
 
