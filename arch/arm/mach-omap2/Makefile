@@ -263,13 +263,11 @@ obj-$(CONFIG_MACH_OMAP_LATONA)		+= board-latona.o \
 					   board-latona-phone_svnet.o \
 					   board-latona-battery.o \
 					   board-latona-reboot.o \
-					   omap3-gptimer12.o \
-					   board-flash.o \
-					   hsmmc.o \
-					   omapxx_apps_brd_id.o	\
 					   board-latona-mux_r08.o \
 					   board-latona-vibrator.o \
-					   board-latona-cmdline.o
+					   board-latona-cmdline.o \
+					   omap3-gptimer12.o \
+					   hsmmc.o
 obj-$(CONFIG_MACH_OMAP_3630SDP)		+= board-3630sdp.o \
 					   board-zoom-peripherals.o \
 					   board-zoom-display.o \
