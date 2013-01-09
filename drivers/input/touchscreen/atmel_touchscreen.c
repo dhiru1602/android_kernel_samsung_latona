@@ -1153,11 +1153,6 @@ int  enable_irq_handler(void)
 	return 0;
 }
 
-#ifdef ENABLE_NOISE_TEST_MODE
-struct class *sec_class;
-EXPORT_SYMBOL(sec_class);
-#endif
-
 static int __init touchscreen_probe(struct platform_device *pdev)
 {
 	int ret,retval,retval_2,r;
