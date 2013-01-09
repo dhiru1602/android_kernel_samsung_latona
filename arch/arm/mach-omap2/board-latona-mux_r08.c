@@ -1,5 +1,5 @@
 /*
- * linux/arch/arm/mach-omap2/mux_latona_rev_r08.c
+ * linux/arch/arm/mach-omap2/board-latona-mux_r08.c
  *
  * Copyright (C) 2010-2011, Samsung Electronics, Co., Ltd. All Rights Reserved.
  *  Written by System S/W Group, Open OS S/W R&D Team,

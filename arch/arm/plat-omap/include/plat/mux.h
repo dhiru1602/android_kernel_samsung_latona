@@ -34,7 +34,7 @@
 #define __ASM_ARCH_MUX_H
 
 #ifdef CONFIG_MACH_OMAP_LATONA
-#include <plat/mux_latona_rev_r08.h>
+#include <mach/board-latona-mux_r08.h>
 #endif
 
 #define PU_PD_SEL_NA		0	/* No pu_pd reg available */

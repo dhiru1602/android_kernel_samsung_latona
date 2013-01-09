@@ -11,9 +11,9 @@
  * Defines for latona boards
  */
 #include <video/omapdss.h>
-#include <plat/mux_latona_rev_r08.h>
 
 #include "board-latona-mtd.h"
+#include "board-latona-mux_r08.h"
 
 #define LATONA_NAND_CS    0
 #define LATONA_WIFI_PMENA_GPIO		160

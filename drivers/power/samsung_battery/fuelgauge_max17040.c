@@ -20,9 +20,9 @@
 #include <linux/interrupt.h>
 #include <linux/workqueue.h>
 #include <mach/gpio.h>
+#include <plat/mux.h>
 #include <linux/power_supply.h>
 #include "common.h"
-#include <plat/mux_latona_rev_r08.h>
 
 #if defined(CONFIG_USE_GPIO_I2C)
 #include <linux/i2c/i2c-omap-gpio.h>
