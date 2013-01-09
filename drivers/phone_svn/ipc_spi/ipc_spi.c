@@ -3749,14 +3749,14 @@ static int ipc_spi_remove( struct spi_device *spi )
 	return 0;
 }
 
-static int ipc_spi_suspend(struct platform_device *pdev, pm_message_t state)
+static int ipc_spi_suspend(struct spi_device *spi, pm_message_t mesg)
 {
 	printk("IPC_SPI SUSPEND\n");
 	stop_spi_sync = 1;
 	return 0;
 }
 
-static int ipc_spi_resume(struct platform_device *pdev)
+static int ipc_spi_resume(struct spi_device *spi)
 {
 	printk("IPC_SPI RESUME\n");
 	stop_spi_sync = 0;
