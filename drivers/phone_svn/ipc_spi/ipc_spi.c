@@ -838,10 +838,10 @@ static int ipc_spi_mmap( struct file *filp, struct vm_area_struct *vma )
 #endif
 }
 
-static int ipc_spi_ioctl(struct inode *inode, struct file *filp,
+static long ipc_spi_ioctl(struct file *filp,
 		unsigned int cmd, unsigned long arg)
 {
-	struct cdev *cdev = inode->i_cdev;
+	struct cdev *cdev = filp->f_dentry->d_inode->i_cdev;
 	struct ipc_spi *od = container_of( cdev, struct ipc_spi, cdev );
 	int r;
 
