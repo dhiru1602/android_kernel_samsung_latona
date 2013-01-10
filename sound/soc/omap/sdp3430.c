@@ -137,9 +137,7 @@ int sdp3430_i2s_startup(struct snd_pcm_substream *substream)
 	  	  * REVISIT: Remove this, Once the dpll3 lock errata is     
 	  	  * updated with with a new workaround without impacting mp3 usecase.          
 	  	  */              
-
-              printk("sdp3430_i2s_startup  \n");
-	  	
+ 	
 	  	omap_dpll3_errat_wa(0);  
 	  }      
 
@@ -154,7 +152,6 @@ int sdp3430_i2s_shutdown(struct snd_pcm_substream *substream)
 	if (!snd_hw_latency) {   
 		pm_qos_update_request(&pm_qos_handler,
 						CLEAR_MPU_CORE_CONSTRAINT);
-		printk("sdp3430_i2s_shutdown \n");
 		omap_dpll3_errat_wa(1);    
 	}   
 

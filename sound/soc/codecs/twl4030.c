@@ -937,7 +937,6 @@ static void twl4030_unset_remap(void)
 
 	if(twl4030_remap)
 	{
-	    printk("IDLE mode - Power resources has to be unset \n");
 
     	twl4030_remap = 0;
 		/*
@@ -963,10 +962,6 @@ static void twl4030_unset_remap(void)
 		//P("after setting idle path : HFCLKEN = %x, ret = %d, retn = %d\n", data, ret, retn);
 
 		twl4030_remap = 0;
-	}
-	else
-	{
-    	printk("IDLE mode - Power resources are not set\n");
 	}
 }
 
@@ -1161,7 +1156,6 @@ static int twl4030_reset_all_output(struct snd_soc_codec *codec)
 
 static void twl4030_set_pcm_sel(int mode)
 {
-	printk("twl4030_set_pcm_sel mode %d\n",  mode);
 	if(mode == BT_SEL_PCM_MODE){
 			gpio_set_value(PCM_SEL,1);
 	}else if(mode == BT_SEL_I2S_MODE){
@@ -2970,8 +2964,6 @@ static int twl4030_set_loopback_path(struct snd_kcontrol *kcontrol, struct snd_c
 static int twl4030_set_idle_mode(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol,unsigned int codec_mode)
 {
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
-
-	printk("twl4030_set_idle_mode value = %ld \n",ucontrol->value.integer.value[0]);
 
 	cancel_delayed_work(&codec_control_work);
 	twl4030_remap = 1;

@@ -1111,7 +1111,9 @@ void check_chip_calibration(unsigned char one_touch_input_flag)
 
 
 			/* print how many channels we counted */
+#if TSP_DEBUG
 			printk(KERN_DEBUG "[TSP] Flags Counted channels: t:%d a:%d \n", tch_ch, atch_ch);
+#endif
 
 			/* send page up command so we can detect when data updates next time,
 			 * page byte will sit at 1 until we next send F3 command */
@@ -1130,13 +1132,16 @@ void check_chip_calibration(unsigned char one_touch_input_flag)
 				{
 					if(qt_time_diff > 500)
 					{
+#if TSP_DEBUG
 						printk(KERN_DEBUG "[TSP] calibration was good\n");
+#endif
 						/* cal was good - don't need to check any more */
 						cal_check_flag = 0;
 						qt_timer_state = 0;
 						qt_time_point = 0;
-
+#if TSP_DEBUG
 						printk(KERN_DEBUG "[TSP] reset acq atchcalst=%d, atchcalsthr=%d\n", config_normal.acquisition_config.atchcalst, config_normal.acquisition_config.atchcalsthr );
+#endif
 							/* Write normal acquisition config back to the chip. */
 							if (write_acquisition_config(config_normal.acquisition_config) != CFG_WRITE_OK)
 						{
@@ -1167,7 +1172,9 @@ void check_chip_calibration(unsigned char one_touch_input_flag)
 			}
 			else
 			{
+#if TSP_DEBUG
 				printk(KERN_DEBUG "[TSP] calibration was not decided yet\n");
+#endif
 				/* we cannot confirm if good or bad - we must wait for next touch 
 				 * message to confirm */
 				cal_check_flag = 1;
@@ -2137,8 +2144,9 @@ uint8_t calibrate_chip(void)
 	    /* resume calibration must be performed with zero settings */
 	    config_normal.acquisition_config.atchcalst = 0;
 	    config_normal.acquisition_config.atchcalsthr = 0; 
-	          
+#if TSP_DEBUG
 		printk(KERN_DEBUG "[TSP] reset acq atchcalst=%d, atchcalsthr=%d\n", config_normal.acquisition_config.atchcalst, config_normal.acquisition_config.atchcalsthr );
+#endif
 	        
 		/* Write temporary acquisition config to chip. */
 		if (write_acquisition_config(config_normal.acquisition_config) != CFG_WRITE_OK)
@@ -3969,7 +3977,9 @@ ssize_t set_power_store(struct device *dev, struct device_attribute *attr, const
 	char *after;
 
 	unsigned long value = simple_strtoul(buf, &after, 10);	
+#if TSP_DEBUG
 	printk(KERN_INFO "[TSP] %s\n", __FUNCTION__);
+#endif
 	cmd_no = (int) (value / 1000);
 	config_value = ( int ) (value % 1000 );
 
@@ -4010,8 +4020,10 @@ ssize_t set_acquisition_store(struct device *dev, struct device_attribute *attr,
   int cmd_no,config_value = 0;
 	char *after;
 
-	unsigned long value = simple_strtoul(buf, &after, 10);	
+	unsigned long value = simple_strtoul(buf, &after, 10);
+#if TSP_DEBUG	
 	printk(KERN_INFO "[TSP] %s\n", __FUNCTION__);
+#endif
 	cmd_no = (int) (value / 1000);
 	config_value = ( int ) (value % 1000 );
 
@@ -4077,8 +4089,10 @@ ssize_t set_touchscreen_store(struct device *dev, struct device_attribute *attr,
   int cmd_no,config_value = 0;
 	char *after;
 
-	unsigned long value = simple_strtoul(buf, &after, 10);	
+	unsigned long value = simple_strtoul(buf, &after, 10);
+#if TSP_DEBUG
 	printk(KERN_INFO "[TSP] %s\n", __FUNCTION__);
+#endif
 	cmd_no = (int) (value / 1000);
 	config_value = ( int ) (value % 1000 );
 
@@ -4405,8 +4419,10 @@ ssize_t set_noise_store(struct device *dev, struct device_attribute *attr, const
   int cmd_no,config_value = 0;
 	char *after;
 
-	unsigned long value = simple_strtoul(buf, &after, 10);	
+	unsigned long value = simple_strtoul(buf, &after, 10);
+#if TSP_DEBUG
 	printk(KERN_INFO "[TSP] %s\n", __FUNCTION__);
+#endif
 
 	if ( value > 100000 ){ 
 		cmd_no = (int) (value / 100000 );
@@ -4581,6 +4597,8 @@ ssize_t set_write_show(struct device *dev, struct device_attribute *attr, char *
 {
   int tmp=-1;
 
+#if TSP_DEBUG
+
 	printk("\n=========== [TSP] Configure SET for normal ============\n");
 	printk("=== set_power - GEN_POWERCONFIG_T7 ===\n");
 	printk("0. idleacqint=%3d, 1. actvacqint=%3d, 2. actv2idleto=%3d\n", config_normal.power_config.idleacqint, config_normal.power_config.actvacqint, config_normal.power_config.actv2idleto );  
@@ -4630,7 +4648,7 @@ ssize_t set_write_show(struct device *dev, struct device_attribute *attr, char *
 	printk("8. cte_config.actvgcafdepth=%3d,  9.cte_config.voltage=%3d\n", config_normal.cte_config.actvgcafdepth, config_normal.cte_config.voltage );
 //	printk("9 , DELAY_TIME = %d\n", DELAY_TIME );
 	printk("================= end ======================\n");
-
+#endif
 	/* set all configuration */
 	tmp = set_all_config(config_normal);
 	if( tmp == 1 )

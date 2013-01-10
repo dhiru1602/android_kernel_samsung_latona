@@ -346,7 +346,7 @@ void max97000_write_regs(void)
 	for (i = 0; i < ARRAY_SIZE(max97000_regs); i++)
 	{
 		data[i + 1] = max97000_regs[i];
-		#ifdef SEC_MAX97000_DEBUG
+		#if SEC_MAX97000_DEBUG
 		if(max97000_regs_backup[i] != max97000_regs[i])
 		{
 			printk("Max97000 Register [ 0x%x : 0x%x] \n", i, max97000_regs[i]);

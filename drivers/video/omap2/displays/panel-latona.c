@@ -37,7 +37,8 @@
 #include  <../../../../arch/arm/mach-omap2/control.h>
 #include <linux/i2c/twl.h>
 
-
+//Debugging
+#define LCD_DEBUG 0
 
 #define LCD_XRES		        480
 #define LCD_YRES		        800
@@ -370,7 +371,9 @@ static void nt35510_panel_disable(struct omap_dss_device *dssdev)
 
 static int nt35510_panel_suspend(struct omap_dss_device *dssdev)
 {
+#if LCD_DEBUG
 	printk(KERN_INFO " **** nt35510_panel_suspend\n");
+#endif
 	spi_setup(nt35510lcd_spi);
 
 	gpio_set_value(OMAP_GPIO_LCD_EN_SET, GPIO_LEVEL_LOW);
@@ -389,8 +392,9 @@ static int nt35510_panel_suspend(struct omap_dss_device *dssdev)
 
 static int nt35510_panel_resume(struct omap_dss_device *dssdev)
 {
+#if LCD_DEBUG
 	printk(KERN_INFO " **** nt35510_panel_resume\n");
-
+#endif
 	spi_setup(nt35510lcd_spi);
     
 //		msleep(150);
@@ -496,7 +500,9 @@ static void spi1write(u8 index, u8 data)
 
 void nt35510_ldi_poweron_hitachi(void)
 {
+#if LCD_DEBUG
 	printk("[LCD] %s() + \n", __func__);
+#endif
 
 	spi1writeindex(0x36);
 	spi1writedata(0x00); 
@@ -531,7 +537,9 @@ void nt35510_ldi_poweron_hitachi(void)
 
 void nt35510_ldi_poweroff_hitachi(void)
 {
+#if LCD_DEBUG
 	printk(" **** %s\n", __func__);
+#endif
 	
 	// SLEEP IN
 	spi1writeindex(0x10);	// SEQ_SLEEP IN_SET
@@ -552,7 +560,9 @@ void nt35510_ldi_poweroff_hitachi(void)
 
 void nt35510_ldi_poweron_sony(void)
 {
+#if LCD_DEBUG
 	printk("[LCD] %s() + \n", __func__);
+#endif
 	msleep(145);
 
 	spi1writeindex(0x3A);
@@ -605,13 +615,17 @@ void nt35510_ldi_poweron_sony(void)
 	spi1writeindex(0x29);	
 
 	atomic_set(&ldi_power_state, POWER_ON);
+#if LCD_DEBUG
 	printk("[LCD] %s() -\n", __func__);
+#endif
 }
 
 
 void nt35510_ldi_poweroff_sony(void)
 {
+#if LCD_DEBUG
 	printk(" **** %s\n", __func__);
+#endif
 
 	// Display Off
 	spi1writeindex(0x28);	// SEQ_DISPOFF_SET
@@ -629,7 +643,9 @@ void nt35510_ldi_poweroff_sony(void)
 
 void nt35510_ldi_poweron_sony_a_si(void)
 {
+#if LCD_DEBUG
 	printk("[LCD] %s() + \n", __func__);
+#endif
 	msleep(145);
 	spi1writeindex(0x3A);
 	spi1writedata(0x77);
@@ -897,13 +913,17 @@ void nt35510_ldi_poweron_sony_a_si(void)
 	spi1writeindex(0x29);
 
 	atomic_set(&ldi_power_state, POWER_ON);
+#if LCD_DEBUG
 	printk("[LCD] %s() -\n", __func__);
+#endif
 }
 
 
 void nt35510_ldi_poweroff_sony_a_si(void)
 {
+#if LCD_DEBUG
 	printk(" **** %s\n", __func__);
+#endif
 		
 	// Display Off
 	spi1writeindex(0x28);	// SEQ_DISPOFF_SET
@@ -1033,7 +1053,9 @@ void lcd_hydis_gamma2(void)
 
 void nt35510_ldi_poweron_hydis(void)
 {
+#if LCD_DEBUG
 	printk("[LCD] %s() + \n", __func__);
+#endif
 		
 // [[ User Set
 	/* Test Commands */
@@ -1246,12 +1268,16 @@ void nt35510_ldi_poweron_hydis(void)
 	spi1writeindex(0x29);	// DISPON
 
 	atomic_set(&ldi_power_state, POWER_ON);	
+#if LCD_DEBUG
 	printk("[LCD] %s() -- \n", __func__);
+#endif
 }
 
 void nt35510_ldi_poweroff_hydis(void)
 {
+#if LCD_DEBUG
 	printk(" **** %s\n", __func__);
+#endif
 		
 	// Display Off
 	spi1writeindex(0x28);	// SEQ_DISPOFF_SET
@@ -1272,7 +1298,9 @@ void nt35510_ldi_poweroff_hydis(void)
 
 void nt35510_ldi_poweron_smd(void)
 {
+#if LCD_DEBUG
 	printk("[LCD] %s() + \n", __func__);
+#endif
 
 	/* Initializing Sequence */
 	spi1writeindex(0x36);
@@ -1503,12 +1531,16 @@ void nt35510_ldi_poweron_smd(void)
 		spi1writeindex(0x29);	
 
 	atomic_set(&ldi_power_state, POWER_ON);
+#if LCD_DEBUG
 	printk("[LCD] %s() -- \n", __func__);
+#endif
 }
 
 void nt35510_ldi_poweroff_smd(void)
 {
+#if LCD_DEBUG
 	printk(" **** %s\n", __func__);
+#endif
 		
 	//Display Off Command
 	spi1writeindex(0x28);
@@ -1523,7 +1555,9 @@ void nt35510_ldi_poweroff_smd(void)
 void nt35510_lcd_LDO_on(void)
 {
 	int ret;
+#if LCD_DEBUG
 	printk("+++ %s\n", __func__);
+#endif
 //	twl_i2c_read_regdump();
 #if 1	
 	ret = regulator_enable( vaux3 ); //VAUX3 - 1.8V
@@ -1544,14 +1578,17 @@ void nt35510_lcd_LDO_on(void)
 	
 	if(current_panel == 3) // if SMD
 		msleep(50);
-	
+#if LCD_DEBUG
 	printk("--- %s\n", __func__);
+#endif
 }
 
 void nt35510_lcd_LDO_off(void)
 {
 	int ret;
+#if LCD_DEBUG
 	printk("+++ %s\n", __func__);
+#endif
 
 	// Reset Release (reset = L)
 	gpio_set_value(OMAP_GPIO_MLCD_RST, GPIO_LEVEL_LOW); 
@@ -1572,7 +1609,9 @@ void nt35510_lcd_LDO_off(void)
 	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x00, 0x1F);
 #endif	
 
+#if LCD_DEBUG
 	printk("--- %s\n", __func__);
+#endif
 }
 
 void nt35510_lcd_poweroff(void)
@@ -1673,7 +1712,9 @@ static DEFINE_SPINLOCK(aat1402_bl_lock);
 
 static void aat1402_set_brightness(void)
 {
+#if LCD_DEBUG
 	printk(KERN_DEBUG" *** aat1402_set_brightness : %d\n", current_intensity);
+#endif
 	//spin_lock_irqsave(&aat1402_bl_lock, flags);
 	//spin_lock(&aat1402_bl_lock);
 
@@ -1770,13 +1811,14 @@ static int nt35510_spi_probe(struct spi_device *spi)
     struct backlight_properties props;
      int status =0;
 	 int ret;
-		
+#if LCD_DEBUG
 	printk(KERN_INFO " **** nt35510_spi_probe.\n");
+#endif
 	nt35510lcd_spi = spi;
 	nt35510lcd_spi->mode = SPI_MODE_0;
 	nt35510lcd_spi->bits_per_word = 9 ;
 
-	printk(" nt35510lcd_spi->chip_select = %x\t, mode = %x\n", nt35510lcd_spi->chip_select,  nt35510lcd_spi->mode);
+	printk(" nt35510lcd_spi->chip_select = %x , mode = %x\n", nt35510lcd_spi->chip_select,  nt35510lcd_spi->mode);
 	printk("ax_speed_hz  = %x\t modalias = %s", nt35510lcd_spi->max_speed_hz, nt35510lcd_spi->modalias );
 	
 	status = spi_setup(nt35510lcd_spi);
@@ -1813,10 +1855,14 @@ static int nt35510_spi_remove(struct spi_device *spi)
 }
 static void nt35510_spi_shutdown(struct spi_device *spi)
 {
+#if LCD_DEBUG
 	printk("*** First power off LCD.\n");
+#endif
 	is_nt35510_spi_shutdown = 1;
 	nt35510_lcd_poweroff();
+#if LCD_DEBUG
 	printk("*** power off - backlight.\n");
+#endif
 	gpio_set_value(OMAP_GPIO_LCD_EN_SET, GPIO_LEVEL_LOW);
 }
 

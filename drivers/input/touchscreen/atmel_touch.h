@@ -1,5 +1,8 @@
 #define IMPROVE_SOURCE // KMJ_DA18
 
+/* Enable Debugging */
+#define TSP_DEBUG 0
+
 typedef enum
 {
     DEFAULT_MODEL,
