@@ -1264,7 +1264,7 @@ static int __init touchscreen_probe(struct platform_device *pdev)
 
 /* Atmel-42QT602240 Specific enteries */ 
 				
-	atmel_kobj = kobject_create_and_add("atmel_qt602240", NULL);
+	atmel_kobj = kobject_create_and_add("settings", ts_kobj);
 	if (!atmel_kobj)	
 		return -ENOMEM;	
 	retval_2 = sysfs_create_group(atmel_kobj, &atmel_attr_group);
@@ -1279,7 +1279,7 @@ static int __init touchscreen_probe(struct platform_device *pdev)
 #ifdef ENABLE_NOISE_TEST_MODE
 /* Noise test enteries */ 
 	struct kobject *noise;
-	noise = kobject_create_and_add("qt602240_noise_test", NULL);
+	noise = kobject_create_and_add("noise_test", ts_kobj);
 	if(!noise)
 		{
 		 printk("[TSP] Failed to create kobj for noise test! \n");
