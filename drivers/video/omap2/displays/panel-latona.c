@@ -276,10 +276,10 @@ static int nt35510_panel_probe(struct omap_dss_device *dssdev)
 		return;
 	}
 	gpio_direction_output(OMAP_GPIO_MLCD_RST, 1);
+	printk("[LCD] %s() : current_panel=%d(0:sony, 1:Hitachi(20mA) , 2:Hydis, 3:SMD, 4:Sony(a-Si)), 5:Hitachi(17mA)\n",
+		__func__, current_panel);
 
-	printk("[LCD] %s() : current_panel=%d(0:sony, 1:Hitachi , 2:Hydis, 3:SMD, 4:Sony(a-Si))\n", __func__, current_panel);
-
-	if(current_panel==1 || current_panel==4 ) // Hitachi || Sony(a-Si)
+	if(current_panel==1 || current_panel==4 || current_panel==5) // Hitachi(20mA) || Sony(a-Si) || Hitachi(17mA)
 	{
 	dssdev->panel.config = OMAP_DSS_LCD_TFT | OMAP_DSS_LCD_IVS |  OMAP_DSS_LCD_IPC |
 						OMAP_DSS_LCD_IHS | OMAP_DSS_LCD_ONOFF ;
