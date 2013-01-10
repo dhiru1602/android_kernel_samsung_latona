@@ -39,9 +39,15 @@
 #include "mux.h"
 #include "sdram-qimonda-hyb18m512160af-6.h"
 #include "omap_ion.h"
+#include "omap_ram_console.h"
 #include "control.h"
 
 #define WILINK_UART_DEV_NAME            "/dev/ttyS1"
+
+#ifdef CONFIG_OMAP_RAM_CONSOLE
+#define LATONA_RAM_CONSOLE_START  PLAT_PHYS_OFFSET + 0xE000000
+#define LATONA_RAM_CONSOLE_SIZE    SZ_1M
+#endif
 
 #ifdef CONFIG_OMAP_MUX
 extern struct omap_board_mux *latona_board_mux_ptr;
@@ -201,6 +207,11 @@ static void __init latona_init(void)
 
 static void __init latona_reserve(void)
 {
+
+#ifdef CONFIG_OMAP_RAM_CONSOLE
+	omap_ram_console_init(LATONA_RAM_CONSOLE_START,
+				LATONA_RAM_CONSOLE_SIZE);
+#endif
 	/* do the static reservations first */
 	memblock_remove(OMAP3_PHYS_ADDR_SMC_MEM, PHYS_ADDR_SMC_SIZE);
 
