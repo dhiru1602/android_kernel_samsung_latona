@@ -1029,7 +1029,7 @@ CONFIG_MTD_ONENAND_OMAP2=y
 #
 # Texas Instruments shared transport line discipline
 #
-# CONFIG_TI_ST is not set
+CONFIG_TI_ST=y
 # CONFIG_SENSORS_LIS3_SPI is not set
 # CONFIG_SENSORS_LIS3_I2C is not set
 # CONFIG_GC_CORE is not set
