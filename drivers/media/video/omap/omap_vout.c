@@ -2615,7 +2615,7 @@ probe_err0:
 	return ret;
 }
 
-static struct platform_driver omap_vout_driver = {
+static struct platform_driver omap_vout_driver __refdata = {
 	.driver = {
 		.name = VOUT_NAME,
 	},

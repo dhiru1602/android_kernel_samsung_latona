@@ -168,7 +168,7 @@ static struct twl4030_power_data twl4030_generic_script __initdata = {
 	.resource_config = twl4030_rconfig,
 };
 
-void twl4030_get_scripts(struct twl4030_power_data *t2scripts_data)
+void __init twl4030_get_scripts(struct twl4030_power_data *t2scripts_data)
 {
 	t2scripts_data->scripts = twl4030_generic_script.scripts;
 	t2scripts_data->num = twl4030_generic_script.num;

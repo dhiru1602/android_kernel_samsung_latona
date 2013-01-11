@@ -48,7 +48,7 @@
 
 #define LATONA_OMAP_OUTPUT_GPIO(name, val)		{name, val, (unsigned int)#name},
 
-static unsigned int __omap_board_output_gpio[][3] __initdata = {
+static unsigned int __omap_board_output_gpio[][3] = {
 	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_PS_HOLD_PU, 0)
 	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_FM_nRST, 0)
 	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_CAM_CIF_NRST, 0)
@@ -75,7 +75,7 @@ EXPORT_SYMBOL(latona_board_output_gpio_size);
 unsigned int (*latona_board_output_gpio_ptr)[3] = __omap_board_output_gpio;
 EXPORT_SYMBOL(latona_board_output_gpio_ptr);
 
-static unsigned int __omap_wakeup_gpio[] __initdata = {
+static unsigned int __omap_wakeup_gpio[] = {
 	OMAP_GPIO_JACK_NINT,
 	OMAP_GPIO_IPC_SRDY,
 	OMAP_GPIO_CHG_ING_N,
@@ -94,7 +94,7 @@ EXPORT_SYMBOL(latona_board_wakeup_gpio_size);
 unsigned int (*latona_board_wakeup_gpio_ptr) = __omap_wakeup_gpio;
 EXPORT_SYMBOL(latona_board_wakeup_gpio_ptr);
 
-static struct omap_board_mux __omap_board_core_mux[] __initdata = {
+static struct omap_board_mux __omap_board_core_mux[] = {
 
 /*
  *		Name, reg-offset,
