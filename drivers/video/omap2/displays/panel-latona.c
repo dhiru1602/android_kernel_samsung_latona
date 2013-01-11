@@ -1729,7 +1729,9 @@ static void aat1402_set_brightness(void)
 		else if(current_intensity>=20)
 			current_intensity = ((current_intensity-20)*(29-17))/(34-20) + 17;
 
+#if LCD_DEBUG
 		printk(KERN_DEBUG" HITACHI PANEL(%d)! orig_intensity=%d, current_intensity=%d\n", current_panel, orig_intensity, current_intensity);
+#endif
 		
 		spi1writeindex(0xB0);
 		spi1writedata(0x02);
