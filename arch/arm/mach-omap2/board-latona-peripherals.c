@@ -573,5 +573,4 @@ void __init latona_peripherals_init(void)
 	enable_board_wakeup_source();
 	omap_serial_init();
 	board_init_zeus_key(); /* ZEUS Key */ 
-	//latona_cam_init();
 }

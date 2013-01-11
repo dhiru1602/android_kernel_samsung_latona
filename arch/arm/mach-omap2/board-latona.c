@@ -193,7 +193,6 @@ static void __init latona_init(void)
 	latona_mux_init_gpio_out();
 	latona_mux_set_wakeup_gpio();
 	msecure_init();
-	latona_reboot_init();
 	usbhs_init(&usbhs_bdata);
 	latona_wifi_init();
 	latona_peripherals_init();
@@ -202,7 +201,6 @@ static void __init latona_init(void)
 	/* Added to register latona devices */
 	platform_add_devices(latona_devices, ARRAY_SIZE(latona_devices));
 	wl127x_vio_leakage_fix();
-	latona_reboot_post_init();
 }
 
 static void __init latona_reserve(void)

@@ -16,7 +16,6 @@
 #include "board-latona-mtd.h"
 #include "board-latona-mux_r08.h"
 
-#define LATONA_NAND_CS    0
 #define LATONA_WIFI_PMENA_GPIO		160
 #define LATONA_WIFI_IRQ_GPIO		99
 
@@ -25,8 +24,6 @@ extern void __init latona_peripherals_init(void);
 extern void __init latona_display_init(void);
 extern void __init latona_phone_svnet_init(void);
 extern void __init latona_battery_init(void);
-extern int __init latona_reboot_init(void);
-extern int __init latona_reboot_post_init(void);
 extern int latona_update_reboot_reason(char mode, const char *cmd);
 extern short int get_headset_status(void);
 
@@ -56,14 +53,6 @@ extern short int get_headset_status(void);
 #define REBOOTMODE_USER_PANIC 		(1 << 6)
 #define REBOOTMODE_CP_CRASH		(1 << 9)
 #define REBOOTMODE_FORCED_UPLOAD	(1 << 10)
-#define REBOOT_MODE_NONE		0
-#define REBOOT_MODE_FACTORYTEST		1
-#define REBOOT_MODE_RECOVERY		2
-#define REBOOT_MODE_ARM11_FOTA		3
-#define REBOOT_MODE_DOWNLOAD		4
-#define REBOOT_MODE_CHARGING		5
-#define REBOOT_MODE_ARM9_FOTA		6
-#define REBOOT_MODE_CP_CRASH		7
 /* End: Reboot modes */
 
 /* Default Parameter Values */
