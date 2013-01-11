@@ -821,13 +821,6 @@ EXPORT_SYMBOL(latona_board_mux_size);
 struct omap_board_mux *latona_board_mux_ptr = __omap_board_core_mux;
 EXPORT_SYMBOL(latona_board_mux_ptr);
 
-extern unsigned int latona_board_output_gpio_size;
-extern unsigned int (*latona_board_output_gpio_ptr)[3];
-extern unsigned int latona_board_wakeup_gpio_size;
-extern unsigned int *latona_board_wakeup_gpio_ptr;
-extern unsigned int latona_board_mux_size;
-extern struct omap_board_mux *latona_board_mux_ptr;
-
 int __init latona_mux_init_padconf(void)
 {
 	int ret = 0;
