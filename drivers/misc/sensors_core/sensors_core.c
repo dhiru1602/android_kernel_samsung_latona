@@ -63,7 +63,7 @@ int sensors_register(struct device *dev, void * drvdata, struct device_attribute
 
 void sensors_unregister(struct device *dev)
 {
-	// TODO : Unregister device
+	device_unregister(dev);
 }
 
 static int __init sensors_class_init(void)
