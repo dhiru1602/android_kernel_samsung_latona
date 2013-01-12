@@ -548,6 +548,10 @@ config OMAP4_DUTY_CYCLE
 	If you are going to use OPP_NITRO with high level of leakage which.
 	could pontentially sustain a thermal runaway, say Y here.
 
+config SUPPORT_GPS
+	tristate "Enable GPIO Control for GPS"
+	default n
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"

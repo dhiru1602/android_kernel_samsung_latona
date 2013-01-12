@@ -56,3 +56,4 @@ obj-$(CONFIG_OMAP4_DUTY_CYCLE)  += omap4_duty_cycle.o
 obj-$(CONFIG_TWL6040_VIB)	+= twl6040-vib.o
 obj-$(CONFIG_GC_CORE)		+= gc-core/
 obj-$(CONFIG_FMRADIO)           += fm_Si4709/
+obj-$(CONFIG_SUPPORT_GPS)       += gps.o
