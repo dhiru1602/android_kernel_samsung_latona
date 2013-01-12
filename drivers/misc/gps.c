@@ -18,13 +18,8 @@ static struct early_suspend early_suspend;
 
 #define DEVICE_NAME "gps_driver"
 
-/* for debugging */
-#define DEBUG 0
-#define DEBUG_DELAY 0
-#define DEBUG_THRESHOLD 0
-#define TRACE_FUNC() pr_debug(BMA222_NAME ": <trace> %s()\n", __FUNCTION__)
+struct class *gps_class;
 
-extern struct class *sec_class;
 static struct device *gps_en_dev;
 static struct device *gps_nrst_dev;
 static struct device *gps_cntl_dev;
@@ -173,7 +168,7 @@ static int gps_early_resume(struct early_suspend *handler)
 }
 #endif
 
-static int gps_init_proc()
+static int gps_init_proc(void)
 {
 	// initialize GPIO
 	if(gpio_is_valid(OMAP_GPIO_GPS_EN))
@@ -204,9 +199,9 @@ static int gps_init_proc()
 	}
 
 	// register into sysfs
-	gps_en_dev = device_create(sec_class, NULL, 0, NULL, "GPS_PWR_EN");
-	gps_nrst_dev = device_create(sec_class, NULL, 0, NULL, "GPS_NRST");
-	gps_cntl_dev = device_create(sec_class, NULL, 0, NULL, "GPS_CNTL");
+	gps_en_dev = device_create(gps_class, NULL, 0, NULL, "GPS_PWR_EN");
+	gps_nrst_dev = device_create(gps_class, NULL, 0, NULL, "GPS_NRST");
+	gps_cntl_dev = device_create(gps_class, NULL, 0, NULL, "GPS_CNTL");
 
 	if(device_create_file(gps_en_dev, &gps_en_attr[0]) < 0)
 	{
@@ -249,7 +244,7 @@ static int gps_init_proc()
 
 }
 
-static int gps_exit_proc()
+static int gps_exit_proc(void)
 {
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	unregister_early_suspend(&early_suspend);
@@ -272,21 +267,34 @@ static int gps_exit_proc()
 	return 0;
 }
 
+static int create_gps_class(void)
+{
+	gps_class = class_create(THIS_MODULE, "gps");
+	
+	if(IS_ERR(gps_class)) {
+		printk(KERN_ERR "[%s] FAILED to create gps_class. \n",__func__);
+		return PTR_ERR(gps_class);
+	}	
+
+	return 0;
+}
 
 /*
  * Module init and exit
  */
 static int __init gps_init(void)
 {
+    create_gps_class();
     return gps_init_proc();
 }
-module_init(gps_init);
 
 static void __exit gps_exit(void)
 {
+    class_destroy(gps_class);
     gps_exit_proc();
 }
 
+module_init(gps_init);
 module_exit(gps_exit);
 
 MODULE_DESCRIPTION("GPS driver");
