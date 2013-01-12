@@ -68,6 +68,7 @@ static unsigned int __omap_board_output_gpio[][3] = {
 	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_MASSMEMORY_EN, 1)
 	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_ALS_EN, 0)
 	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_CON_CP_SEL, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_UART_SEL, 1)
 };	/* end array __omap_output_gpio */
 
 unsigned int latona_board_output_gpio_size = ARRAY_SIZE(__omap_board_output_gpio);
@@ -400,7 +401,7 @@ static struct omap_board_mux __omap_board_core_mux[] = {
 	// 130 (B20, L, SAFE_MODE, N/C) - 09/17
 	OMAP3_MUX(CAM_WEN, OMAP_MUX_MODE7 | OMAP_PIN_INPUT_PULLDOWN),		// Brian: NC
 	// 131 (D25, L, GPIO_126, UART_SEL, O[L], OFF[L])
-	//OMAP3_MUX(CAM_STROBE,  OMAP_MUX_MODE4 | OMAP_PIN_INPUT_PULLDOWN),
+	OMAP3_MUX(CAM_STROBE,  OMAP_MUX_MODE4 | OMAP_PIN_INPUT_PULLDOWN),
 	// 132 (AF18, L, GPIO_112, DET_3.5, I[U], OFF[U])
 	OMAP3_MUX(CSI2_DX0,  OMAP_MUX_MODE4 | OMAP_PIN_INPUT | OMAP_WAKEUP_EN),
 	// 133 (AF17, L, GPIO_113, EAR_KEY, I[Z], OFF[L])
