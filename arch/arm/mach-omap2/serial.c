@@ -81,7 +81,7 @@ static struct omap_device_pm_latency omap_uart_latency[] = {
 	},
 };
 
-#ifdef CONFIG_OMAP_MUX
+#if defined (CONFIG_OMAP_MUX) && !defined(CONFIG_MACH_OMAP_LATONA)
 static struct omap_device_pad default_uart1_pads[] __initdata = {
 	{
 		.name	= "uart1_cts.uart1_cts",
