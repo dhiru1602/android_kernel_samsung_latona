@@ -1,6 +1,7 @@
 /*
  * Modified from mach-omap2/include/mach/board-zoom.h for Samsung Latona board
  *
+ * Dheeraj CVR "dhiru1602" <cvr.dheeraj@gmail.com>
  * Mark "Hill Beast" Kennard <komcomputers@gmail.com>
  * crackerizer <github.com/crackerizer>
  *
@@ -27,6 +28,23 @@ extern void __init latona_battery_init(void);
 extern int __init latona_reboot_init(void);
 extern int __init latona_reboot_post_init(void);
 extern int latona_update_reboot_reason(char mode, const char *cmd);
+extern short int get_headset_status(void);
+
+/* GPIO SWITCH */
+#define HEADSET_DISCONNET			0
+#define HEADSET_3POLE				2 
+#define HEADSET_4POLE_WITH_MIC	1
+
+#define EAR_MIC_BIAS_GPIO OMAP_GPIO_EAR_MICBIAS_EN
+#define EAR_KEY_GPIO OMAP_GPIO_EAR_SEND_END 
+#define EAR_DET_GPIO OMAP_GPIO_DET_3_5
+#define EAR_DETECT_INVERT_ENABLE 1
+
+#define EAR_KEY_INVERT_ENABLE 1
+
+#define EAR_ADC_SEL_GPIO OMAP_GPIO_EARPATH_SEL
+#define USE_ADC_SEL_GPIO 1
+/* End: GPIO SWITCH */
 
 /* Reboot modes */
 #define REBOOTMODE_NORMAL 		(1 << 0)

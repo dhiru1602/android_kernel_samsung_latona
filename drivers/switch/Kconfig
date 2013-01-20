@@ -12,10 +12,4 @@ config SWITCH_GPIO
 	help
 	  Say Y here to enable GPIO based switch support.
 
-config INPUT_ZEUS_EAR_KEY
-        tristate "EAR_KEY_DRIVER"
-	default y
-        help
-          Say Y here if you want to enable ear key.
-
 endif # SWITCH

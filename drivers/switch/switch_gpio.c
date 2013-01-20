@@ -33,14 +33,16 @@
 #include <linux/wakelock.h>
 #include <mach/hardware.h>
 #include <plat/mux.h>
-#include "switch_omap_gpio.h"
+#ifdef CONFIG_MACH_OMAP_LATONA
+#include <mach/board-latona.h>
+#endif
 
-#define CONFIG_DEBUG_SEC_HEADSET 0
+#define HEADSET_DEBUG 0
 
-#ifdef CONFIG_DEBUG_SEC_HEADSET
-#define SEC_HEADSET_DBG(fmt, arg...) printk(KERN_INFO "[HEADSET] %s () " fmt "\r\n", __func__, ## arg)
+#if HEADSET_DEBUG
+#define HEADSET_DBG(fmt, arg...) printk(KERN_INFO "[HEADSET] %s () " fmt "\r\n", __func__, ## arg)
 #else
-#define SEC_HEADSET_DBG(fmt, arg...) do {} while(0)
+#define HEADSET_DBG(fmt, arg...) do {} while(0)
 #endif
 
 #define HEADSET_ATTACH_COUNT		3
@@ -76,7 +78,7 @@ struct switch_device_info
 
 static struct device *this_dev;
 
-#ifdef CONFIG_INPUT_ZEUS_EAR_KEY
+#ifdef CONFIG_INPUT_ZEUS_KEY_DRIVER
 extern void ear_key_disable_irq(void);
 extern void ear_key_enable_irq(void);
 extern void release_ear_key(void);
@@ -93,6 +95,13 @@ struct gpio_switch_data {
 	int irq;
 	struct work_struct work;
 };
+
+short int get_headset_status(void)
+{
+	HEADSET_DBG(" headset_status %d", headset_status);
+	return headset_status;
+}
+EXPORT_SYMBOL(get_headset_status);
 
 static void release_headset_event(struct work_struct *work)
 {
@@ -174,7 +183,7 @@ static void ear_adc_caculrator(struct work_struct *work)
 			headset_status = HEADSET_4POLE_WITH_MIC;
 		
 			printk("[Headset] 4pole ear-mic adc is %d\n", adc);
-			#ifdef CONFIG_INPUT_ZEUS_EAR_KEY
+			#ifdef CONFIG_INPUT_ZEUS_KEY_DRIVER
 			ear_key_enable_irq();
 			#endif
 		}
@@ -185,7 +194,7 @@ static void ear_adc_caculrator(struct work_struct *work)
 			headset_status = HEADSET_3POLE;
 
 			printk("[Headset] 3pole earphone adc is %d\n", adc);
-			#ifdef CONFIG_INPUT_ZEUS_EAR_KEY
+			#ifdef CONFIG_INPUT_ZEUS_KEY_DRIVER
 			ear_key_disable_irq();
 			#endif
 			gpio_direction_output(EAR_MIC_BIAS_GPIO, 0);
@@ -201,7 +210,7 @@ static void ear_adc_caculrator(struct work_struct *work)
 		switch_set_state(&data->sdev, state);
 
 		headset_status = HEADSET_DISCONNET;
-		#ifdef CONFIG_INPUT_ZEUS_EAR_KEY
+		#ifdef CONFIG_INPUT_ZEUS_KEY_DRIVER
 		ear_key_disable_irq();
 		#endif	
 
@@ -232,7 +241,7 @@ static void headset_detect_timer_handler(unsigned long arg)
 	else if(!state)
 		count = HEADSET_DETACH_COUNT;
 		
-	SEC_HEADSET_DBG("Check attach state - headset_detect_timer_token is %d", headset_detect_timer_token);
+	HEADSET_DBG("Check attach state - headset_detect_timer_token is %d", headset_detect_timer_token);
 	
 	if(headset_detect_timer_token < count)
 	{
@@ -244,7 +253,7 @@ static void headset_detect_timer_handler(unsigned long arg)
 	{
 		cancel_delayed_work_sync(&ear_adc_cal_work);
 		schedule_delayed_work(&ear_adc_cal_work, 20);
-		SEC_HEADSET_DBG("add work queue - timer token is %d", count);
+		HEADSET_DBG("add work queue - timer token is %d", count);
 		headset_detect_timer_token = 0;
 	}
 	else
@@ -260,7 +269,7 @@ static void headset_detect_timer_handler(unsigned long arg)
 static void gpio_switch_work(struct work_struct *work)
 {
 	int state;
-	SEC_HEADSET_DBG("");  
+	HEADSET_DBG("");  
 	//struct gpio_switch_data	*data =
 	//container_of(work, struct gpio_switch_data, work);
 	del_timer(&headset_detect_timer);
@@ -271,23 +280,23 @@ static void gpio_switch_work(struct work_struct *work)
 	if (state || !state)
 	{
 		//wake_lock(&headset_sendend_wake_lock);
-		SEC_HEADSET_DBG("Headset attached timer start");
+		HEADSET_DBG("Headset attached timer start");
 		headset_detect_timer_token = 0;
 		headset_detect_timer.expires = HEADSET_CHECK_TIME;
 		add_timer(&headset_detect_timer);
 	}
 
 	else
-		SEC_HEADSET_DBG("Headset state does not valid. or send_end event");
+		HEADSET_DBG("Headset state does not valid. or send_end event");
 }
 
 static irqreturn_t gpio_irq_handler(int irq, void *dev_id)
 {
 	struct gpio_switch_data *switch_data =
 	    (struct gpio_switch_data *)dev_id;
-#ifdef CONFIG_INPUT_ZEUS_EAR_KEY
+#ifdef CONFIG_INPUT_ZEUS_KEY_DRIVER
 	int state;
-	SEC_HEADSET_DBG("");  
+	HEADSET_DBG("");  
 	state = gpio_get_value(data->gpio) ^ EAR_DETECT_INVERT_ENABLE;
 	 if (!state)
 	{
@@ -306,7 +315,7 @@ static ssize_t switch_gpio_print_state(struct switch_dev *sdev, char *buf)
 	struct gpio_switch_data	*switch_data =
 		container_of(sdev, struct gpio_switch_data, sdev);
 	const char *state;
-	SEC_HEADSET_DBG(""); 
+	HEADSET_DBG(""); 
 	if (switch_get_state(sdev))
 		state = switch_data->state_on;
 	else
@@ -323,7 +332,9 @@ static int switch_gpio_suspend(struct platform_device *device, pm_message_t stat
 
 	if(headset_status == HEADSET_4POLE_WITH_MIC)
 	{
+#if HEADSET_DEBUG
 		printk("[HEADSET] 4POLE_HEADSET enable VINTANA2, USB3V1");
+#endif
 		twl_i2c_write_u8( TWL4030_MODULE_PM_RECEIVER, REMAP_ACTIVE , TWL4030_VINTANA2_REMAP );
 		twl_i2c_write_u8( TWL4030_MODULE_PM_RECEIVER, REMAP_ACTIVE , TWL4030_VUSB3V1_REMAP ); 
 	}
@@ -342,7 +353,7 @@ static int gpio_switch_probe(struct platform_device *pdev)
 	struct gpio_switch_data *switch_data;
 	int ret = 0;  
   
-	SEC_HEADSET_DBG("");  
+	HEADSET_DBG("");  
 	this_dev = &pdev->dev;
 
 	if (!pdata)
@@ -431,7 +442,7 @@ err_switch_dev_register:
 static int __devexit gpio_switch_remove(struct platform_device *pdev)
 {
 	struct gpio_switch_data *switch_data = platform_get_drvdata(pdev);
-	SEC_HEADSET_DBG("");
+	HEADSET_DBG("");
 	cancel_work_sync(&switch_data->work);
 	gpio_free(switch_data->gpio);
 	switch_dev_unregister(&switch_data->sdev);

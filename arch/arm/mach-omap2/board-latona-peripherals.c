@@ -54,7 +54,7 @@ struct s5ka3dfx_platform_data omap_board_s5ka3dfx_platform_data;
 /* Atmel Touchscreen */
 #define OMAP_GPIO_TSP_INT 142
 
-/* ZEUS Ear key and power key */
+/* ZEUS Key and Headset Switch */
 
 static struct gpio_switch_platform_data headset_switch_data = {
 	.name = "h2w",
@@ -68,18 +68,6 @@ static struct platform_device headset_switch_device = {
 		}
 };
 
-static struct resource board_ear_key_resource = {
-	.start = 0,
-	.end = 0,
-	.flags = IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHLEVEL,
-};
-static struct platform_device board_ear_key_device = {
-	.name = "sec_jack",
-	.id = -1,
-	.num_resources = 1,
-	.resource = &board_ear_key_resource,
-};
-
 static struct resource board_zeus_key_resources[] = {
 	[0] = {
 	       .start = 0,                                             /* Power Button */ 
@@ -91,7 +79,11 @@ static struct resource board_zeus_key_resources[] = {
 	       .end = 0,
 	       .flags = IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHLEVEL,
 	       },
-
+	[2] = {
+	       .start = 0,                                             /* Headset Button */ 
+	       .end = 0,
+	       .flags = IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHLEVEL,
+	       }
 };
 
 static struct platform_device board_zeus_key_device = {
@@ -101,19 +93,7 @@ static struct platform_device board_zeus_key_device = {
 	.resource = board_zeus_key_resources,
 };
 
-static inline void __init board_init_ear_key(void)
-{
-	board_ear_key_resource.start = gpio_to_irq(OMAP_GPIO_EAR_SEND_END);
-	if (gpio_request(OMAP_GPIO_EAR_SEND_END, "ear_key_irq") < 0) {
-		printk(KERN_ERR
-		       "\n FAILED TO REQUEST GPIO %d for POWER KEY IRQ \n",
-		       OMAP_GPIO_EAR_SEND_END);
-		return;
-	}
-	gpio_direction_input(OMAP_GPIO_EAR_SEND_END);
-}
-
-static inline void __init board_init_power_key(void)
+static inline void __init board_init_zeus_key(void)
 {
 	board_zeus_key_resources[0].start = gpio_to_irq(OMAP_GPIO_KEY_PWRON);
 	if (gpio_request(OMAP_GPIO_KEY_PWRON, "power_key_irq") < 0) {
@@ -129,10 +109,18 @@ static inline void __init board_init_power_key(void)
 		       OMAP_GPIO_KEY_HOME);
 		return;
 	}
+	board_zeus_key_resources[2].start = gpio_to_irq(OMAP_GPIO_EAR_SEND_END);
+	if (gpio_request(OMAP_GPIO_EAR_SEND_END, "ear_key_irq") < 0) {
+		printk(KERN_ERR
+		       "\n FAILED TO REQUEST GPIO %d for EAR KEY IRQ \n",
+		       OMAP_GPIO_EAR_SEND_END);
+		return;
+	}
+	gpio_direction_input(OMAP_GPIO_EAR_SEND_END);
 	gpio_direction_input(OMAP_GPIO_KEY_PWRON);
 	gpio_direction_input(OMAP_GPIO_KEY_HOME);
 }
-/* End: Zeus Ear key and power key */
+/* End: ZEUS Key and Headset Switch */
 
 /* Samsung LEDs support */
 
@@ -269,8 +257,7 @@ static struct fixed_voltage_config latona_vwlan = {
 
 static struct platform_device *latona_board_devices[] __initdata = {
 	&headset_switch_device,
-	&board_ear_key_device,       /* ZEUS EAR KEY */ 
-	&board_zeus_key_device,     /* ZEUS POWER KEY */ 
+	&board_zeus_key_device,     /* ZEUS KEY */ 
 	&samsung_led_device,         /* SAMSUNG LEDs */ 
 };
 
@@ -585,7 +572,6 @@ void __init latona_peripherals_init(void)
 #endif
 	enable_board_wakeup_source();
 	omap_serial_init();
-	board_init_power_key(); /* Initialize ZEUS Ear Key */ 
-	board_init_ear_key();   /* and POWER KEY */ 
+	board_init_zeus_key(); /* ZEUS Key */ 
 	//latona_cam_init();
 }
