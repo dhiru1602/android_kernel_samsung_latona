@@ -80,7 +80,7 @@ static struct platform_device board_ear_key_device = {
 	.resource = &board_ear_key_resource,
 };
 
-static struct resource board_power_key_resources[] = {
+static struct resource board_zeus_key_resources[] = {
 	[0] = {
 	       .start = 0,                                             /* Power Button */ 
 	       .end = 0,
@@ -94,11 +94,11 @@ static struct resource board_power_key_resources[] = {
 
 };
 
-static struct platform_device board_power_key_device = {
-	.name = "power_key_device",
+static struct platform_device board_zeus_key_device = {
+	.name = "zeuskey_device",
 	.id = -1,
-	.num_resources = ARRAY_SIZE(board_power_key_resources),
-	.resource = board_power_key_resources,
+	.num_resources = ARRAY_SIZE(board_zeus_key_resources),
+	.resource = board_zeus_key_resources,
 };
 
 static inline void __init board_init_ear_key(void)
@@ -115,14 +115,14 @@ static inline void __init board_init_ear_key(void)
 
 static inline void __init board_init_power_key(void)
 {
-	board_power_key_resources[0].start = gpio_to_irq(OMAP_GPIO_KEY_PWRON);
+	board_zeus_key_resources[0].start = gpio_to_irq(OMAP_GPIO_KEY_PWRON);
 	if (gpio_request(OMAP_GPIO_KEY_PWRON, "power_key_irq") < 0) {
 		printk(KERN_ERR
 		       "\n FAILED TO REQUEST GPIO %d for POWER KEY IRQ \n",
 		       OMAP_GPIO_KEY_PWRON);
 		return;
 	}
-	board_power_key_resources[1].start = gpio_to_irq(OMAP_GPIO_KEY_HOME);
+	board_zeus_key_resources[1].start = gpio_to_irq(OMAP_GPIO_KEY_HOME);
 	if (gpio_request(OMAP_GPIO_KEY_HOME, "home_key_irq") < 0) {
 		printk(KERN_ERR
 		       "\n FAILED TO REQUEST GPIO %d for VOLDN KEY IRQ \n",
@@ -270,7 +270,7 @@ static struct fixed_voltage_config latona_vwlan = {
 static struct platform_device *latona_board_devices[] __initdata = {
 	&headset_switch_device,
 	&board_ear_key_device,       /* ZEUS EAR KEY */ 
-	&board_power_key_device,     /* ZEUS POWER KEY */ 
+	&board_zeus_key_device,     /* ZEUS POWER KEY */ 
 	&samsung_led_device,         /* SAMSUNG LEDs */ 
 };
 

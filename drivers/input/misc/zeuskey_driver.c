@@ -1,4 +1,9 @@
-/* This file is subject to the terms and conditions of the GNU General
+/*
+ * ZEUS BUTTON KEY DRIVER - HOME / POWER
+ *
+ * Dheeraj CVR (dhiru1602) <cvr.dheeraj@gmail.com>
+ * 
+ * This file is subject to the terms and conditions of the GNU General
  * Public License. See the file "COPYING" in the main directory of this
  * archive for more details.
  *
@@ -27,40 +32,12 @@
 
 #define ZEUS_DEBUG 0
 
-#if defined(CONFIG_INPUT_GPIO_VOLUME_KEY) && defined(ZEUS_DEBUG)
-#define POWER_KEY_FLAG (1<<0)
-#define VOLDN_KEY_FLAG (1<<1)
-#define VOLUP_KEY_FLAG (1<<2)
-
-int key_flag = 0;
-inline void check_force_crash(int key, int press)
-{
-	if(press) {
-		key_flag |= key;
-	}
-	else {
-		key_flag &= ~key;
-	}
-	if(key_flag == (POWER_KEY_FLAG | VOLDN_KEY_FLAG  | VOLUP_KEY_FLAG)) {
-		printk(KERN_ERR "key_flag = %d\n", key_flag);
-		printk(KERN_ERR "%s : Force Crash by keypad\n", __func__);
-		panic("__forced_upload");
-	}
-}
-#endif
-
-static int __devinit power_key_driver_probe(struct platform_device *plat_dev);
+static int __devinit zeus_key_driver_probe(struct platform_device *plat_dev);
 static irqreturn_t powerkey_press_handler(int irq_num, void * dev);
-#ifdef CONFIG_INPUT_HARD_RESET_KEY
 static irqreturn_t homekey_press_handler(int irq_num, void * dev);
 int home_key_press_status = 0;
 int last_home_key_press_status = 0;
 static struct timespec home_key_up_time = {0, 0};
-#endif
-#ifdef CONFIG_INPUT_GPIO_VOLUME_KEY
-static irqreturn_t volume_down_key_press_handler(int irq_num, void * dev);
-static irqreturn_t volume_up_key_press_handler(int irq_num, void * dev);
-#endif
 
 struct work_struct  lcd_work;
 static struct workqueue_struct *lcd_wq=NULL;
@@ -92,16 +69,8 @@ ssize_t gpiokey_pressed_show(struct device *dev, struct device_attribute *attr, 
 {
   unsigned int key_press_status=0;
   key_press_status = gpio_get_value(OMAP_GPIO_KEY_PWRON);
-#ifdef CONFIG_INPUT_HARD_RESET_KEY
   key_press_status &= ~0x2;
   key_press_status |= ((!gpio_get_value(OMAP_GPIO_KEY_HOME)) << 1);
-#endif
-
-#ifdef CONFIG_INPUT_GPIO_VOLUME_KEY
-  key_press_status &= ~0xC;
-  key_press_status |= ((!gpio_get_value(OMAP_GPIO_VOLUME_UP)) << 2);
-  key_press_status |= ((!gpio_get_value(OMAP_GPIO_VOLUME_DOWN)) << 3);
-#endif
 
   return sprintf(buf, "%u\n", key_press_status);
 }
@@ -127,12 +96,9 @@ static irqreturn_t powerkey_press_handler(int irq_num, void * dev)
   
   input_report_key(ip_dev,KEY_POWER,key_press_status);
   input_sync(ip_dev);
-#ifdef ZEUS_DEBUG
+#if ZEUS_DEBUG
   dev_dbg(ip_dev->dev.parent,"Sent KEY_POWER event = %d\n",key_press_status);
   printk("[PWR-KEY] KEY_POWER event = %d\n",key_press_status);
-#endif
-#if defined(CONFIG_INPUT_GPIO_VOLUME_KEY) && defined(ZEUS_DEBUG)
-  check_force_crash(POWER_KEY_FLAG, key_press_status);
 #endif
 
   if (lcd_wq && key_press_status)  
@@ -141,7 +107,6 @@ static irqreturn_t powerkey_press_handler(int irq_num, void * dev)
   return IRQ_HANDLED;
 }
 
-#ifdef CONFIG_INPUT_HARD_RESET_KEY
 static irqreturn_t homekey_press_handler(int irq_num, void * dev)
 {
   struct input_dev *ip_dev = (struct input_dev *)dev;
@@ -163,7 +128,7 @@ static irqreturn_t homekey_press_handler(int irq_num, void * dev)
   if (ts_sub_to_ms(current_kernel_time(), home_key_up_time) > 3000) {
     last_home_key_press_status = 0;
 
-#ifdef ZEUS_DEBUG
+#if ZEUS_DEBUG
     printk("Status of last KEY_HOME event reset to zero\n");
 #endif
   }
@@ -172,7 +137,7 @@ static irqreturn_t homekey_press_handler(int irq_num, void * dev)
      In this case, the button must still be pressed down and  we  have to ignore the key press event.
      In case the event is the same as last time, it has to be a falsely recognized event and we have to ignore it, too. */
   if (ts_sub_to_ms(current_kernel_time(), home_key_up_time) < 50 || home_key_press_status == last_home_key_press_status) {
-#ifdef ZEUS_DEBUG
+#if ZEUS_DEBUG
     printk("KEY_HOME event ignored, probably unwanted keypress\n");
 #endif
 
@@ -185,7 +150,7 @@ static irqreturn_t homekey_press_handler(int irq_num, void * dev)
   /* "Rearm" home key event timer */ 
   home_key_up_time = current_kernel_time();
 
-#ifdef ZEUS_DEBUG
+#if ZEUS_DEBUG
   dev_dbg(ip_dev->dev.parent,"Sent KEY_HOME event = %d\n",home_key_press_status);
   printk("Sent KEY_HOME event = %d\n",home_key_press_status);
 #endif
@@ -195,77 +160,14 @@ static irqreturn_t homekey_press_handler(int irq_num, void * dev)
   	
   return IRQ_HANDLED;
 }
-#endif
 
-#ifdef CONFIG_INPUT_GPIO_VOLUME_KEY
-static irqreturn_t volume_down_key_press_handler(int irq_num, void * dev)
+static int __devinit zeus_key_driver_probe(struct platform_device *plat_dev)
 {
-  struct input_dev *ip_dev = (struct input_dev *)dev;
-  int key_press_status = 0;
-  
-  if(!ip_dev){
-    dev_err(ip_dev->dev.parent,"Input Device not allocated\n");
-    return IRQ_HANDLED;
-  }
-  
-  key_press_status = !gpio_get_value(OMAP_GPIO_VOLUME_DOWN);
-  
-  if( key_press_status < 0 ){
-    dev_err(ip_dev->dev.parent,"Failed to read GPIO value\n");
-    return IRQ_HANDLED;
-  }
-
-  input_report_key(ip_dev, KEY_VOLUMEDOWN, key_press_status);
-  input_sync(ip_dev);
-#ifdef ZEUS_DEBUG
-  dev_dbg(ip_dev->dev.parent,"Sent KEY_VOLUMEDOWN event = %d\n", key_press_status);
-  printk("Sent KEY_VOLUMEDOWN event = %d\n", key_press_status);
-  check_force_crash(VOLDN_KEY_FLAG, key_press_status);
-#endif
-  return IRQ_HANDLED;
-}
-
-static irqreturn_t volume_up_key_press_handler(int irq_num, void * dev)
-{
-  struct input_dev *ip_dev = (struct input_dev *)dev;
-  int key_press_status = 0;
-  
-  if(!ip_dev){
-    dev_err(ip_dev->dev.parent,"Input Device not allocated\n");
-    return IRQ_HANDLED;
-  }
-  
-  key_press_status = !gpio_get_value(OMAP_GPIO_VOLUME_UP);
-  
-  if( key_press_status < 0 ){
-    dev_err(ip_dev->dev.parent,"Failed to read GPIO value\n");
-    return IRQ_HANDLED;
-  }
-
-  input_report_key(ip_dev, KEY_VOLUMEUP, key_press_status);
-  input_sync(ip_dev);
-#ifdef ZEUS_DEBUG
-  dev_dbg(ip_dev->dev.parent,"Sent KEY_VOLUMEUP event = %d\n", key_press_status);
-  printk("Sent KEY_VOLUMEUP event = %d\n", key_press_status);
-  check_force_crash(VOLUP_KEY_FLAG, key_press_status);
-#endif
-  return IRQ_HANDLED;
-}
-#endif
-
-static int __devinit power_key_driver_probe(struct platform_device *plat_dev)
-{
-  struct input_dev *power_key=NULL;
+  struct input_dev *zeus_key=NULL;
   int pwr_key_irq=-1, err=0;
 
   struct kobject *gpiokey;
-#ifdef CONFIG_INPUT_HARD_RESET_KEY
   int home_key_irq = -1;
-#endif
-#ifdef CONFIG_INPUT_GPIO_VOLUME_KEY
-  int volume_up_key_irq = -1;
-  int volume_down_key_irq = -1;
-#endif
 
   gpiokey = kobject_create_and_add("gpiokey", NULL);
   if (!gpiokey) {
@@ -284,83 +186,46 @@ static int __devinit power_key_driver_probe(struct platform_device *plat_dev)
     err = -ENXIO;
     return err;
   }  
-#ifdef CONFIG_INPUT_HARD_RESET_KEY
+
   home_key_irq = platform_get_irq(plat_dev, 1);
   if(home_key_irq <= 0){
     dev_err(&plat_dev->dev,"failed to map the power key to an IRQ %d\n", home_key_irq);
     err = -ENXIO;
     return err;
   }
-#endif
-#ifdef CONFIG_INPUT_GPIO_VOLUME_KEY
-  volume_down_key_irq = platform_get_irq(plat_dev, 2);
-  if(volume_down_key_irq <= 0) {
-    dev_err(&plat_dev->dev, "failed to map the volume down key to an IRQ %d\n", volume_down_key_irq);
-  }
 
-  volume_up_key_irq = platform_get_irq(plat_dev, 3);
-  if(volume_up_key_irq <= 0) {
-    dev_err(&plat_dev->dev, "failed to map the volume up key to an IRQ %d\n", volume_up_key_irq);
-  }
-#endif
-  power_key = input_allocate_device();
-  if(!power_key)
+  zeus_key = input_allocate_device();
+  if(!zeus_key)
   {
     dev_err(&plat_dev->dev,"failed to allocate an input devd %d \n",pwr_key_irq);
     err = -ENOMEM;
     return err;
   }
   err = request_irq(pwr_key_irq, &powerkey_press_handler ,IRQF_TRIGGER_FALLING|IRQF_TRIGGER_RISING,
-                    "power_key_driver",power_key);
-#ifdef CONFIG_INPUT_HARD_RESET_KEY
+                    "zeuskey_power",zeus_key);
+
   err |= request_irq(home_key_irq, &homekey_press_handler ,IRQF_TRIGGER_FALLING|IRQF_TRIGGER_RISING,
-                    "power_key_driver",power_key);
-#endif
+                    "zeuskey_home",zeus_key);
+
   if(err) {
-#ifdef CONFIG_INPUT_HARD_RESET_KEY
+
     dev_err(&plat_dev->dev,"failed to request an IRQ handler for num %d & %d\n",pwr_key_irq, home_key_irq);
-#else
-    dev_err(&plat_dev->dev,"failed to request an IRQ handler for num %d\n",pwr_key_irq);
-#endif
+
     goto free_input_dev;
   }
 
   dev_dbg(&plat_dev->dev,"\n Power Key Drive:Assigned IRQ num %d SUCCESS \n",pwr_key_irq);
-#ifdef CONFIG_INPUT_HARD_RESET_KEY
   dev_dbg(&plat_dev->dev,"\n HOME Key Drive:Assigned IRQ num %d SUCCESS \n",home_key_irq);
-#endif
-
-#ifdef CONFIG_INPUT_GPIO_VOLUME_KEY
-  err = request_irq(volume_down_key_irq, &volume_down_key_press_handler, 
-                    IRQF_TRIGGER_FALLING|IRQF_TRIGGER_RISING, "power_key_driver", power_key);
-  
-  err |= request_irq(volume_up_key_irq, &volume_up_key_press_handler, 
-                     IRQF_TRIGGER_FALLING|IRQF_TRIGGER_RISING, "power_key_driver", power_key);
-
-  if(err) {
-    dev_err(&plat_dev->dev, "failed to request an IRQ handler for num %d & %d\n", 
-            volume_down_key_irq, volume_up_key_irq);
-  }
-
-  dev_dbg(&plat_dev->dev, "\n Volume Down Key Driver:Assigned IRQ num %d SUCCESS\n", volume_down_key_irq);
-  dev_dbg(&plat_dev->dev, "\n Volume Up Key Driver:Assigned IRQ num %d SUCCESS\n", volume_up_key_irq);
-#endif
 
   /* register the input device now */
-  input_set_capability(power_key, EV_KEY, KEY_POWER);
-#ifdef CONFIG_INPUT_HARD_RESET_KEY
-  input_set_capability(power_key, EV_KEY, KEY_HOME);
-#endif
-#ifdef CONFIG_INPUT_GPIO_VOLUME_KEY
-  input_set_capability(power_key, EV_KEY, KEY_VOLUMEDOWN);
-  input_set_capability(power_key, EV_KEY, KEY_VOLUMEUP);
-#endif
-  power_key->name = "sec_power_key";
-  power_key->phys = "sec_power_key/input0";
-  power_key->dev.parent = &plat_dev->dev;
-  platform_set_drvdata(plat_dev, power_key);
+  input_set_capability(zeus_key, EV_KEY, KEY_POWER);
+  input_set_capability(zeus_key, EV_KEY, KEY_HOME);
+  zeus_key->name = "zeus_key";
+  zeus_key->phys = "zeus_key/input0";
+  zeus_key->dev.parent = &plat_dev->dev;
+  platform_set_drvdata(plat_dev, zeus_key);
 
-  err = input_register_device(power_key);
+  err = input_register_device(zeus_key);
   if (err) {
     dev_err(&plat_dev->dev, "power key couldn't be registered: %d\n", err);
     goto release_irq_num;
@@ -370,50 +235,27 @@ static int __devinit power_key_driver_probe(struct platform_device *plat_dev)
 
 release_irq_num:
   free_irq(pwr_key_irq,NULL);
-#ifdef CONFIG_INPUT_HARD_RESET_KEY
   free_irq(home_key_irq, NULL);
-#endif
-#ifdef CONFIG_INPUT_GPIO_VOLUME_KEY
-  free_irq(volume_down_key_irq, NULL);
-  free_irq(volume_up_key_irq, NULL);
-#endif
 
 free_input_dev:
-  input_free_device(power_key);
+  input_free_device(zeus_key);
 
 return err;
 
 }
 
-static int __devexit power_key_driver_remove(struct platform_device *plat_dev)
+static int __devexit zeus_key_driver_remove(struct platform_device *plat_dev)
 {
   struct input_dev *ip_dev= platform_get_drvdata(plat_dev);
   int pwr_key_irq=0;
-#ifdef CONFIG_INPUT_HARD_RESET_KEY
   int home_key_irq=0;
-#endif
-#ifdef CONFIG_INPUT_GPIO_VOLUME_KEY
-  int volume_down_key_irq = 0;
-  int volume_up_key_irq = 0;
-#endif
 
   pwr_key_irq = platform_get_irq(plat_dev,0);
-#ifdef CONFIG_INPUT_HARD_RESET_KEY
   home_key_irq = platform_get_irq(plat_dev,1);
-#endif
-#ifdef CONFIG_INPUT_GPIO_VOLUME_KEY
-  volume_down_key_irq = platform_get_irq(plat_dev, 2);
-  volume_up_key_irq = platform_get_irq(plat_dev, 3);
-#endif
 
   free_irq(pwr_key_irq,ip_dev);
-#ifdef CONFIG_INPUT_HARD_RESET_KEY
   free_irq(home_key_irq,ip_dev);
-#endif
-#ifdef CONFIG_INPUT_GPIO_VOLUME_KEY
-  free_irq(volume_down_key_irq, ip_dev);
-  free_irq(volume_up_key_irq, ip_dev);
-#endif
+
   input_unregister_device(ip_dev);
 
   if (lcd_wq)
@@ -421,27 +263,27 @@ static int __devexit power_key_driver_remove(struct platform_device *plat_dev)
 
   return 0;
 }
-struct platform_driver power_key_driver_t __refdata = {
-        .probe          = &power_key_driver_probe,
-        .remove         = __devexit_p(power_key_driver_remove),
+struct platform_driver zeus_key_driver_t __refdata = {
+        .probe          = &zeus_key_driver_probe,
+        .remove         = __devexit_p(zeus_key_driver_remove),
         .driver         = {
-                .name   = "power_key_device", 
+                .name   = "zeuskey_device", 
                 .owner  = THIS_MODULE,
         },
 };
 
-static int __init power_key_driver_init(void)
+static int __init zeus_key_driver_init(void)
 {
-        return platform_driver_register(&power_key_driver_t);
+        return platform_driver_register(&zeus_key_driver_t);
 }
-module_init(power_key_driver_init);
+module_init(zeus_key_driver_init);
 
-static void __exit power_key_driver_exit(void)
+static void __exit zeus_key_driver_exit(void)
 {
-        platform_driver_unregister(&power_key_driver_t);
+        platform_driver_unregister(&zeus_key_driver_t);
 }
-module_exit(power_key_driver_exit);
+module_exit(zeus_key_driver_exit);
 
 MODULE_ALIAS("platform:power key driver");
-MODULE_DESCRIPTION("board zeus power key");
+MODULE_DESCRIPTION("Zeus Button Key Driver - HOME / POWER");
 MODULE_LICENSE("GPL");
