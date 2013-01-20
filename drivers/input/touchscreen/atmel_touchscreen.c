@@ -1193,7 +1193,7 @@ static int __init touchscreen_probe(struct platform_device *pdev)
 	}
 
     // default and common settings
-	tsp.inputdevice->name = "sec_touchscreen";
+	tsp.inputdevice->name = "latona_touchscreen";
 	tsp.inputdevice->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS) | BIT_MASK(EV_SYN);	// ryun
 	tsp.inputdevice->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);		// ryun 20091127 
   	tsp.inputdevice->id.bustype = BUS_I2C;
