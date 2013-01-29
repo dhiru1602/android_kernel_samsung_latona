@@ -142,13 +142,7 @@ static void ipc_spi_cfg_gpio( void )
 	err = gpio_request( gpio_ipc_srdy, "IPC_SRDY" );
 	if( err ) {
 		printk( "ipc_spi_cfg_gpio - fail to request gpio %s : %d\n", "IPC_SRDY", err );
-	}
-	else {
-		gpio_direction_input( gpio_ipc_srdy );
-	}
-	
-	// Irq Setting -
-	irq_set_irq_type( OMAP_GPIO_IRQ( OMAP_GPIO_IPC_SRDY ), IRQ_TYPE_LEVEL_HIGH );
+	}	
 }
 
 /* spi board data */

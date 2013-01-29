@@ -53,6 +53,7 @@
 #include <linux/delay.h>
 #include <linux/in.h>
 #include <linux/irq.h>
+#include <linux/kthread.h>
 
 #include <linux/workqueue.h>
 #ifdef CONFIG_SVNET_WHITELIST
@@ -170,7 +171,6 @@ struct ipc_spi {
 	void __iomem *mmio;
 
 	int irq;
-	struct tasklet_struct tasklet;
 
 #ifdef CONFIG_SVNET_WHITELIST
 	struct wake_lock wlock;
@@ -536,21 +536,16 @@ EXPORT_SYMBOL(onedram_get_vbase);
 
 static int ipc_spi_irq_log_flag = 0;
 
-static void do_spi_tasklet( unsigned long data )
+static irqreturn_t ipc_spi_irq_handler( int irq, void *data ) // SRDY Rising EDGE ISR
 {
 	struct ipc_spi *od = ( struct ipc_spi * )data;
 	int srdy_pin = 0;
 
 	srdy_pin = gpio_get_value( gpio_srdy );
 
-	if( srdy_pin ) {
-		irq_set_irq_type( od->irq, IRQ_TYPE_LEVEL_LOW );
-	}
-	else {
-		irq_set_irq_type( od->irq, IRQ_TYPE_LEVEL_HIGH );
-		enable_irq( od->irq );
-
-		return;
+	if( !srdy_pin ) {
+		pr_info("SRDY LOW.\n");
+		return IRQ_HANDLED;
 	}
 	
 	if( ipc_spi_irq_log_flag )
@@ -567,66 +562,8 @@ static void do_spi_tasklet( unsigned long data )
 		up( &transfer_event_sem ); // signal transfer event
 	}
 
-	enable_irq( od->irq );
-}
-
-static irqreturn_t ipc_spi_irq_handler( int irq, void *data ) // SRDY Rising EDGE ISR
-{
-	struct ipc_spi *od = ( struct ipc_spi * )data;
-
-	dev_dbg( od->dev, "(%d) schedule tasklet\n", __LINE__ );
-	tasklet_hi_schedule( &od->tasklet );
-
-	disable_irq_nosync( od->irq );
-	dev_dbg( od->dev, "(%d) disable irq.\n", __LINE__ );
-
 #ifdef CONFIG_SVNET_WHITELIST
 	wake_lock_timeout(&od->wlock, DEFAULT_ISR_WAKE_TIME);
-#endif
-
-#if 0
-	struct list_head *l;
-	unsigned long flags;
-	int r;
-	u32 mailbox;
-
-	r = onedram_read_mailbox(&mailbox);
-	if (r)
-		return IRQ_HANDLED;
-
-//	if (old_mailbox == mailbox &&
-//			old_clock + 100000 > cpu_clock(smp_processor_id()))
-//		return IRQ_HANDLED;
-
-	dev_dbg(od->dev, "[%d] recv %x\n", _read_sem(od), mailbox);
-	hw_tmp = _read_sem(od); /* for hardware */
-
-	if (h_list.len) {
-		spin_lock_irqsave(&h_list.lock, flags);
-		list_for_each(l, &h_list.list) {
-			struct ipc_spi_handler *h =
-				list_entry(l, struct ipc_spi_handler, list);
-
-			if (h->handler)
-				h->handler(mailbox, h->data);
-		}
-		spin_unlock_irqrestore(&h_list.lock, flags);
-
-		spin_lock(&ipc_spi_lock);
-		od->mailbox = mailbox;
-		spin_unlock(&ipc_spi_lock);
-	} else {
-		od->mailbox = mailbox;
-	}
-
-	if (_read_sem(od))
-		complete_all(&od->comp);
-
-	wake_up_interruptible(&od->waitq);
-	kill_fasync(&od->async_queue, SIGIO, POLL_IN);
-
-//	old_clock = cpu_clock(smp_processor_id());
-//	old_mailbox = mailbox;
 #endif
 
 	return IRQ_HANDLED;
@@ -3536,8 +3473,6 @@ err :
 	ipc_spi_make_data_interrupt( int_cmd_fail, od );
 }
 
-void ( *onedram_cp_force_crash ) ( void );
-
 static void ipc_spi_cp_force_crash( void )
 {
 	u32 int_cmd = 0;
@@ -3582,6 +3517,7 @@ static int __devinit ipc_spi_platform_probe( struct platform_device *pdev )
 	struct ipc_spi *od = NULL;
 	struct ipc_spi_platform_data *pdata;
 	struct resource *res;
+	struct task_struct *th = NULL;
 
 	printk("[%s]\n",__func__);
 	pdata = pdev->dev.platform_data;
@@ -3634,15 +3570,16 @@ static int __devinit ipc_spi_platform_probe( struct platform_device *pdev )
 	wake_lock_init(&od->wlock, WAKE_LOCK_SUSPEND, "ipc_spi");
 #endif
 
-	tasklet_init( &od->tasklet, do_spi_tasklet, ( unsigned long )od );
-
-	r = request_irq( irq, ipc_spi_irq_handler, IRQF_NO_SUSPEND | IRQF_TRIGGER_HIGH, "IpcSpi", od );
+	r = request_irq(irq, ipc_spi_irq_handler,
+		IRQF_TRIGGER_RISING, "IPC_SRDY", od);
 	if (r) {
-		dev_err( &pdev->dev, "(%d) Failed to allocate an interrupt: %d\n", __LINE__, irq );
-		
+		dev_err(&pdev->dev, "(%d) Failed to allocate an interrupt: %d\n",
+			__LINE__, irq);
+
 		goto err;
 	}
 	od->irq = irq;
+	enable_irq_wake(irq);
 
 	// Init work structure
 	ipc_spi_send_modem_work_data = kmalloc( sizeof( struct ipc_spi_send_modem_bin_workq_data ), GFP_ATOMIC );
@@ -3671,14 +3608,13 @@ static int __devinit ipc_spi_platform_probe( struct platform_device *pdev )
 
 	platform_set_drvdata(pdev, od);
 
-	r = kernel_thread( ipc_spi_thread, ( void * )od, 0 );
-	if( r < 0 ) {
-		dev_err( &pdev->dev, "kernel_thread() failed : %d\n", r );
-		
+	th = kthread_create(ipc_spi_thread, (void *)od, "ipc_spi_thread");
+	if (IS_ERR(th)) {
+		dev_err(&pdev->dev, "kernel_thread() failed : %d\n", r);
+
 		goto err;
 	}
-
-	onedram_cp_force_crash = ipc_spi_cp_force_crash;
+	wake_up_process(th);
 
 	dev_info( &pdev->dev, "(%d) platform probe Done.\n", __LINE__ );
 
