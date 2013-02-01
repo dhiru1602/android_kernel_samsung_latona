@@ -30,6 +30,15 @@
 
 #include <linux/i2c/twl.h>
 
+#define WORKQUEUE_RTC
+
+#ifdef WORKQUEUE_RTC
+
+#include <linux/workqueue.h>
+#include <linux/sched.h>
+#define MY_WORK_QUEUE_NAME "RTC-twl-sched.c"
+static struct workqueue_struct *omap_rtc_wq;    // TI
+#endif
 
 /*
  * RTC block register offsets (use TWL_MODULE_RTC)
@@ -253,6 +262,13 @@ static int twl_rtc_read_time(struct device *dev, struct rtc_time *tm)
 	tm->tm_mon = bcd2bin(rtc_data[4]) - 1;
 	tm->tm_year = bcd2bin(rtc_data[5]) + 100;
 
+#if 1 /*   To restrict updated range by CDMA time  */
+	if ( tm->tm_year > 136 ) {
+		pr_err("%s: Android time range is over !!!\n", __func__);
+		return -ENODATA; 
+	}
+#endif
+
 	return ret;
 }
 
@@ -355,12 +371,27 @@ out:
 	return ret;
 }
 
-static irqreturn_t twl_rtc_interrupt(int irq, void *rtc)
+#ifdef WORKQUEUE_RTC
+struct rtc {
+
+	unsigned int rtc;
+	struct work_struct  *rtc_work;
+	
+}rtc_ins;
+
+static void rtc_interrupt_bottom_half(struct work_struct *work)
 {
-	unsigned long events = 0;
+
+unsigned long events = 0;
 	int ret = IRQ_NONE;
 	int res;
 	u8 rd_reg;
+
+printk("rtc_interrupt_bottom_half \n");
+	
+ void* rtc =(void *) rtc_ins.rtc ;
+
+#if 1
 
 	res = twl_rtc_read_u8(&rd_reg, REG_RTC_STATUS_REG);
 	if (res)
@@ -401,6 +432,76 @@ static irqreturn_t twl_rtc_interrupt(int irq, void *rtc)
 
 	/* Notify RTC core on event */
 	rtc_update_irq(rtc, 1, events);
+
+	out:
+	return ret;
+#endif
+
+	
+}
+
+#endif
+
+static irqreturn_t twl_rtc_interrupt(int irq, void *rtc)
+{
+	unsigned long events = 0;
+	int ret = IRQ_NONE;
+	int res;
+	u8 rd_reg;
+#ifdef WORKQUEUE_RTC
+	static struct work_struct task;
+#endif
+
+#ifdef WORKQUEUE_RTC
+printk("twl_rtc_interrupt rtc ");
+rtc_ins.rtc =(int)rtc ;
+INIT_WORK(&task, rtc_interrupt_bottom_half);
+
+ queue_work(omap_rtc_wq, &task);
+#endif
+
+#ifndef WORKQUEUE_RTC
+
+	res = twl_rtc_read_u8(&rd_reg, REG_RTC_STATUS_REG);
+	if (res)
+		goto out;
+	/*
+	 * Figure out source of interrupt: ALARM or TIMER in RTC_STATUS_REG.
+	 * only one (ALARM or RTC) interrupt source may be enabled
+	 * at time, we also could check our results
+	 * by reading RTS_INTERRUPTS_REGISTER[IT_TIMER,IT_ALARM]
+	 */
+	if (rd_reg & BIT_RTC_STATUS_REG_ALARM_M)
+		events |= RTC_IRQF | RTC_AF;
+	else
+		events |= RTC_IRQF | RTC_UF;
+
+	res = twl_rtc_write_u8(rd_reg | BIT_RTC_STATUS_REG_ALARM_M,
+				   REG_RTC_STATUS_REG);
+	if (res)
+		goto out;
+
+	if (twl_class_is_4030()) {
+		/* Clear on Read enabled. RTC_IT bit of TWL4030_INT_PWR_ISR1
+		 * needs 2 reads to clear the interrupt. One read is done in
+		 * do_twl_pwrirq(). Doing the second read, to clear
+		 * the bit.
+		 *
+		 * FIXME the reason PWR_ISR1 needs an extra read is that
+		 * RTC_IF retriggered until we cleared REG_ALARM_M above.
+		 * But re-reading like this is a bad hack; by doing so we
+		 * risk wrongly clearing status for some other IRQ (losing
+		 * the interrupt).  Be smarter about handling RTC_UF ...
+		 */
+		res = twl_i2c_read_u8(TWL4030_MODULE_INT,
+			&rd_reg, TWL4030_INT_PWR_ISR1);
+		if (res)
+			goto out;
+	}
+
+	/* Notify RTC core on event */
+	rtc_update_irq(rtc, 1, events);
+#endif
 
 	ret = IRQ_HANDLED;
 out:
@@ -483,12 +584,20 @@ static int __devinit twl_rtc_probe(struct platform_device *pdev)
 	if (ret < 0) {
 		dev_err(&pdev->dev, "IRQ is not free.\n");
 		goto out2;
+#ifdef WORKQUEUE_RTC
+	omap_rtc_wq = create_workqueue(MY_WORK_QUEUE_NAME);
+#endif
+
 	}
 
 	if (enable_irq_wake(irq) < 0)
 		dev_warn(&pdev->dev, "Cannot enable wakeup for IRQ %d\n", irq);
 
 	platform_set_drvdata(pdev, rtc);
+
+	/* Starting backup batery charge - configuration 3v, 25uA */
+	ret = twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x14, 0x12 /*BB_CFG*/);
+
 	return 0;
 
 out2:
