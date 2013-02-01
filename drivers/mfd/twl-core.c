@@ -1220,6 +1220,15 @@ static void clocks_init(struct device *dev,
 
 	if (e < 0)
 		pr_err("%s: clock init err [%d]\n", DRIVER_NAME, e);
+
+	/* ENABLE TRITON ADC CLOCK */
+	{
+		u8 val = 0;
+
+		// set GPBR1 register MADC_HFCLK_EN -> 1, DEFAULT_MADC_CLK_EN -> 1 
+		twl_i2c_read_u8( TWL4030_MODULE_INTBR, &val, 0x0C);
+		twl_i2c_write_u8( TWL4030_MODULE_INTBR, (val | 0x90), 0x0C );
+	}
 }
 
 /*----------------------------------------------------------------------*/
