@@ -1411,8 +1411,6 @@ static struct i2c_driver twl_driver = {
 	.id_table	= twl_ids,
 	.probe		= twl_probe,
 	.remove		= __devexit_p(twl_remove),
-	.suspend	= twl_suspend,
-	.resume		= twl_resume,
 };
 
 static int __init twl_init(void)
