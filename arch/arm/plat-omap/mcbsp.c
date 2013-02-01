@@ -1833,7 +1833,7 @@ static inline void __devexit omap_st_remove(struct omap_mcbsp *mcbsp) {}
 #if defined(CONFIG_ARCH_OMAP3) || defined(CONFIG_ARCH_OMAP4)
 static inline void __devinit omap34xx_device_init(struct omap_mcbsp *mcbsp)
 {
-	mcbsp->dma_op_mode = MCBSP_DMA_MODE_ELEMENT;
+	mcbsp->dma_op_mode = MCBSP_DMA_MODE_THRESHOLD;
 	if (cpu_is_omap34xx() || cpu_is_omap44xx()) {
 		/*
 		 * Initially configure the maximum thresholds to a safe value.
