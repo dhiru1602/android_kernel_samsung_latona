@@ -540,7 +540,10 @@ int omap2_clksel_set_parent(struct clk *clk, struct clk *new_parent)
 	if (!parent_div)
 		return -EINVAL;
 
+	/* make sure that clk is running to avoid OMAP bus-timeout exception */
+	clk_enable(clk);
 	_write_clksel_reg(clk, field_val);
+	clk_disable(clk);
 
 	clk_reparent(clk, new_parent);
 
