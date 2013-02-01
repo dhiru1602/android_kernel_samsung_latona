@@ -3285,7 +3285,11 @@ static struct omap_clk omap3xxx_clks[] = {
 	CLK(NULL,	"sad2d_ick",	&sad2d_ick,	CK_34XX | CK_36XX),
 	CLK(NULL,	"mad2d_ick",	&mad2d_ick,	CK_34XX | CK_36XX),
 	CLK("omap_timer.10",	"fck",	&gpt10_fck,	CK_3XXX),
+#ifdef CONFIG_MACH_OMAP_LATONA
+	CLK(NULL,       "gpt11_fck",    &gpt11_fck,     CK_3XXX),
+#else
 	CLK("omap_timer.11",	"fck",	&gpt11_fck,	CK_3XXX),
+#endif
 	CLK(NULL,	"cpefuse_fck",	&cpefuse_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
 	CLK(NULL,	"ts_fck",	&ts_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
 	CLK(NULL,	"usbtll_fck",	&usbtll_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
