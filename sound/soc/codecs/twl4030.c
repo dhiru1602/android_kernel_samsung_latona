@@ -4606,6 +4606,7 @@ static int twl4030_soc_probe(struct snd_soc_codec *codec)
 	/* Set the defaults, and power up the codec */
 	twl4030->sysclk = twl4030_codec_get_mclk() / 1000;
 	codec->dapm.bias_level = SND_SOC_BIAS_OFF;
+	codec->dapm.idle_bias_off = 1;
 
 #ifdef SAMSUNG_CUSTOMISATION
        INIT_DELAYED_WORK( &codec_control_work, codec_control_work_handler ); //sec_lilkan
