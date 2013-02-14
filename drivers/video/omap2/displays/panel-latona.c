@@ -500,6 +500,7 @@ static void spi1write(u8 index, u8 data)
 
 void nt35510_ldi_poweron_hitachi(void)
 {
+	msleep(1);
 #if LCD_DEBUG
 	printk("[LCD] %s() + \n", __func__);
 #endif
