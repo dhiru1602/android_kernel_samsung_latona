@@ -11,8 +11,9 @@
 #include "cm.h"
 #include <asm/string.h>
 
-u32 cm_read_mod_reg(s16 module, u16 idx);
-void cm_write_mod_reg(u32 val, s16 module, u16 idx);
+#include "../mach-omap2/cm2xxx_3xxx.h"
+#include "../mach-omap2/cm-regbits-34xx.h"
+
 #define CM_ICLKEN1					0x0010
 
 #define MAX_GPTIMER12_INSTANCE 5
@@ -99,9 +100,9 @@ int request_gptimer12( struct gptimer12_timer *timer )
 		return -1;
 	}
 	//CM_ICLKEN_WKUP |= 1 << 1;
-	cm_val = cm_read_mod_reg( WKUP_MOD, CM_ICLKEN1 );
+	cm_val = omap2_cm_read_mod_reg( WKUP_MOD, CM_ICLKEN1 );
 	cm_val = cm_val | ( 1 << 1 );
-	cm_write_mod_reg( cm_val, WKUP_MOD, CM_ICLKEN1 );
+	omap2_cm_write_mod_reg( cm_val, WKUP_MOD, CM_ICLKEN1 );
 
 	//modify exist entry 
 	for ( loop_count = 0; loop_count < MAX_GPTIMER12_INSTANCE; loop_count++ )
@@ -160,9 +161,9 @@ int request_gptimer12( struct gptimer12_timer *timer )
 			omap_dm_timer_set_load_start( battery_timer, 0, 0xffffffff - GP_TIMER12_SEC_TO_TICK(next_time) );
 			//CM_ICLKEN_WKUP &= ~(1 << 1);
 #if 0
-			cm_val = cm_read_mod_reg(WKUP_MOD,CM_ICLKEN1);
+			cm_val = omap2_cm_read_mod_reg(WKUP_MOD,CM_ICLKEN1);
 			cm_val = cm_val&~(1<<1);
-			cm_write_mod_reg(cm_val,WKUP_MOD,CM_ICLKEN1);
+			omap2_cm_write_mod_reg(cm_val,WKUP_MOD,CM_ICLKEN1);
 #endif
 
 			timer->active = true;
@@ -218,9 +219,9 @@ int request_gptimer12( struct gptimer12_timer *timer )
 	omap_dm_timer_set_load_start( battery_timer, 0, 0xffffffff - GP_TIMER12_SEC_TO_TICK(next_time) );
 	//CM_ICLKEN_WKUP &= ~(1 << 1);
 #if 0
-	cm_val = cm_read_mod_reg(WKUP_MOD,CM_ICLKEN1);
+	cm_val = omap2_cm_read_mod_reg(WKUP_MOD,CM_ICLKEN1);
 	cm_val = cm_val&~(1<<1);
-	cm_write_mod_reg(cm_val,WKUP_MOD,CM_ICLKEN1);
+	omap2_cm_write_mod_reg(cm_val,WKUP_MOD,CM_ICLKEN1);
 	// printk("requested gptimer12_count : %d \n",gptimer12_count);
 #endif
 
@@ -261,9 +262,9 @@ int release_gptimer12(struct gptimer12_timer *timer)
 
 	// case : delete current working timer 
 	//CM_ICLKEN_WKUP |= 1 << 1;
-	cm_val = cm_read_mod_reg( WKUP_MOD, CM_ICLKEN1 );
+	cm_val = omap2_cm_read_mod_reg( WKUP_MOD, CM_ICLKEN1 );
 	cm_val = cm_val | ( 1 << 1 );
-	cm_write_mod_reg( cm_val, WKUP_MOD, CM_ICLKEN1 );
+	omap2_cm_write_mod_reg( cm_val, WKUP_MOD, CM_ICLKEN1 );
 
 	if ( timer_manager[slot].remain_time == 0 )
 	{
@@ -300,9 +301,9 @@ int release_gptimer12(struct gptimer12_timer *timer)
 		omap_dm_timer_disable( battery_timer );
 
 		//CM_ICLKEN_WKUP &= ~(1 << 1);
-		cm_val = cm_read_mod_reg( WKUP_MOD, CM_ICLKEN1 );
+		cm_val = omap2_cm_read_mod_reg( WKUP_MOD, CM_ICLKEN1 );
 		cm_val = cm_val & ~( 1 << 1 );
-		cm_write_mod_reg( cm_val, WKUP_MOD,CM_ICLKEN1 );
+		omap2_cm_write_mod_reg( cm_val, WKUP_MOD,CM_ICLKEN1 );
 
 
 		return 0;
@@ -345,9 +346,9 @@ int release_gptimer12(struct gptimer12_timer *timer)
 	omap_dm_timer_set_load_start( battery_timer, 0, 0xffffffff - GP_TIMER12_SEC_TO_TICK(next_time) );
 
 	//CM_ICLKEN_WKUP &= ~(1 << 1);
-	cm_val = cm_read_mod_reg( WKUP_MOD, CM_ICLKEN1 );
+	cm_val = omap2_cm_read_mod_reg( WKUP_MOD, CM_ICLKEN1 );
 	cm_val = cm_val & ~( 1 << 1 );
-	cm_write_mod_reg( cm_val, WKUP_MOD,CM_ICLKEN1 );
+	omap2_cm_write_mod_reg( cm_val, WKUP_MOD,CM_ICLKEN1 );
 
 	timer->active = false;
 
