@@ -264,6 +264,8 @@ static enum usb_xceiv_events twl4030_usb_linkstat(struct twl4030_usb *twl)
 #ifdef CONFIG_FSA9480_MICROUSB
 	int	linkstat = USB_EVENT_NONE;
 
+	twl->vbus_supplied = false;
+
 	if(get_real_usbic_state() == MICROUSBIC_USB_CABLE)
 	{
 		linkstat = USB_EVENT_VBUS;
@@ -271,6 +273,7 @@ static enum usb_xceiv_events twl4030_usb_linkstat(struct twl4030_usb *twl)
 		spin_lock_irq(&twl->lock);
 		twl->linkstat = linkstat;
 		twl->otg.default_a = false;
+		twl->vbus_supplied = true;
 		twl->otg.state = OTG_STATE_B_IDLE;
 		twl->otg.last_event = linkstat;
 		spin_unlock_irq(&twl->lock);
