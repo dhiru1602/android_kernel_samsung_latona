@@ -138,13 +138,13 @@ static struct omap_video_timings nt35510_default_panel_timings = {
 
 	.x_res          = 480,
 	.y_res          = 800,
-	.pixel_clock    = 24000,
-	.hfp            = 10,
-	.hsw            = 10,
-	.hbp            = 10,
-	.vfp            = 4,
-	.vsw            = 2,
-	.vbp            = 9,
+	.pixel_clock    = 61714,
+	.hfp            = 280,
+	.hsw            = 150,
+	.hbp            = 170,
+	.vfp            = 1,
+	.vsw            = 15,
+	.vbp            = 1,
 
 };
 
