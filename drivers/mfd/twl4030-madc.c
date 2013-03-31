@@ -218,6 +218,21 @@ static int twl4030_madc_read_channels(struct twl4030_madc_data *madc,
 				      u8 reg_base, unsigned
 						long channels, int *buf)
 {
+#ifdef CONFIG_MACH_OMAP_LATONA
+	int count = 0;
+	u8 reg, i;
+
+	if (unlikely(!buf))
+		return 0;
+
+	for (i = 0; i < TWL4030_MADC_MAX_CHANNELS; i++) {
+		if (channels & (1<<i)) {
+			reg = reg_base + 2*i;
+			buf[i] = twl4030_madc_channel_raw_read(madc, reg);
+			count++;
+		}
+	}
+#else
 	int count = 0, count_req = 0, i;
 	u8 reg;
 
@@ -268,6 +283,7 @@ static int twl4030_madc_read_channels(struct twl4030_madc_data *madc,
 	}
 	if (count_req)
 		dev_err(madc->dev, "%d channel conversion failed\n", count_req);
+#endif
 
 	return count;
 }
