@@ -42,7 +42,7 @@
 
 #define LCD_XRES		        480
 #define LCD_YRES		        800
-#define LCD_PIXCLOCK_MAX	    24000 // 26000
+#define LCD_PIXCLOCK_MAX	    29500 // 26000
 
 static int current_panel = -1;	// 0:sony, 1:Hitachi(20mA) , 2:Hydis, 3:SMD, 4:Sony(a-Si), 5:Hitachi(17mA)
 static int lcd_enabled = 0;
@@ -138,13 +138,13 @@ static struct omap_video_timings nt35510_default_panel_timings = {
 
 	.x_res          = 480,
 	.y_res          = 800,
-	.pixel_clock    = 61714,
-	.hfp            = 280,
-	.hsw            = 150,
-	.hbp            = 170,
-	.vfp            = 1,
-	.vsw            = 15,
-	.vbp            = 1,
+	.pixel_clock    = LCD_PIXCLOCK_MAX,
+	.hfp            = 10,
+	.hsw            = 10,
+	.hbp            = 10,
+	.vfp            = 4,
+	.vsw            = 2,
+	.vbp            = 9,
 
 };
 
@@ -153,7 +153,7 @@ static struct omap_video_timings nt35510_hitachi_panel_timings = {
 
 	.x_res          = 480,
 	.y_res          = 800,
-	.pixel_clock    = 24000,
+	.pixel_clock    = LCD_PIXCLOCK_MAX,
 	.hfp            = 100,
 	.hsw            = 2,
 	.hbp            = 2,
@@ -168,7 +168,7 @@ static struct omap_video_timings nt35510_smd_panel_timings = {
 
 	.x_res          = 480,
 	.y_res          = 800,
-	.pixel_clock    = 24000,
+	.pixel_clock    = LCD_PIXCLOCK_MAX,
 	.hfp            = 10,
 	.hsw            = 4,
 	.hbp            = 40,
@@ -183,7 +183,7 @@ static struct omap_video_timings nt35510_sonyasi_panel_timings = {
 
 	.x_res          = 480,
 	.y_res          = 800,
-	.pixel_clock    = 24000,
+	.pixel_clock    = LCD_PIXCLOCK_MAX,
 	.hfp            = 14,
 	.hsw            = 10,
 	.hbp            = 14,
