@@ -27,6 +27,7 @@ struct omap_dss_device omap_board_lcd_device = {
     .name = "lcd",
     .driver_name = "nt35510_panel",
     .type = OMAP_DISPLAY_TYPE_DPI,
+    .channel = OMAP_DSS_CHANNEL_LCD,
     .phy.dpi.data_lines = 24,
     .platform_enable = NULL,
     .platform_disable = NULL,
