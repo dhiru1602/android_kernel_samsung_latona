@@ -444,6 +444,20 @@ static int nt35510_get_recommended_bpp(struct omap_dss_device *dssdev)
 	return 16; //16 bit color
 }
 
+static int nt35510_set_update_mode(struct omap_dss_device *dssdev,
+		enum omap_dss_update_mode mode)
+{
+	if (mode != OMAP_DSS_UPDATE_AUTO)
+		return -EINVAL;
+	return 0;
+}
+
+static enum omap_dss_update_mode nt35510_get_update_mode(
+		struct omap_dss_device *dssdev)
+{
+	return OMAP_DSS_UPDATE_AUTO;
+}
+
 static struct omap_dss_driver nt35510_driver = {
 	.probe          = nt35510_panel_probe,
 	.remove         = nt35510_panel_remove,
@@ -452,6 +466,9 @@ static struct omap_dss_driver nt35510_driver = {
 	.disable        = nt35510_panel_disable,
 	.suspend        = nt35510_panel_suspend,
 	.resume         = nt35510_panel_resume,
+
+	.set_update_mode = nt35510_set_update_mode,
+	.get_update_mode = nt35510_get_update_mode,
 
 	.get_resolution	= nt35510_get_resolution,
 	.get_recommended_bpp = nt35510_get_recommended_bpp,
