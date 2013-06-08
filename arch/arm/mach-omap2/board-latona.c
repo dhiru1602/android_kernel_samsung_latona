@@ -201,6 +201,7 @@ static void __init latona_init(void)
 	/* Added to register latona devices */
 	platform_add_devices(latona_devices, ARRAY_SIZE(latona_devices));
 	wl127x_vio_leakage_fix();
+	latona_cmdline_set_serialno(); //Inject serialno in commandline
 }
 
 static void __init latona_reserve(void)
