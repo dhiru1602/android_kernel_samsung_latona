@@ -46,10 +46,13 @@
 #include <linux/interrupt.h>
 #include <linux/workqueue.h>
 #include <linux/nmi.h>
+#include <linux/delay.h>
 #include <mach/hardware.h>
 #include <plat/prcm.h>
 
 #include "omap_wdt.h"
+#include "../../arch/arm/mach-omap2/prcm-common.h"
+#include "../../arch/arm/mach-omap2/control.h"
 
 static struct platform_device *omap_wdt_dev;
 
@@ -73,6 +76,49 @@ struct omap_wdt_dev {
 	int irq;
 	struct notifier_block nb;
 };
+
+void omap_watchdog_reset(void)
+{
+	u32 base = 0x48314000;
+	u32 cm_base_iclk = 0x48004C00;
+	u32 cm_base_fclk = 0x48004C10;
+
+	u32 regval;
+
+	omap_ctrl_writew(0x118, 0x0A08); // change pullup just before warm-reset
+
+	regval = omap_readl(cm_base_iclk);
+	regval |=  0x20;
+	omap_writel(regval, cm_base_iclk);
+
+	regval = omap_readl(cm_base_fclk);
+	regval |=  0x20;
+	omap_writel(regval, cm_base_fclk);
+
+	/* initialize prescaler */
+	while (omap_readl(base + OMAP_WATCHDOG_WPS) & 0x01)
+		cpu_relax();
+	omap_writel((0 << 5) | (PTV << 2), base + OMAP_WATCHDOG_CNTRL);
+	while (omap_readl(base + OMAP_WATCHDOG_WPS) & 0x01)
+		cpu_relax();
+
+	while (omap_readl(base + OMAP_WATCHDOG_WPS) & 0x04)
+		cpu_relax();
+
+	omap_writel((0xFFFE88FF), base + OMAP_WATCHDOG_CRR); // 0xFFFE88FF: 3secs, 0xFFFD8EFF: 5secs, 0xFFFF82FF: 1sec
+
+	while (omap_readl(base + OMAP_WATCHDOG_WPS) & 0x04)
+		cpu_relax();
+
+	udelay(20);
+	omap_writel(0xBBBB, base + OMAP_WATCHDOG_SPR );
+	while (omap_readl(base + OMAP_WATCHDOG_WPS) & 0x10)
+		cpu_relax();
+
+	omap_writel(0x4444, base + OMAP_WATCHDOG_SPR );
+
+	return;
+}
 
 static void omap_wdt_ping(struct omap_wdt_dev *wdev)
 {
