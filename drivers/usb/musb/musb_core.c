@@ -728,7 +728,8 @@ b_host:
 		handled = IRQ_HANDLED;
 
 		/* Release the wakelock */
-		wake_unlock(&musb->musb_wakelock);
+		if (is_otg_enabled(musb) || is_host_enabled(musb))
+			wake_unlock(&musb->musb_wakelock);
 		switch (musb->xceiv->state) {
 #ifdef CONFIG_USB_MUSB_HDRC_HCD
 		case OTG_STATE_A_HOST:
@@ -797,7 +798,8 @@ b_host:
 				otg_state_string(musb->xceiv->state));
 
 			/* Hold a wakelock */
-			wake_lock(&musb->musb_wakelock);
+			if (is_otg_enabled(musb) || is_host_enabled(musb))
+				wake_lock(&musb->musb_wakelock);
 			switch (musb->xceiv->state) {
 #ifdef CONFIG_USB_OTG
 			case OTG_STATE_A_SUSPEND:
