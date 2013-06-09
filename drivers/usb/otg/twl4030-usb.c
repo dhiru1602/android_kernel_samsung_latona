@@ -371,7 +371,7 @@ static void twl4030_i2c_access(struct twl4030_usb *twl, int on)
 			WARN_ON(twl4030_usb_write_verify(twl, PHY_CLK_CTRL,
 						(u8)val) < 0);
 
-			timeout = jiffies + HZ;
+			timeout = jiffies + 2 * HZ;
 			while (!(twl4030_usb_read(twl, PHY_CLK_CTRL_STS) &
 							PHY_DPLL_CLK)
 				&& time_before(jiffies, timeout))
