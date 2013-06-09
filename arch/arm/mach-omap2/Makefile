@@ -262,7 +262,6 @@ obj-$(CONFIG_MACH_OMAP_LATONA)		+= board-latona.o \
 					   board-latona-display.o \
 					   board-latona-phone_svnet.o \
 					   board-latona-battery.o \
-					   board-latona-reboot.o \
 					   board-latona-mux_r08.o \
 					   board-latona-vibrator.o \
 					   board-latona-cmdline.o \

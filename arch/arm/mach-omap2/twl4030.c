@@ -82,7 +82,9 @@ static struct twl4030_ins wrst_seq[] __initdata = {
  * Reset RC.
  * Reenable twl4030.
  */
+#ifndef CONFIG_MACH_OMAP_LATONA
 	{MSG_SINGULAR(DEV_GRP_NULL, RES_NRES_PWRON, RES_STATE_OFF), 2},
+#endif
 	{MSG_SINGULAR(DEV_GRP_NULL, RES_RESET, RES_STATE_OFF), 2},
 	{MSG_SINGULAR(DEV_GRP_NULL, RES_MAIN_REF, RES_STATE_WRST), 2},
 	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_ALL, RES_TYPE_R0, RES_TYPE2_R2,
@@ -93,7 +95,9 @@ static struct twl4030_ins wrst_seq[] __initdata = {
 	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_RC, RES_TYPE_ALL, RES_TYPE2_R0,
 							RES_STATE_WRST), 2},
 	{MSG_SINGULAR(DEV_GRP_NULL, RES_RESET, RES_STATE_ACTIVE), 2},
+#ifndef CONFIG_MACH_OMAP_LATONA
 	{MSG_SINGULAR(DEV_GRP_NULL, RES_NRES_PWRON, RES_STATE_ACTIVE), 2},
+#endif
 };
 
 static struct twl4030_script wrst_script __initdata = {

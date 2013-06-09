@@ -191,18 +191,25 @@ extern s32 t2_adc_data( u8 channel );
 
 extern unsigned long long sched_clock( void );
 
-extern u32 latona_bootmode;
-
 static bool boot_complete = false;
 static int boot_monitor_count = 0;
 
 int stop_temperature_overheat = CHARGE_STOP_TEMPERATURE_MAX;
 int recover_temperature_overheat = CHARGE_RECOVER_TEMPERATURE_MAX;
 
+u32 latona_bootmode;
+
 #ifdef CONFIG_SEC_BATTERY_USE_RECOVERY_MODE
 static int recovery_mode = 0;
 module_param(recovery_mode, bool, 0);
 #endif  /* CONFIG_SEC_BATTER_USE_RECOVERY_MODE */
+
+static __init int setup_boot_mode(char *opt)
+{
+	latona_bootmode = (u32) memparse(opt, &opt);
+	return 0;
+}
+__setup("bootmode=", setup_boot_mode);
 
 // ------------------------------------------------------------------------- // 
 //                           sysfs interface                                 //
