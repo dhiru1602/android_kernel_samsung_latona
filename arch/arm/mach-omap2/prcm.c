@@ -28,6 +28,9 @@
 #include <plat/common.h>
 #include <plat/prcm.h>
 #include <plat/irqs.h>
+#ifdef CONFIG_MACH_OMAP_LATONA
+#include <mach/board-latona.h>
+#endif /* CONFIG_MACH_OMAP_LATONA */
 
 #include "clock.h"
 #include "clock2xxx.h"
@@ -68,7 +71,11 @@ static void omap_prcm_arch_reset(char mode, const char *cmd)
 		prcm_offs = WKUP_MOD;
 	} else if (cpu_is_omap34xx()) {
 		prcm_offs = OMAP3430_GR_MOD;
+#ifdef CONFIG_MACH_OMAP_LATONA
+		latona_write_reboot_reason(mode, cmd);
+#else
 		omap3_ctrl_write_boot_mode((cmd ? (u8)*cmd : 0));
+#endif /* CONFIG_MACH_OMAP_LATONA */
 	} else if (cpu_is_omap44xx()) {
 		omap4_prm_global_warm_sw_reset(); /* never returns */
 	} else {
@@ -104,8 +111,13 @@ static void omap_prcm_arch_reset(char mode, const char *cmd)
 	 */
 
 	/* XXX should be moved to some OMAP2/3 specific code */
-	omap2_prm_set_mod_reg_bits(OMAP_RST_GS_MASK, prcm_offs,
+#ifdef CONFIG_MACH_OMAP_LATONA
+ 	omap2_prm_set_mod_reg_bits(OMAP_RST_GS_MASK, prcm_offs,
+ 				   OMAP2_RM_RSTCTRL);
+#else
+	omap2_prm_set_mod_reg_bits(OMAP_RST_DPLL3_MASK, prcm_offs,
 				   OMAP2_RM_RSTCTRL);
+#endif
 	omap2_prm_read_mod_reg(prcm_offs, OMAP2_RM_RSTCTRL); /* OCP barrier */
 }
 

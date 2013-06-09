@@ -24,6 +24,7 @@ extern void __init latona_peripherals_init(void);
 extern void __init latona_display_init(void);
 extern void __init latona_phone_svnet_init(void);
 extern void __init latona_battery_init(void);
+extern void latona_write_reboot_reason(char mode, const char *cmd);
 extern short int get_headset_status(void);
 extern void __init latona_cmdline_set_serialno(void);
 
@@ -42,3 +43,15 @@ extern void __init latona_cmdline_set_serialno(void);
 #define EAR_ADC_SEL_GPIO OMAP_GPIO_EARPATH_SEL
 #define USE_ADC_SEL_GPIO 1
 /* End: GPIO SWITCH */
+
+/* Reboot modes */
+#define REBOOTMODE_NORMAL 		(1 << 0)
+#define REBOOTMODE_RECOVERY 		(1 << 1)
+#define REBOOTMODE_FOTA 		(1 << 2)
+#define REBOOTMODE_KERNEL_PANIC		(1 << 3)
+#define REBOOTMODE_SHUTDOWN		(1 << 4)
+#define REBOOTMODE_DOWNLOAD             (1 << 5)
+#define REBOOTMODE_USER_PANIC 		(1 << 6)
+#define REBOOTMODE_CP_CRASH		(1 << 9)
+#define REBOOTMODE_FORCED_UPLOAD	(1 << 10)
+/* End: Reboot modes */
