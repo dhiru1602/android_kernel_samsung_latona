@@ -4,7 +4,6 @@
 #include <linux/delay.h>
 #include <linux/i2c/i2c-omap-gpio.h>
 #include <linux/slab.h>
-
 #define GPIO_LEVEL_HIGH 1
 #define GPIO_LEVEL_LOW  0
 
@@ -15,6 +14,42 @@ static DEFINE_MUTEX(omap_gpio_i2c_mutex);
 //
 // omap_gpio_i2c_init
 // 
+
+//TI Patch start
+#define	MAX_GPIO_BUFFER		20
+typedef struct gpio_setting_done_check 
+{
+	int gpio_setting_done_list[MAX_GPIO_BUFFER];
+	int ptr;
+} GPIO_SETTING_DONE_CHECK;
+GPIO_SETTING_DONE_CHECK GPIO_List = {{-1, }, 0};
+
+
+static int gpio_check_already_enabled(int num)
+{
+	u32 cnt_value = 0;
+	u32 flag = 1;
+
+	for(cnt_value = 0; cnt_value < MAX_GPIO_BUFFER; cnt_value ++)
+	{
+		if(GPIO_List.gpio_setting_done_list[cnt_value] == num)
+		{
+			printk(KERN_WARNING "[%s] SCL GPIO request is duplicated! Please check whether it's proper or not! \n", __func__);
+			flag = 0;
+			break;
+		}
+	}
+
+	if(1 == flag)
+	{
+		GPIO_List.gpio_setting_done_list[GPIO_List.ptr] = num;
+		GPIO_List.ptr++;
+	}
+
+	return flag;
+}
+//TI Patch end
+
 OMAP_GPIO_I2C_CLIENT * omap_gpio_i2c_init(const int sda, const int scl, const int addr, const int khz)
 {
 	// allocate memory space for internal structure
@@ -29,7 +64,12 @@ OMAP_GPIO_I2C_CLIENT * omap_gpio_i2c_init(const int sda, const int scl, const in
 	mutex_lock(&omap_gpio_i2c_mutex);
 
 	// verify/request SCL and set direction
+
+#if 1	//TI Patch start
+	if(gpio_is_valid(scl) && gpio_check_already_enabled(scl)) 
+#else
 	if(gpio_is_valid(scl)) 
+#endif		//TI Patch end	
 	{
 		if(gpio_request(scl, NULL))
 		{
@@ -39,7 +79,11 @@ OMAP_GPIO_I2C_CLIENT * omap_gpio_i2c_init(const int sda, const int scl, const in
 	}
 
 	// verify/request SDA and set direction
+#if 1	//TI Patch start
+		if(gpio_is_valid(sda) && gpio_check_already_enabled(sda)) 
+#else
 	if(gpio_is_valid(sda)) 
+#endif		//TI Patch end	
 	{
 		if(gpio_request(sda, NULL))
 		{
@@ -50,6 +94,7 @@ OMAP_GPIO_I2C_CLIENT * omap_gpio_i2c_init(const int sda, const int scl, const in
 	
 	// calculate delay between the wave in SCL
 	client->delay   = 1000 / khz;
+	printk("scl=%d sda=%d client->delay=%d\n",scl,sda,client->delay);
 	client->scl 	= scl;
 	client->sda	= sda;
 	client->addr    = addr;
@@ -216,6 +261,14 @@ static unsigned char omap_gpio_i2c_poll_ack(OMAP_GPIO_I2C_CLIENT * client)
 	return ack;
 }
 
+static void omap_gpio_i2c_smbus_ack(OMAP_GPIO_I2C_CLIENT * client)
+{
+    gpio_set_value(client->scl, GPIO_LEVEL_HIGH);
+     udelay(client->delay);
+     gpio_set_value(client->scl, GPIO_LEVEL_LOW);
+}
+
+
 //
 // omap_gpio_i2c_write
 //
@@ -274,6 +327,73 @@ int omap_gpio_i2c_write(OMAP_GPIO_I2C_CLIENT * client, OMAP_GPIO_I2C_WR_DATA *i2
 }
 
 EXPORT_SYMBOL(omap_gpio_i2c_write);
+
+//
+// omap_gpio_i2c_smbus_write
+//
+
+int omap_gpio_i2c_smbus_write(OMAP_GPIO_I2C_CLIENT * client, OMAP_GPIO_I2C_WR_DATA *i2c_param)
+{
+    int i = 0;
+
+    mutex_lock(&omap_gpio_i2c_mutex);
+    // send start condition
+    omap_gpio_i2c_send_start(client);
+
+    // send slave address
+    omap_gpio_i2c_send_byte(client, (client->addr << 1) | I2C_M_WR);
+
+    // receive ack/nack from slave
+
+   omap_gpio_i2c_smbus_ack(client);
+    /*if( !omap_gpio_i2c_poll_ack(client) )
+    {
+        omap_gpio_i2c_send_stop(client);
+        printk("[omap_gpio_i2c_do_write] ack timeout while sending SA+W\n");
+        mutex_unlock(&omap_gpio_i2c_mutex);
+        return -EIO;
+    }
+   */
+
+    // send register address
+    for(i=0; i < i2c_param->reg_len; i++)
+    {
+        omap_gpio_i2c_send_byte( client, i2c_param->reg_addr[(i2c_param->reg_len-1)-i] );
+
+       omap_gpio_i2c_smbus_ack(client);
+       /*if( !omap_gpio_i2c_poll_ack(client) )
+        {
+            omap_gpio_i2c_send_stop(client);
+            printk("[omap_gpio_i2c_do_write] ack timeout while sending RA\n");
+            mutex_unlock(&omap_gpio_i2c_mutex);
+            return -EIO;
+        }*/
+    }
+ 	// send data
+    for(i=0; i < i2c_param->wdata_len; i++)
+    {
+        omap_gpio_i2c_send_byte( client, i2c_param->wdata[i] );
+
+       omap_gpio_i2c_smbus_ack(client);
+       /*if( !omap_gpio_i2c_poll_ack(client) )
+        {
+            omap_gpio_i2c_send_stop(client);
+            printk("[omap_gpio_i2c_do_write] ack timeout while writing DATA\n");
+            mutex_unlock(&omap_gpio_i2c_mutex);
+            return -EIO;
+        }*/
+    }
+
+    // send stop condition
+    omap_gpio_i2c_send_stop(client);
+
+    mutex_unlock(&omap_gpio_i2c_mutex);
+
+    return 0;
+}
+
+EXPORT_SYMBOL(omap_gpio_i2c_smbus_write);
+
 
 //
 // omap_gpio_i2c_read
@@ -360,3 +480,88 @@ int omap_gpio_i2c_read(OMAP_GPIO_I2C_CLIENT * client, OMAP_GPIO_I2C_RD_DATA *i2c
 
 EXPORT_SYMBOL(omap_gpio_i2c_read);
 
+//
+// omap_gpio_i2c_smbus_read
+//
+int omap_gpio_i2c_smbus_read(OMAP_GPIO_I2C_CLIENT * client, OMAP_GPIO_I2C_RD_DATA *i2c_param)
+{
+    int i = 0;
+
+    // check argument
+    if(client == NULL)
+    {
+        printk(KERN_ERR "[%s] client is null!\n", __func__);
+        return -EINVAL;
+    }
+
+    mutex_lock(&omap_gpio_i2c_mutex);
+
+    // send start condition
+    omap_gpio_i2c_send_start(client);
+
+    // if the client wants to send/receive in one command using SR
+    if(i2c_param->reg_len > 0)
+    {
+        // send slave address
+        omap_gpio_i2c_send_byte(client, (client->addr << 1) | I2C_M_WR);
+
+        // check ack/nack
+       omap_gpio_i2c_smbus_ack(client);
+       /* if( !omap_gpio_i2c_poll_ack(client) )
+        {
+            omap_gpio_i2c_send_stop(client);
+            printk("[omap_gpio_i2c_do_read] ack timeout while sending SA+W\n");
+            mutex_unlock(&omap_gpio_i2c_mutex);
+            return -EIO;
+        }*/
+
+        // send data
+        for(i = 0; i < i2c_param->reg_len; i++)
+        {
+            omap_gpio_i2c_send_byte( client, i2c_param->reg_addr[(i2c_param->reg_len-1)-i] );
+           omap_gpio_i2c_smbus_ack(client);
+           /*if( !omap_gpio_i2c_poll_ack(client) )
+            {
+				omap_gpio_i2c_send_stop(client);
+                printk("[omap_gpio_i2c_do_read] ack timeout while sending RA\n");
+               mutex_unlock(&omap_gpio_i2c_mutex);
+                return -EIO;
+            }*/
+        }
+
+        omap_gpio_i2c_send_stop(client);
+        udelay(client->delay);
+
+        omap_gpio_i2c_send_start(client);
+    }
+
+    // send slave address
+    omap_gpio_i2c_send_byte(client, (client->addr << 1) | I2C_M_RD);
+   omap_gpio_i2c_smbus_ack(client);
+
+   /*if( !omap_gpio_i2c_poll_ack(client) )
+    {
+        omap_gpio_i2c_send_stop(client);
+        printk("[omap_gpio_i2c_do_read] ack timeout while sending SA+R\n");
+        mutex_unlock(&omap_gpio_i2c_mutex);
+        return -EIO;
+    }*/
+
+    // receive data and send ack or nack
+    for(i = 0; i < i2c_param->rdata_len; i++)
+    {
+        i2c_param->rdata[i] = omap_gpio_i2c_read_byte(client);
+
+        if(i == (i2c_param->rdata_len-1))
+            omap_gpio_i2c_send_nack(client);
+        else
+            omap_gpio_i2c_send_ack(client);
+    }
+
+    // terminate communication
+    omap_gpio_i2c_send_stop(client);
+    mutex_unlock(&omap_gpio_i2c_mutex);
+
+    return 0;
+}
+EXPORT_SYMBOL(omap_gpio_i2c_smbus_read);

@@ -5,12 +5,12 @@
 
 #include <mach/gpio.h>
 #include <mach/hardware.h>
-#include "../../../arch/arm/mach-omap2/mux.h"
+//#include "mux.h"
 
 typedef struct __OMAP_GPIO_I2C_WR_DATA {
 	u8 reg_len;
 	u8 *reg_addr;
-	u8 wdata_len;
+	int wdata_len;
 	u8 *wdata;
         u8 rdata;
 	u8 rdata_len;	
@@ -19,7 +19,7 @@ typedef struct __OMAP_GPIO_I2C_WR_DATA {
 typedef struct __OMAP_GPIO_I2C_RD_DATA {
 	u8 reg_len;
 	u8 *reg_addr;
-	u8 rdata_len;
+	int rdata_len;
 	u8 *rdata;
 } OMAP_GPIO_I2C_RD_DATA;
 
@@ -34,3 +34,5 @@ extern OMAP_GPIO_I2C_CLIENT * omap_gpio_i2c_init(int /*sda*/, int /*scl*/, int/*
 extern void omap_gpio_i2c_deinit(OMAP_GPIO_I2C_CLIENT *);
 extern int omap_gpio_i2c_write(OMAP_GPIO_I2C_CLIENT *, OMAP_GPIO_I2C_WR_DATA *);
 extern int omap_gpio_i2c_read(OMAP_GPIO_I2C_CLIENT *, OMAP_GPIO_I2C_RD_DATA *);
+extern int omap_gpio_i2c_smbus_read(OMAP_GPIO_I2C_CLIENT *, OMAP_GPIO_I2C_RD_DATA *);
+extern int omap_gpio_i2c_smbus_write(OMAP_GPIO_I2C_CLIENT *, OMAP_GPIO_I2C_WR_DATA *);
