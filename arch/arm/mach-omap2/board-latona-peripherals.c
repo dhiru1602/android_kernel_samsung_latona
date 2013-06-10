@@ -483,7 +483,7 @@ static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
 	},
 #ifdef CONFIG_INPUT_YAS529
 	{
-		I2C_BOARD_INFO("geomagnetic", 0x2E),
+		I2C_BOARD_INFO("Yas529Geomag", 0x2E),
 	},
 #endif
 	{
