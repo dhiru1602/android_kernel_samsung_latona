@@ -24,10 +24,6 @@
 #include <linux/power_supply.h>
 #include "common.h"
 
-#if defined(CONFIG_USE_GPIO_I2C)
-#include <linux/i2c/i2c-omap-gpio.h>
-#endif    
-
 #define DRIVER_NAME "secFuelgaugeDev"
 
 #define I2C_M_WR    0x00
@@ -41,12 +37,7 @@
 #define REG_COMMAND 0xFE
 
 
-#if defined(CONFIG_USE_GPIO_I2C)
-    static OMAP_GPIO_I2C_CLIENT * fuelgauge_i2c_client;
-	static struct i2c_client * fuelgauge_i2c_dummy_client;
-#else
-    static struct i2c_client * fuelgauge_i2c_client;
-#endif
+static struct i2c_client * fuelgauge_i2c_client;
 
 struct delayed_work fuelgauge_work;
 
@@ -58,9 +49,7 @@ static SEC_battery_charger_info *sec_bci;
        int fuelgauge_quickstart( void );
 static int i2c_read( unsigned char );
 static int i2c_write( unsigned char *, u8 );
-#if !defined(CONFIG_USE_GPIO_I2C)
 static int i2c_read_dur_sleep( unsigned char );
-#endif
 static irqreturn_t low_battery_isr( int, void * );
 static void fuelgauge_work_handler( struct work_struct * );
 static int fuelgauge_probe( struct i2c_client *, const struct i2c_device_id * );
@@ -80,6 +69,7 @@ static const struct i2c_device_id fuelgauge_i2c_id[] = {
     { DRIVER_NAME, 0 },
     { },
 };
+MODULE_DEVICE_TABLE(i2c, fuelgauge_i2c_id);
 
 static struct i2c_driver fuelgauge_i2c_driver =
 {
@@ -100,14 +90,10 @@ int get_fuelgauge_adc_value( int count, bool is_sleep )
 {
     int result;
     
-#if !defined(CONFIG_USE_GPIO_I2C)
     if( is_sleep )
         result = i2c_read_dur_sleep( REG_VCELL );
     else
         result = i2c_read( REG_VCELL );
-#else
-    result = i2c_read( REG_VCELL );
-#endif
 
     result = ( result >> 4 ) * 125 / 100;
     return result;
@@ -117,14 +103,10 @@ int get_fuelgauge_ptg_value( bool is_sleep )
 {
     int val;
 
-#if !defined(CONFIG_USE_GPIO_I2C)
     if( is_sleep )
         val = i2c_read_dur_sleep( REG_SOC ); 
     else
         val = i2c_read( REG_SOC );
-#else
-    val = i2c_read( REG_SOC );
-#endif
 
     if ((val & 0x0F) >= 32)
         val = (val >> 8) + 1;
@@ -151,60 +133,13 @@ int fuelgauge_quickstart( void )
     return 0;
 }
 
-#if 0
-int update_rcomp_by_temperature(int temp)
-{
-    static unsigned int appliedRcomp = 0;
-
-    int tempCoHot = -75;
-    int tempCoCold = -75;
-    unsigned int newRcomp = 0;
-
-    int ret = 0;
-    unsigned char buf[3];
-
-    if(temp > 20)
-        newRcomp = startingRcomp + (((temp - 20) * tempCoHot)/100);
-    else if(temp < 20)
-        newRcomp = startingRcomp + (((temp - 20) * tempCoCold)/100);
-    else
-        newRcomp = startingRcomp;
-
-    if(newRcomp != appliedRcomp)
-    {
-        ret = i2c_read( REG_RCOMP );
-        buf[0] = REG_RCOMP;
-        buf[1] = newRcomp;
-        buf[2] = ret & 0xFF;
-        i2c_write( buf, 3 );
-
-        appliedRcomp = newRcomp;
-        printk("%s, buf[0]=0x%x, buf[1]=0x%x, buf[2]=0x%x\n", buf[0], buf[1], buf[2]);
-        return 1;
-    }
-
-    return 0;
-}
-#endif
-
 static int i2c_read( unsigned char reg_addr )
 {
     int ret = 0;
     unsigned char buf[2];
 
-#if defined(CONFIG_USE_GPIO_I2C)
-    OMAP_GPIO_I2C_RD_DATA i2c_rd_param;
-#else
     struct i2c_msg msg1[1],msg2[1];
-#endif
 
-#if defined(CONFIG_USE_GPIO_I2C)
-    i2c_rd_param.reg_len = 1;
-    i2c_rd_param.reg_addr = &reg_addr;
-    i2c_rd_param.rdata_len = 2;
-    i2c_rd_param.rdata = buf;
-    omap_gpio_i2c_read(fuelgauge_i2c_client, &i2c_rd_param);
-#else
     msg1->addr = fuelgauge_i2c_client->addr;
     msg1->flags = I2C_M_WR;
     msg1->len = 1;
@@ -231,7 +166,6 @@ static int i2c_read( unsigned char reg_addr )
             return -1;
         }
     }
-#endif
 
     ret = buf[0] << 8 | buf[1];
 
@@ -242,13 +176,8 @@ static int i2c_write( unsigned char *buf, u8 len )
 {
     int ret = 0;
 
-#if defined(CONFIG_USE_GPIO_I2C)
-    OMAP_GPIO_I2C_WR_DATA i2c_wr_param;
-#else
     struct i2c_msg msg;
-#endif
 
-#if !defined(CONFIG_USE_GPIO_I2C)
     msg.addr    = fuelgauge_i2c_client->addr;
     msg.flags = I2C_M_WR;
     msg.len = len;
@@ -261,25 +190,10 @@ static int i2c_write( unsigned char *buf, u8 len )
         printk( KERN_ERR "[FG] fail to write max17040." );
         return -1;
     }
-#else
-#if 0
-    i2c_wr_param.reg_len = 0;
-    i2c_wr_param.reg_addr = NULL;
-    i2c_wr_param.wdata_len = len;
-    i2c_wr_param.wdata = buf;
-#else
-    i2c_wr_param.reg_len = 1;
-    i2c_wr_param.reg_addr = &(buf[0]);
-    i2c_wr_param.wdata_len = len;
-    i2c_wr_param.wdata = &(buf[1]);	
-    omap_gpio_i2c_write(fuelgauge_i2c_client, &i2c_wr_param);
-#endif
-#endif
 
     return ret;
 }
 
-#if !defined(CONFIG_USE_GPIO_I2C)
 static int i2c_read_dur_sleep( unsigned char reg_addr )
 {
     unsigned char buf[2];
@@ -296,7 +210,6 @@ static int i2c_read_dur_sleep( unsigned char reg_addr )
 
     return ret;
 }
-#endif
 
 static irqreturn_t low_battery_isr( int irq, void *_di )
 {
@@ -331,11 +244,7 @@ static int fuelgauge_probe( struct i2c_client *client,
         printk( "[FG] device not supported.\n" );
     }
 
-    #if defined(CONFIG_USE_GPIO_I2C)
-	fuelgauge_i2c_dummy_client = client;
-    #else
     fuelgauge_i2c_client = client;
-    #endif
 
     if ( client->irq )
     {
@@ -427,26 +336,11 @@ int fuelgauge_init( void )
 {
     int ret;
 
-#if defined(CONFIG_USE_GPIO_I2C)
-    fuelgauge_i2c_client = omap_gpio_i2c_init(OMAP_GPIO_FUEL_SDA,OMAP_GPIO_FUEL_SCL, 0x36, 10);
-
-    if(fuelgauge_i2c_client == NULL)
-    {
-        printk(KERN_ERR "[FG] omap_gpio_i2c_init failed!\n");
-    }
-
-	printk("[FG] Fuelgauge Init. add dummy i2c driver!\n");
-	if( ( ret = i2c_add_driver( &fuelgauge_i2c_driver ) < 0 ) )
-	{
-		printk( KERN_ERR "[FG] i2c_add_driver failed.\n" );    
-	}
-#else
     printk("[FG] Fuelgauge Init. add i2c driver!\n");
     if( ( ret = i2c_add_driver( &fuelgauge_i2c_driver ) < 0 ) )
     {
         printk( KERN_ERR "[FG] i2c_add_driver failed.\n" );
     }
-#endif
 
     return ret;    
 }
@@ -455,9 +349,6 @@ void fuelgauge_exit( void )
 {
     printk("[FG] Fuelgauge Exit.\n");
 
-#if defined(CONFIG_USE_GPIO_I2C)
-    omap_gpio_i2c_deinit(fuelgauge_i2c_client);
-#endif
     i2c_del_driver( &fuelgauge_i2c_driver );
 
 }

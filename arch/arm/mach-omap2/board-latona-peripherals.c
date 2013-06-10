@@ -19,6 +19,7 @@
 #include <linux/input.h>
 #include <linux/input/matrix_keypad.h>
 #include <linux/gpio.h>
+#include <linux/i2c-gpio.h>
 #include <linux/i2c/twl.h>
 #include <linux/regulator/machine.h>
 #include <linux/regulator/fixed.h>
@@ -480,13 +481,6 @@ static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
 	{
 		I2C_BOARD_INFO("cam_pmic", CAM_PMIC_I2C_ADDR),
 	},
-#ifdef CONFIG_SAMSUNG_BATTERY
-	{
-		I2C_BOARD_INFO("secFuelgaugeDev", 0x36),
-		.flags = I2C_CLIENT_WAKE,
-		.irq = OMAP_GPIO_IRQ(OMAP_GPIO_FUEL_INT_N),
-	},
-#endif
 #ifdef CONFIG_INPUT_YAS529
 	{
 		I2C_BOARD_INFO("geomagnetic", 0x2E),
@@ -501,6 +495,33 @@ static struct i2c_board_info __initdata latona_i2c_bus3_info[] = {
 	{
 		I2C_BOARD_INFO("qt602240_ts", 0x4A),
 	},
+};
+
+static __initdata struct i2c_board_info latona_i2c4_boardinfo[] = {
+	{
+		I2C_BOARD_INFO("secFuelgaugeDev", 0x36),
+		.flags = I2C_CLIENT_WAKE,
+		.irq = OMAP_GPIO_IRQ(OMAP_GPIO_FUEL_INT_N),
+	},
+};
+
+static struct i2c_gpio_platform_data latona_gpio_i2c4_pdata = {
+	.sda_pin = OMAP_GPIO_FUEL_SDA,
+	.scl_pin = OMAP_GPIO_FUEL_SCL,
+	.udelay = 10,
+	.timeout = 0,
+};
+
+static struct platform_device latona_gpio_i2c4_device = {
+	.name	= "i2c-gpio",
+	.id	= 4,
+	.dev = {
+		.platform_data = &latona_gpio_i2c4_pdata,
+	},
+};
+
+static struct platform_device *latona_i2c_gpio_devices[] __initdata = {
+	&latona_gpio_i2c4_device, // Fuel Guage MAX17040
 };
 
 static int __init omap_i2c_init(void)
@@ -533,6 +554,9 @@ static int __init omap_i2c_init(void)
 	omap_pmic_init(1, 400, "twl5030", INT_34XX_SYS_NIRQ, &latona_twldata);	
 	omap_register_i2c_bus(3, 400, latona_i2c_bus3_info,
 			ARRAY_SIZE(latona_i2c_bus3_info));
+
+	i2c_register_board_info(4, latona_i2c4_boardinfo, ARRAY_SIZE(latona_i2c4_boardinfo));
+
 	return 0;
 }
 
@@ -560,6 +584,8 @@ void __init latona_peripherals_init(void)
 		ARRAY_SIZE(latona_board_devices));
 	twl4030_get_scripts(&latona_t2scripts_data);
 	board_onenand_init();
+	platform_add_devices(latona_i2c_gpio_devices,
+		ARRAY_SIZE(latona_i2c_gpio_devices));
 	omap_i2c_init();
 	atmel_dev_init();
 	platform_device_register(&omap_vwlan_device);
