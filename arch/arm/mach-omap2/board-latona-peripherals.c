@@ -486,9 +486,6 @@ static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
 		I2C_BOARD_INFO("Yas529Geomag", 0x2E),
 	},
 #endif
-	{
-		I2C_BOARD_INFO("Si4709_driver", 0x10),			
-	},
 };
 
 static struct i2c_board_info __initdata latona_i2c_bus3_info[] = {
@@ -541,9 +538,31 @@ static struct platform_device latona_gpio_i2c5_device = {
 	},
 };
 
+static __initdata struct i2c_board_info latona_i2c6_boardinfo[] = {
+	{
+		I2C_BOARD_INFO("Si4709_driver", 0x10),
+	},
+};
+
+static struct i2c_gpio_platform_data latona_gpio_i2c6_pdata = {
+	.sda_pin = OMAP_GPIO_FM_SDA,
+	.scl_pin = OMAP_GPIO_FM_SCL,
+	.udelay = 5,
+	.timeout = 0,
+};
+
+static struct platform_device latona_gpio_i2c6_device = {
+	.name	= "i2c-gpio",
+	.id	= 6,
+	.dev = {
+		.platform_data = &latona_gpio_i2c6_pdata,
+	},
+};
+
 static struct platform_device *latona_i2c_gpio_devices[] __initdata = {
 	&latona_gpio_i2c4_device, // Fuel Guage MAX17040
 	&latona_gpio_i2c5_device, // Yamaha BMA222
+	&latona_gpio_i2c6_device, // Si4709 FM Radio
 };
 
 static int __init omap_i2c_init(void)
@@ -579,6 +598,7 @@ static int __init omap_i2c_init(void)
 
 	i2c_register_board_info(4, latona_i2c4_boardinfo, ARRAY_SIZE(latona_i2c4_boardinfo));
 	i2c_register_board_info(5, latona_i2c5_boardinfo, ARRAY_SIZE(latona_i2c5_boardinfo));
+	i2c_register_board_info(6, latona_i2c6_boardinfo, ARRAY_SIZE(latona_i2c6_boardinfo));
 
 	return 0;
 }

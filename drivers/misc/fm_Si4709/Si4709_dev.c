@@ -44,10 +44,6 @@
 #include "common.h"
 #include <mach/board-latona.h>
 
-#if defined(CONFIG_FMRADIO_USE_GPIO_I2C)
-#include <linux/i2c/i2c-omap-gpio.h>
-#endif
-
 enum
 {
     eTRUE,
@@ -201,10 +197,6 @@ struct workqueue_struct *Si4709_wq;
 struct work_struct Si4709_work;
 #endif
 
-#if defined(CONFIG_FMRADIO_USE_GPIO_I2C)
-static OMAP_GPIO_I2C_CLIENT * Si4709_i2c_client;
-#endif
-
 /*static functions*/
 /**********************************************/
 static void wait(void);
@@ -253,14 +245,7 @@ int Si4709_dev_init(struct i2c_client *client)
      
     Si4709_dev.client = client;
 
-#if defined(CONFIG_FMRADIO_USE_GPIO_I2C)
-	Si4709_i2c_client = omap_gpio_i2c_init(OMAP_GPIO_FM_SDA,
-						  OMAP_GPIO_FM_SCL,
-						  0x10,
-						  200);
-#endif
-
-	/***reset the device here****/
+    /***reset the device here****/
 	
     gpio_set_value(OMAP_GPIO_FM_nRST, GPIO_LEVEL_LOW);	
  		
@@ -2485,10 +2470,6 @@ static int i2c_read( u8 reg )
 	u8 idx, reading_reg = STATUSRSSI;
 	u8 data[NUM_OF_REGISTERS * 2], data_high, data_low;
 	int msglen = 0, ret = 0;
-#if defined(CONFIG_FMRADIO_USE_GPIO_I2C)
-	OMAP_GPIO_I2C_RD_DATA i2c_rd_param;
-	u8 reg_addr_0 = 0x0;
-#endif	
 
 	for(idx = 0; idx < NUM_OF_REGISTERS * 2; idx++)
 	{
@@ -2506,21 +2487,8 @@ static int i2c_read( u8 reg )
 		msglen = (msglen + NUM_OF_REGISTERS) * 2;
 	} 
 
-#if !defined(CONFIG_FMRADIO_USE_GPIO_I2C)
 	ret = i2c_master_recv(Si4709_dev.client, data, msglen);
-#else
-	i2c_rd_param.reg_len = 0;
-	i2c_rd_param.reg_addr = &data;
-	i2c_rd_param.rdata_len = msglen;
-	i2c_rd_param.rdata = data;
-        
-	ret = omap_gpio_i2c_read(Si4709_i2c_client, &i2c_rd_param);
-	if(ret)
-	{
-		printk(KERN_ERR "[FM Radio] i2c_read failed![%d]\n", ret);
-	}
-
-#endif       
+      
 	  if(msglen) 
 	  {
 	  	idx = 0;
@@ -2556,24 +2524,6 @@ static int i2c_read( u8 reg )
    calling this function. If it is eFALSE then this function should not
    be called*/
    
-#if defined(CONFIG_FMRADIO_USE_GPIO_I2C)
-static int GP_i2c_write( unsigned char *buf, u8 len )
-{
-	OMAP_GPIO_I2C_WR_DATA i2c_wr_param;
-
-	i2c_wr_param.reg_len = 0;
-	i2c_wr_param.reg_addr = NULL;
-	i2c_wr_param.wdata_len = len;
-	i2c_wr_param.wdata = buf;
-	if(!omap_gpio_i2c_write(Si4709_i2c_client, &i2c_wr_param))
-	{
-		return len;
-	}
-
-	return 0;
-}
-#endif
-
 static int i2c_write( u8 reg )
 {
 	   u8 writing_reg = POWERCFG;
@@ -2593,11 +2543,7 @@ static int i2c_write( u8 reg )
 	      	writing_reg = (writing_reg +1) & RDSD;
 	    } while(writing_reg != ((reg + 1) & RDSD));
 
-#if !defined(CONFIG_FMRADIO_USE_GPIO_I2C)
 	    ret = i2c_master_send(Si4709_dev.client, ( const char *)data, msglen);
-#else
-            ret =GP_i2c_write( ( const char *)data, msglen);
-#endif
 
     	if(ret == msglen) 
     	{
