@@ -243,8 +243,8 @@ struct yas_acc_driver_callback {
     int (*unlock)(void);
     int (*i2c_open)(void);
     int (*i2c_close)(void);
-    int (*i2c_write)(uint8_t slave, uint8_t adr, const uint8_t *buf, int len);
-    int (*i2c_read) (uint8_t slave, uint8_t adr, uint8_t *buf, int len);
+    int (*i2c_write)(u16 reg, u8 *read_val, unsigned int len);
+    int (*i2c_read)(uint8_t reg, uint8_t *read_val, int len);
     void (*msleep)(int msec);
 };
 

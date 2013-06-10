@@ -520,8 +520,30 @@ static struct platform_device latona_gpio_i2c4_device = {
 	},
 };
 
+static __initdata struct i2c_board_info latona_i2c5_boardinfo[] = {
+	{
+		I2C_BOARD_INFO("YamahaBMA222", 0x08),
+	},
+};
+
+static struct i2c_gpio_platform_data latona_gpio_i2c5_pdata = {
+	.sda_pin = OMAP_GPIO_SENSOR_SDA,
+	.scl_pin = OMAP_GPIO_SENSOR_SCL,
+	.udelay = 5,
+	.timeout = 0,
+};
+
+static struct platform_device latona_gpio_i2c5_device = {
+	.name	= "i2c-gpio",
+	.id	= 5,
+	.dev = {
+		.platform_data = &latona_gpio_i2c5_pdata,
+	},
+};
+
 static struct platform_device *latona_i2c_gpio_devices[] __initdata = {
 	&latona_gpio_i2c4_device, // Fuel Guage MAX17040
+	&latona_gpio_i2c5_device, // Yamaha BMA222
 };
 
 static int __init omap_i2c_init(void)
@@ -556,6 +578,7 @@ static int __init omap_i2c_init(void)
 			ARRAY_SIZE(latona_i2c_bus3_info));
 
 	i2c_register_board_info(4, latona_i2c4_boardinfo, ARRAY_SIZE(latona_i2c4_boardinfo));
+	i2c_register_board_info(5, latona_i2c5_boardinfo, ARRAY_SIZE(latona_i2c5_boardinfo));
 
 	return 0;
 }

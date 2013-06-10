@@ -27,7 +27,6 @@
 #include <linux/types.h>
 #include <linux/workqueue.h>
 #include <linux/slab.h>
-#include <linux/i2c/i2c-omap-gpio.h>
 #include <mach/board-latona.h>
 
 #if defined(CONFIG_HAS_EARLYSUSPEND)
@@ -40,7 +39,7 @@
 #include "yas_acc_driver-bma222.c"
 
 #define YAS_ACC_KERNEL_VERSION                                                        "3.0.401"
-#define YAS_ACC_KERNEL_NAME                                                   "accelerometer"
+#define YAS_ACC_KERNEL_NAME                                                   "YamahaBMA222"
 
 /* REL axes parameter range [um/s^2] (for input event) */
 #define GRAVITY_EARTH                                                                 9806550
@@ -49,6 +48,8 @@
 
 #define delay_to_jiffies(d)                                       ((d)?msecs_to_jiffies(d):1)
 #define actual_delay(d)                               (jiffies_to_msecs(delay_to_jiffies(d)))
+
+#define I2C_M_WR 0
 
 /* ---------------------------------------------------------------------------------------- *
    Function prototype declaration
@@ -62,8 +63,8 @@ static int yas_acc_lock(void);
 static int yas_acc_unlock(void);
 static int yas_acc_i2c_open(void);
 static int yas_acc_i2c_close(void);
-static int yas_acc_i2c_write(uint8_t, uint8_t, const uint8_t *, int);
-static int yas_acc_i2c_read(uint8_t, uint8_t, uint8_t *, int);
+static int yas_acc_i2c_write(u16 reg, u8 *read_val, unsigned int len);
+static int yas_acc_i2c_read(uint8_t reg, uint8_t *read_val, int len);
 static void yas_acc_msleep(int);
 
 static int yas_acc_core_driver_init(struct yas_acc_private_data *);
@@ -96,15 +97,15 @@ static ssize_t yas_acc_wake_store(struct device *, struct device_attribute *, co
 static ssize_t yas_acc_private_data_show(struct device *, struct device_attribute *, char *);
 #if DEBUG
 static ssize_t yas_acc_debug_reg_show(struct device *, struct device_attribute *, char *);
-static int yas_acc_suspend(OMAP_GPIO_I2C_CLIENT *client, pm_message_t);
-static int yas_acc_resume(OMAP_GPIO_I2C_CLIENT *client);
+static int yas_acc_suspend(struct i2c_client * client , pm_message_t mesg);
+static int yas_acc_resume(struct i2c_client * client);
 #endif
 
 static void yas_acc_work_func(struct work_struct *);
-//static int yas_acc_probe(struct i2c_client *, const struct i2c_device_id *);
-//static int yas_acc_remove(struct i2c_client *);
-static int yas_acc_suspend(OMAP_GPIO_I2C_CLIENT *client, pm_message_t);
-static int yas_acc_resume(OMAP_GPIO_I2C_CLIENT *client);
+static int yas_acc_probe(struct i2c_client *, const struct i2c_device_id *);
+static int yas_acc_remove(struct i2c_client *);
+static int yas_acc_suspend(struct i2c_client * client , pm_message_t mesg);
+static int yas_acc_resume(struct i2c_client * client);
 
 /* ---------------------------------------------------------------------------------------- *
    Driver private data
@@ -112,8 +113,7 @@ static int yas_acc_resume(OMAP_GPIO_I2C_CLIENT *client);
 struct yas_acc_private_data {
     struct mutex driver_mutex;
     struct mutex data_mutex;
-    //struct i2c_client *client;
-    OMAP_GPIO_I2C_CLIENT * client;
+    struct i2c_client *client;
     struct input_dev *input;
     struct yas_acc_driver *driver;
     struct delayed_work work;
@@ -174,29 +174,66 @@ static int yas_acc_i2c_close(void)
     return 0;
 }
 
-static int yas_acc_i2c_write(uint8_t slave, uint8_t reg, const uint8_t *buf, int len)
+static int yas_acc_i2c_write(u16 reg, u8 *read_val, unsigned int len)
 {
-    OMAP_GPIO_I2C_WR_DATA i2c_wr_param;
-    struct yas_acc_private_data *data = yas_acc_get_data();
+    int err;
+    struct i2c_msg msg[1];
+    struct yas_acc_private_data *yas_data = yas_acc_get_data();
+    unsigned char data[300];
+    int i ;
+		
+    msg->addr = yas_data->client->addr;
+    msg->flags = I2C_M_WR;
+    msg->len = len + 2;
+    msg->buf = data;
+    data[0] = reg & 0x00ff;
+    data[1] = reg >> 8;
 	
-    i2c_wr_param.reg_addr = &reg;
-    i2c_wr_param.reg_len = 1;
-    i2c_wr_param.wdata_len = len;
-    i2c_wr_param.wdata = buf;
-    return omap_gpio_i2c_write(data->client, &i2c_wr_param);
+    for (i = 0; i < len; i++)
+    {
+	data[i+2] = *(read_val+i);
+    }
+
+    err = i2c_transfer(yas_data->client->adapter, msg, 1);
+
+    if (err >= 0) return 0;
+
+    return err;
 
 }
 
-static int yas_acc_i2c_read(uint8_t slave, uint8_t reg, uint8_t *buf, int len)
+static int yas_acc_i2c_read(uint8_t reg, uint8_t *read_val, int len)
 {
-    OMAP_GPIO_I2C_RD_DATA i2c_rd_param;
-    struct yas_acc_private_data *data = yas_acc_get_data();
-    
-    i2c_rd_param.reg_addr = &reg;
-    i2c_rd_param.reg_len = 1;
-    i2c_rd_param.rdata_len = len;
-    i2c_rd_param.rdata = buf;
-    return omap_gpio_i2c_read(data->client, &i2c_rd_param);
+    int ret = 0;
+
+    struct 	 i2c_msg msg[1];
+    struct yas_acc_private_data *yas_data = yas_acc_get_data();
+    unsigned char data[2];
+
+    msg->addr 	= yas_data->client->addr;
+    msg->flags 	= I2C_M_WR;
+    msg->len 	= 2;
+    msg->buf 	= data;
+    data[0] = reg & 0x00ff;
+    data[1] = reg >> 8;
+	
+
+    ret = i2c_transfer(yas_data->client->adapter, msg, 1);
+    if (ret >= 0) 
+    {
+	msg->flags = I2C_M_RD;
+	msg->len   = len;
+	msg->buf   = read_val;
+	ret = i2c_transfer(yas_data->client->adapter, msg, 1);
+    }
+
+    if (ret >= 0) 
+    {
+	    return 0;
+    }else{
+	printk( KERN_ERR "[yas_acc_i2c_read] I2C Read Failed\n" );
+	return -1;
+    }
 }
 
 static void yas_acc_msleep(int msec)
@@ -245,40 +282,6 @@ static int yas_acc_core_driver_init(struct yas_acc_private_data *data)
         kfree(driver);
         return err;
     }
-
-//-------------for test----------------	
-#if 0
-
-    struct yas_acc_data accel;
-    int i;
-    accel.xyz.v[0] = accel.xyz.v[1] = accel.xyz.v[2] = 0;
-	printk(KERN_ERR "bma222_init_proc test 1\n");
-	
-    err = driver->set_enable(1);
-    if (err != YAS_NO_ERROR) {
-		printk(KERN_ERR "bma222_init_proc set_enable err \n");
-        kfree(driver);
-        return err;
-    }
-
-printk(KERN_ERR "bma222_init_proc test 2\n");
-
-for(i=0;i<10;i++)
-{
-    err = driver->measure(&accel);
-    if (err != YAS_NO_ERROR) {
-		printk(KERN_ERR "bma222_init_proc measure err =%d\n",err);
-        kfree(driver);
-        return err;
-    }
-
-     printk(KERN_ERR "bma222_init_proc data(%10d %10d %10d) raw(%5d %5d %5d)\n",
-     accel.xyz.v[0], accel.xyz.v[1], accel.xyz.v[2], accel.raw.v[0], accel.raw.v[1], accel.raw.v[2]);
-}
-#endif
-printk(KERN_ERR "bma222_init_proc test 3 \n");
-
-//-------------for test----------------
 
     return 0;
 }
@@ -910,7 +913,7 @@ static int bma222_early_suspend(struct early_suspend *handler)
 }
 #endif
 
-static int yas_acc_suspend(OMAP_GPIO_I2C_CLIENT *client, pm_message_t mesg)
+static int yas_acc_suspend(struct i2c_client * client , pm_message_t mesg)
 {
 /*    struct yas_acc_private_data *data =yas_acc_get_data();
     struct yas_acc_driver *driver = data->driver;
@@ -956,7 +959,7 @@ static int bma222_early_resume(struct early_suspend *handler)
 }
 #endif
 
-static int yas_acc_resume(OMAP_GPIO_I2C_CLIENT *client)
+static int yas_acc_resume(struct i2c_client * client)
 {
  /*   struct yas_acc_private_data *data =yas_acc_get_data();
     struct yas_acc_driver *driver = data->driver;
@@ -982,8 +985,7 @@ extern struct class *sensors_class;
 extern int sensors_register(struct device *dev, void * drvdata, struct device_attribute *attributes[], char *name);
 static struct device *accel_sensor_device;
 
-//static int yas_acc_probe(struct i2c_client *client, const struct i2c_device_id *id)
-static int bma222_init_proc()
+static int yas_acc_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
     struct yas_acc_private_data *data;
     int err;
@@ -999,17 +1001,16 @@ static int bma222_init_proc()
     mutex_init(&data->driver_mutex);
     mutex_init(&data->data_mutex);
 
-    data->client = omap_gpio_i2c_init(OMAP_GPIO_SENSOR_SDA, OMAP_GPIO_SENSOR_SCL, 0x08, 200);
-	
-/*
+
     // Setup i2c client
     if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
         err = -ENODEV;
         goto ERR2;
     }
+
     i2c_set_clientdata(client, data);
     data->client = client;
-*/
+
     /* Setup accelerometer core driver */
     err = yas_acc_core_driver_init(data);
     if (err < 0) {
@@ -1058,30 +1059,14 @@ static int bma222_init_proc()
     return err;
 }
 
-static int bma222_exit_proc()
-{
-
-  struct yas_acc_private_data *data = yas_acc_get_data();
-  struct yas_acc_driver *driver = data->driver;
-	
-#if defined(CONFIG_HAS_EARLYSUSPEND)
-		unregister_early_suspend(&data->early_suspend);
-#endif
-
-    yas_acc_set_enable(driver, 0);
-    sysfs_remove_group(&data->input->dev.kobj, &yas_acc_attribute_group);
-    yas_acc_input_fini(data);
-    yas_acc_core_driver_fini(data);
-    kfree(data);	
-
-    return 0;
-}
-
-/*
 static int yas_acc_remove(struct i2c_client *client)
 {
     struct yas_acc_private_data *data = i2c_get_clientdata(client);
     struct yas_acc_driver *driver = data->driver;
+
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+		unregister_early_suspend(&data->early_suspend);
+#endif
 
     yas_acc_set_enable(driver, 0);
     sysfs_remove_group(&data->input->dev.kobj, &yas_acc_attribute_group);
@@ -1101,7 +1086,7 @@ MODULE_DEVICE_TABLE(i2c, yas_acc_id);
 
 struct i2c_driver yas_acc_driver = {
     .driver = {
-        .name = "accelerometer",
+        .name = YAS_ACC_KERNEL_NAME,
         .owner = THIS_MODULE,
     },
     .probe = yas_acc_probe,
@@ -1110,25 +1095,23 @@ struct i2c_driver yas_acc_driver = {
     .resume = yas_acc_resume,
     .id_table = yas_acc_id,
 };
-*/
+
 
 /* ---------------------------------------------------------------------------------------- *
    Module init and exit
  * ---------------------------------------------------------------------------------------- */
 static int __init yas_acc_init(void)
 {
-    //return i2c_add_driver(&yas_acc_driver);
-    return bma222_init_proc();
+    i2c_add_driver(&yas_acc_driver);
 }
 module_init(yas_acc_init);
 
 static void __exit yas_acc_exit(void)
 {
-    //i2c_del_driver(&yas_acc_driver);
-    bma222_exit_proc();
+    i2c_del_driver(&yas_acc_driver);
 }
 module_exit(yas_acc_exit);
 
-MODULE_DESCRIPTION("accelerometer kernel driver");
+MODULE_DESCRIPTION("Yamaha BMA222 Accelerometer Driver");
 MODULE_LICENSE("GPL");
 MODULE_VERSION(YAS_ACC_KERNEL_VERSION);

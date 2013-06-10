@@ -388,7 +388,7 @@ static int yas_bma222_read_reg(unsigned char adr, unsigned char *buf, unsigned c
     int err;
 
     if (acc_data.i2c_open) {
-        err = cbk->i2c_read(YAS_ACC_I2C_SLAVEADDR, adr, buf, len);
+        err = cbk->i2c_read(adr, buf, len);
         if (err != 0) {
             return err;
         }
@@ -405,7 +405,7 @@ static int yas_bma222_write_reg(unsigned char adr, unsigned char *buf, unsigned 
     int err;
 
     if (acc_data.i2c_open) {
-        err = cbk->i2c_write(YAS_ACC_I2C_SLAVEADDR, adr, buf, len);
+        err = cbk->i2c_write(adr, buf, len);
         if (err != 0) {
             return err;
         }
