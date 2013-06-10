@@ -43,14 +43,7 @@
 static unsigned int music_ear_amp_gain[MAX97000_GAIN_MAX];
 static unsigned int music_spk_amp_gain[MAX97000_GAIN_MAX];
 
-
-#if defined(MAX97000_USE_GPIO_I2C)
-	#include <plat/i2c-omap-gpio.h>
-	static OMAP_GPIO_I2C_CLIENT * max97000_i2c_client;
-	static struct i2c_client *max97000_dummy_i2c_client;
-#else
-	static struct i2c_client *max97000_i2c_client;
-#endif
+static struct i2c_client *max97000_i2c_client;
 
 struct delayed_work amp_control_work;
 static struct wake_lock max97000_wakelock;
@@ -304,39 +297,6 @@ void max97000_apply_case(int spkORear, int musicORvoice)
 }
 #endif
 
-#if defined(MAX97000_USE_GPIO_I2C)
-static int i2c_read( unsigned char reg_addr )
-{
-	int ret = 0;
-	unsigned char buf[2];
-	OMAP_GPIO_I2C_RD_DATA i2c_rd_param;
-
-	i2c_rd_param.reg_len = 1;
-	i2c_rd_param.reg_addr = &reg_addr;
-	i2c_rd_param.rdata_len = 2;
-	i2c_rd_param.rdata = buf;
-	omap_gpio_i2c_read(max97000_i2c_client, &i2c_rd_param);
-
-	ret = buf[0] << 8 | buf[1];
-
-	return ret;
-}
-
-static int i2c_write( unsigned char *buf, u8 len )
-{
-	int ret = 0;
-	OMAP_GPIO_I2C_WR_DATA i2c_wr_param;
-
-	i2c_wr_param.reg_len = 0;
-	i2c_wr_param.reg_addr = NULL;
-	i2c_wr_param.wdata_len = len;
-	i2c_wr_param.wdata = buf;
-	omap_gpio_i2c_write(max97000_i2c_client, &i2c_wr_param);
-
-	return ret;
-}
-#endif
-
 void max97000_write_regs(void)
 {
 	unsigned int i;
@@ -355,11 +315,7 @@ void max97000_write_regs(void)
 		#endif
    	}
 
-#if defined(MAX97000_USE_GPIO_I2C)
-        if (i2c_write(data, 11) != 0)
-#else
         if (i2c_master_send(max97000_i2c_client, data, 11) != 11)
-#endif
         {
 			//dev_err(&max97000_i2c_client-dev, "max97000_i2c_client write failed\n");
 			printk("max97000 max97000_i2c_client error !!!!\n");
@@ -373,11 +329,7 @@ void max97000_write_single(const unsigned int reg, const unsigned int value)
 	data[0] = reg;
 	data[1] = value;
 
-#if defined(MAX97000_USE_GPIO_I2C)
-        if (i2c_write(data, 2) != 0)
-#else
         if (i2c_master_send(max97000_i2c_client, data, 2) != 2)
-#endif
 	{
 		//dev_err(&max97000_i2c_client->dev, "max97000_i2c_client write failed\n");
 		printk("max97000 max97000_i2c_client error !!!!\n");
@@ -877,11 +829,7 @@ static int __devinit max97000_i2c_probe(struct i2c_client *client,
 {
 	P("");
 
-#if defined(MAX97000_USE_GPIO_I2C)
-	max97000_dummy_i2c_client = client;
-#else
 	max97000_i2c_client = client;
-#endif
 
 #if 0 //changoh.heo 2011.02.08 OMAP_GPIO_AMP_SHDN was requested in mux.c. Therefore delete it.
 	if (gpio_request(OMAP_GPIO_AMP_SHDN , "OMAP_GPIO_AMP_SHDN") == 0)
@@ -953,18 +901,7 @@ static int __init max97000_init(void)
 	int ret = 0;
 	printk("max97000_init\n");
 	INIT_DELAYED_WORK( &amp_control_work, amp_control_work_handler ); //sec_lilkan
-#if defined(MAX97000_USE_GPIO_I2C)
-	max97000_i2c_client = omap_gpio_i2c_init(OMAP_GPIO_AP_I2C_SDA,
-						  OMAP_GPIO_AP_I2C_SCL,
-						  //0x36,
-						  //0x9A,
-						  0x4D,
-						  200);
-	if(max97000_i2c_client == NULL)
-	{
-		printk(KERN_ERR "[FG] omap_gpio_i2c_init failed!\n");
-	}
-#endif
+
 	ret = i2c_add_driver(&max97000_i2c_driver);
 	if(ret)
 		printk( KERN_ERR "[MAX97000] i2c_add_driver failed");
@@ -976,12 +913,7 @@ module_init(max97000_init);
 
 static void __exit max97000_exit(void)
 {
-#if defined(MAX97000_USE_GPIO_I2C)
-	omap_gpio_i2c_deinit(max97000_i2c_client);
-#else
 	i2c_del_driver(&max97000_i2c_driver);
-#endif
-
 }
 module_exit(max97000_exit);
 

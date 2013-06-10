@@ -148,10 +148,6 @@ config FSA9480_NOTIFY_USB_CONNECTION_STATE
 	depends on FSA9480_MICROUSB
 	default y
 	
-config FSA9480_GPIO_I2C
-	bool "FSA9480 MicroUSB for GPIO Emulation I2C"
-	depends on FSA9480_MICROUSB
-	
 config FSA9480_LINE_OUT
 	bool "FSA9480 MicroUSB for LINE OUT"
 	depends on FSA9480_MICROUSB

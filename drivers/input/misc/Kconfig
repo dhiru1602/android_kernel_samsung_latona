@@ -611,10 +611,4 @@ config INPUT_YAS529_POSITION
 	    6: bottom, lower-right
 	    7: bottom, lower-left
 
-config INPUT_YAS529_USE_GPIO_I2C
-	tristate "Yamaha YAS529 I2C Policy"
-	default n
-	help
-		Say Y to use I2C using GPIO
-
 endif

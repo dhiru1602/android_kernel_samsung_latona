@@ -85,10 +85,6 @@
 #define INA_INB_R_SPK 14
 #define OUTPUT_OFF 15
 
-#ifdef CONFIG_SND_SOC_MAX97000_USE_GPIO_I2C
-#define MAX97000_USE_GPIO_I2C 1
-#endif
-
 extern int max97000_add_controls(struct snd_soc_codec *codec);
 extern void max97000_power_down_mode(void);
 extern void max97000_set_force_out_mode(int mode, int output);

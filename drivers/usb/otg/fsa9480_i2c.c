@@ -45,13 +45,7 @@ static u8 fsa9480_device1 = 0;
 static u8 fsa9480_device2 = 0;
 
 
-#ifdef CONFIG_FSA9480_GPIO_I2C
-#include <plat/i2c-omap-gpio.h>
-static OMAP_GPIO_I2C_CLIENT * fsa9480_i2c_client;
-static struct i2c_client *fsa9480_dummy_i2c_client;
-#else
 static struct i2c_client *fsa9480_i2c_client;
-#endif
 
 struct i2c_driver fsa9480_i2c_driver;
 
@@ -196,51 +190,6 @@ u8 fsa9480_get_ta_status(void)
 		return 0;
 }
 
-#ifdef CONFIG_FSA9480_GPIO_I2C
-//define GPIO I2C READ WRITE functions
-static int fsa9480_read(OMAP_GPIO_I2C_CLIENT *client, u8 reg, u8 *data)
-{
-	int ret = 0;
-	unsigned char buf[1];
-	OMAP_GPIO_I2C_RD_DATA i2c_rd_param;
-
-	i2c_rd_param.reg_len = 1;
-	i2c_rd_param.reg_addr = &reg;
-	i2c_rd_param.rdata_len = 1;
-	i2c_rd_param.rdata = buf;
-	ret = omap_gpio_i2c_read(client, &i2c_rd_param);
-
-	if(ret !=0 )
-		{
-		DEBUG_FSA9480("[FSA9480] %s : READ FAILED\n",__func__);
-		return -EIO;
-		}
-
-	*data = buf[0];
-
-	return ret;
-}
-
-static int fsa9480_write(OMAP_GPIO_I2C_CLIENT *client, u8 reg, u8 data)
-{
-	int ret = 0;
-	OMAP_GPIO_I2C_WR_DATA i2c_wr_param;
-
-	i2c_wr_param.reg_len = 1;
-	i2c_wr_param.reg_addr = &reg;
-	i2c_wr_param.wdata_len = 1;
-	i2c_wr_param.wdata = &data;
-	ret = omap_gpio_i2c_write(client, &i2c_wr_param);
-
-	if(ret !=0 )
-		{
-		DEBUG_FSA9480("[FSA9480] %s : WRITE FAILED\n",__func__);
-		return -EIO;
-		}
-
-	return ret;
-}
-#else
 static int fsa9480_read(struct i2c_client *client, u8 reg, u8 *data)
 {
 	int ret;
@@ -289,7 +238,6 @@ static int fsa9480_write(struct i2c_client *client, u8 reg, u8 data)
 
 	return 0;
 }
-#endif
 
 #ifdef CONFIG_FSA9480_LINE_OUT
 void FSA9480_Enable_SPK(u8 enable)
@@ -651,11 +599,7 @@ static void fsa9480_read_int_register(struct work_struct *work)
 		usbic_state = MICROUSBIC_NO_DEVICE;
 	}
 
-#ifdef CONFIG_FSA9480_GPIO_I2C
-    enable_irq(fsa9480_dummy_i2c_client->irq);
-#else
 	enable_irq(fsa9480_i2c_client->irq);
-#endif
 
 	wake_lock_timeout(&fsa9480_wake_lock, 3*HZ);
 }
@@ -761,15 +705,7 @@ static int fsa9480_probe(struct i2c_client *client, const struct i2c_device_id *
 	INIT_WORK(&fsa9480_work, fsa9480_read_int_register);
 	fsa9480_workqueue = create_singlethread_workqueue("fsa9480_wq");
 
-#ifdef CONFIG_FSA9480_GPIO_I2C
-fsa9480_i2c_client  = omap_gpio_i2c_init(OMAP_GPIO_AP_I2C_SDA,
-						  OMAP_GPIO_AP_I2C_SCL,
-						  0x25,
-						  200);
-    fsa9480_dummy_i2c_client = client;
-#else
 	fsa9480_i2c_client = client;
-#endif
 
 	wake_lock_init(&fsa9480_wake_lock, WAKE_LOCK_SUSPEND, "FSA9480");
 
