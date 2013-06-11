@@ -38,7 +38,9 @@
 #include <plat/usb.h>
 #include <linux/switch.h>
 #include <mach/board-latona.h>
+#include <linux/i2c/twl4030-madc.h>
 #include <linux/irq.h>
+#include <linux/gp2a.h>
 #include "mux.h"
 #include "hsmmc.h"
 #include "common-board-devices.h"
@@ -54,6 +56,8 @@ struct s5ka3dfx_platform_data omap_board_s5ka3dfx_platform_data;
 
 /* Atmel Touchscreen */
 #define OMAP_GPIO_TSP_INT 142
+
+#define GP2A_LIGHT_ADC_CHANNEL	4
 
 /* ZEUS Key and Headset Switch */
 
@@ -260,6 +264,23 @@ static struct platform_device *latona_board_devices[] __initdata = {
 	&headset_switch_device,
 	&board_zeus_key_device,     /* ZEUS KEY */ 
 	&samsung_led_device,         /* SAMSUNG LEDs */ 
+};
+
+static int gp2a_light_adc_value(void)
+{
+	return twl4030_get_madc_conversion(GP2A_LIGHT_ADC_CHANNEL);
+}
+
+static void gp2a_power(bool on)
+{
+	/* this controls the power supply rail to the gp2a IC */
+	gpio_set_value(OMAP_GPIO_ALS_EN, on);
+}
+
+static struct gp2a_platform_data gp2a_pdata = {
+	.power = gp2a_power,
+	.p_out = OMAP_GPIO_PS_VOUT,
+	.light_adc_value = gp2a_light_adc_value,
 };
 
 static struct platform_device omap_vwlan_device = {
@@ -486,6 +507,10 @@ static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
 		I2C_BOARD_INFO("Yas529Geomag", 0x2E),
 	},
 #endif
+	{
+		I2C_BOARD_INFO("gp2a", 0x44),
+		.platform_data = &gp2a_pdata,
+	},
 };
 
 static struct i2c_board_info __initdata latona_i2c_bus3_info[] = {
