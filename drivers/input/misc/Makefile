@@ -59,3 +59,4 @@ obj-$(CONFIG_INPUT_ZEUS_KEY_DRIVER)     += zeuskey_driver.o
 obj-$(CONFIG_INPUT_BMA222)              += yas_acc_kernel_driver.o
 obj-$(CONFIG_INPUT_ORIENTATION)         += yas_ori_kernel_driver.o
 obj-$(CONFIG_INPUT_YAS529)              += yas_mag_kernel_driver.o
+obj-$(CONFIG_OPTICAL_GP2A)		+= gp2a.o
