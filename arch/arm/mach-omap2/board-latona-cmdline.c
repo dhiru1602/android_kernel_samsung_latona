@@ -35,6 +35,7 @@ static struct cmdline_parameter cmdline_parameters[] __initdata = {
         {"omapfb.vram", "0:5M", 0},
         {"vram", "16M", 1},
         {"androidboot.hardware", "latona", 1},
+        {"mem", "512M", 1},
 };
 
 static char *matchstr(const char *s1, const char *s2)
