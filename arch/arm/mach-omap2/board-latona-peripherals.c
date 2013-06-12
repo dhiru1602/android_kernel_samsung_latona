@@ -175,10 +175,6 @@ static struct regulator_consumer_supply latona_vmmc1_supply = {
 	.supply		= "vmmc",
 };
 
-static struct regulator_consumer_supply latona_vsim_supply = {
-	.supply		= "vmmc_aux",
-};
-
 static struct regulator_consumer_supply latona_vmmc2_supply = {
 	.supply		= "vmmc",
 };
@@ -225,21 +221,6 @@ static struct regulator_init_data latona_vmmc2 = {
 	},
 	.num_consumer_supplies  = 1,
 	.consumer_supplies      = &latona_vmmc2_supply,
-};
-
-/* VSIM for OMAP VDD_MMC1A (i/o for DAT4..DAT7) */
-static struct regulator_init_data latona_vsim = {
-	.constraints = {
-		.min_uV			= 1800000,
-		.max_uV			= 3000000,
-		.valid_modes_mask	= REGULATOR_MODE_NORMAL
-					| REGULATOR_MODE_STANDBY,
-		.valid_ops_mask		= REGULATOR_CHANGE_VOLTAGE
-					| REGULATOR_CHANGE_MODE
-					| REGULATOR_CHANGE_STATUS,
-	},
-	.num_consumer_supplies  = 1,
-	.consumer_supplies      = &latona_vsim_supply,
 };
 
 static struct regulator_init_data latona_vmmc3 = {
@@ -393,7 +374,6 @@ static int latona_twl_gpio_setup(struct device *dev,
 	 * regulators will be set up only *after* we return.
 	*/
 	latona_vmmc1_supply.dev = mmc[1].dev;
-	latona_vsim_supply.dev = mmc[1].dev;
 	latona_vmmc2_supply.dev = mmc[0].dev;
 
 	return 0;
