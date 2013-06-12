@@ -47,7 +47,6 @@ typedef unsigned int        uint32_t;
 /* -------------------------------------------------------------------------- */
 
 /* Debugging */
-#define DEBUG                               (1)
 
 #if DEBUG
 #ifdef __LINUX_KERNEL_DRIVER__

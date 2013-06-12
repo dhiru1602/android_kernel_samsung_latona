@@ -93,7 +93,7 @@ minor position size units id
 
 */
 
-static struct mtd_partition onenand_partitions[] = {
+const static struct mtd_partition onenand_partitions[] = {
       {
 		.name		= "boot",
 		.offset		= (82*SZ_256K),
