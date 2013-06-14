@@ -812,12 +812,6 @@ CONFIG_PHONE_SVNET=y
 # CONFIG_SVNET_WHITELIST is not set
 
 #
-# Samsung battery driver
-#
-CONFIG_SAMSUNG_BATTERY=y
-# CONFIG_SAMSUNG_BATTERY_TESTMODE is not set
-
-#
 # Network testing
 #
 # CONFIG_NET_PKTGEN is not set

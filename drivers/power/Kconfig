@@ -248,6 +248,4 @@ config CHARGER_GPIO
 	  This driver can be build as a module. If so, the module will be
 	  called gpio-charger.
 
-source "drivers/power/samsung_battery/Kconfig"
-
 endif # POWER_SUPPLY
