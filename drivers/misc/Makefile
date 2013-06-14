@@ -57,3 +57,4 @@ obj-$(CONFIG_TWL6040_VIB)	+= twl6040-vib.o
 obj-$(CONFIG_GC_CORE)		+= gc-core/
 obj-$(CONFIG_FMRADIO)           += fm_Si4709/
 obj-$(CONFIG_SUPPORT_GPS)       += gps.o
+obj-$(CONFIG_FSA9480_MICROUSB)  += fsa9480.o

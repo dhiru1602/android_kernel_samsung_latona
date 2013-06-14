@@ -42,7 +42,7 @@
 
 #ifdef CONFIG_FSA9480_MICROUSB
 #include <linux/wakelock.h>
-#include "fsa9480_i2c.h"
+#include <linux/fsa9480.h>
 #define CARKIT_ANA_CTRL         0xBB
 #endif
 

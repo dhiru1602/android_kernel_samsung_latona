@@ -24,7 +24,7 @@
 #include <plat/gpio.h>
 #include <plat/hardware.h>
 #include <plat/mux.h>
-#include "fsa9480_i2c.h"
+#include <linux/fsa9480.h>
 
 
 #define FSA9480UCX 0x4A
