@@ -499,14 +499,6 @@ static struct i2c_board_info __initdata latona_i2c_bus3_info[] = {
 	},
 };
 
-static __initdata struct i2c_board_info latona_i2c4_boardinfo[] = {
-	{
-		I2C_BOARD_INFO("secFuelgaugeDev", 0x36),
-		.flags = I2C_CLIENT_WAKE,
-		.irq = OMAP_GPIO_IRQ(OMAP_GPIO_FUEL_INT_N),
-	},
-};
-
 static struct i2c_gpio_platform_data latona_gpio_i2c4_pdata = {
 	.sda_pin = OMAP_GPIO_FUEL_SDA,
 	.scl_pin = OMAP_GPIO_FUEL_SCL,
@@ -601,7 +593,6 @@ static int __init omap_i2c_init(void)
 	omap_register_i2c_bus(3, 400, latona_i2c_bus3_info,
 			ARRAY_SIZE(latona_i2c_bus3_info));
 
-	i2c_register_board_info(4, latona_i2c4_boardinfo, ARRAY_SIZE(latona_i2c4_boardinfo));
 	i2c_register_board_info(5, latona_i2c5_boardinfo, ARRAY_SIZE(latona_i2c5_boardinfo));
 	i2c_register_board_info(6, latona_i2c6_boardinfo, ARRAY_SIZE(latona_i2c6_boardinfo));
 
@@ -632,6 +623,7 @@ void __init latona_peripherals_init(void)
 		ARRAY_SIZE(latona_board_devices));
 	twl4030_get_scripts(&latona_t2scripts_data);
 	board_onenand_init();
+	latona_power_init();
 	platform_add_devices(latona_i2c_gpio_devices,
 		ARRAY_SIZE(latona_i2c_gpio_devices));
 	omap_i2c_init();
