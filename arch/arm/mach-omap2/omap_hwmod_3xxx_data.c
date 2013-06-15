@@ -1719,6 +1719,9 @@ static struct omap_hwmod_opt_clk dss_opt_clks[] = {
 static struct omap_hwmod omap3430es1_dss_core_hwmod = {
 	.name		= "dss_core",
 	.class		= &omap3xxx_dss_hwmod_class,
+#ifdef CONFIG_FB_OMAP_BOOTLOADER_INIT
+	.flags		= HWMOD_INIT_NO_RESET,
+#endif
 	.main_clk	= "dss1_alwon_fck", /* instead of dss_fck */
 	.sdma_reqs	= omap3xxx_dss_sdma_chs,
 	.sdma_reqs_cnt	= ARRAY_SIZE(omap3xxx_dss_sdma_chs),
