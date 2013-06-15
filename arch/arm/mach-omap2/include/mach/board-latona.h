@@ -28,6 +28,7 @@ extern void latona_write_reboot_reason(char mode, const char *cmd);
 extern short int get_headset_status(void);
 extern void __init latona_cmdline_set_serialno(void);
 extern void __init latona_power_init(void);
+extern void __init latona_connector_init(void);
 
 /* GPIO SWITCH */
 #define HEADSET_DISCONNET			0

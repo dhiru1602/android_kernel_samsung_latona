@@ -84,85 +84,19 @@ static int g_dock;
 extern struct device *sio_switch_dev;
 #endif
 
-#ifdef CONFIG_FSA9480_NOTIFY_USB_CONNECTION_STATE
-#define MAX_NOTIFICATION_HANDLER	10
-#define USB_STATE_CONNECTED       1
-#define USB_STATE_DISCONNECTED    0
-
-typedef void (*notification_handler)(const int);
-
-notification_handler connection_state_change_handler[MAX_NOTIFICATION_HANDLER];
-
-int fsa9480_add_connection_state_monitor(notification_handler handler);
-void fsa9480_remove_connection_state_monitor(notification_handler handler);
-
-EXPORT_SYMBOL(fsa9480_add_connection_state_monitor);
-EXPORT_SYMBOL(fsa9480_remove_connection_state_monitor);
-
-static void fsa9480_notify_connection_state_changed(int);
-
-int fsa9480_add_connection_state_monitor(notification_handler handler)
-{
-	int index = 0;
-	if(handler == NULL)
-	{
-		printk(KERN_ERR "[FSA9480][%s] param is null\n", __func__);
-		return -EINVAL;
-	}
-
-	for(; index < MAX_NOTIFICATION_HANDLER; index++)
-	{
-		if(connection_state_change_handler[index] == NULL)
-		{
-			connection_state_change_handler[index] = handler;
-			return 0;
-		}
-	}
-
-	// there is no space this time
-	printk(KERN_INFO "[FSA9480][%s] No spcae\n", __func__);
-
-	return -ENOMEM;
-}
-
-void fsa9480_remove_connection_state_monitor(notification_handler handler)
-{
-	int index = 0;
-	if(handler == NULL)
-	{
-		printk(KERN_ERR "[FSA9480][%s] param is null\n", __func__);
-		return;
-	}
-	
-	for(; index < MAX_NOTIFICATION_HANDLER; index++)
-	{
-		if(connection_state_change_handler[index] == handler)
-		{
-			connection_state_change_handler[index] = NULL;
-		}
-	}
-}
-	
-static void fsa9480_notify_connection_state_changed(int state)
-{
-	int index = 0;
-	for(; index < MAX_NOTIFICATION_HANDLER; index++)
-	{
-		if(connection_state_change_handler[index] != NULL)
-		{
-			connection_state_change_handler[index](state);
-		}
-	}
-
-}
-
-#endif  // End of CONFIG_FSA9480_NOTIFY_USB_CONNECTION_STATE
+struct fsa9480_platform_data *fsa9480_pdata;
 
 FSA9480_DEV_TY1_TYPE fsa9480_get_dev_typ1(void)
 {
 	return fsa9480_device1;
 }
 
+void fsa9480_update_microusbic(int state)
+{
+	usbic_state = state;
+	fsa9480_pdata->detected(usbic_state);
+	
+}
 
 u8 fsa948080_get_jig_status(void)
 {
@@ -353,26 +287,19 @@ static void fsa9480_process_device(u8 dev1, u8 dev2, u8 attach)
 						{
 							DEBUG_FSA9480("FSA9480_DEV_TY1_USB --- ATTACH\n");
 							MicroUSBStatus = _ATTACH;
-							usbic_state = MICROUSBIC_USB_CABLE;
-#ifdef CONFIG_FSA9480_NOTIFY_USB_CONNECTION_STATE
-                            fsa9480_notify_connection_state_changed(USB_STATE_CONNECTED);
-#endif
+							fsa9480_update_microusbic(MICROUSBIC_USB_CABLE);
 						}
 						else if(attach & FSA9480_INT1_DETACH)
 						{
 							MicroUSBStatus = _DETTACH;
-							usbic_state = MICROUSBIC_NO_DEVICE;
+							fsa9480_update_microusbic(MICROUSBIC_NO_DEVICE);
 							DEBUG_FSA9480("FSA9480_DEV_TY1_USB --- DETACH\n");
 							
-#ifdef CONFIG_FSA9480_NOTIFY_USB_CONNECTION_STATE                            
-                            fsa9480_notify_connection_state_changed(USB_STATE_DISCONNECTED);
-#endif
 							interruptible_sleep_on_timeout(&usb_disconnect_waitq, USB_DISCONNECT_WAIT_TIMEOUT);
 						}
 
 		               // msleep(200);
 						wake_up_interruptible(&usb_detect_waitq);
-						microusb_usbjig_detect();
 					}
 			}
 			break;
@@ -390,13 +317,13 @@ static void fsa9480_process_device(u8 dev1, u8 dev2, u8 attach)
 			case FSA9480_DEV_TY1_USB_CHG:
 				DEBUG_FSA9480("USB ");
 				DEBUG_FSA9480("\n");
-				usbic_state = MICROUSBIC_USB_CHARGER;
+				fsa9480_update_microusbic(MICROUSBIC_USB_CHARGER);
 			break;
 
 			case FSA9480_DEV_TY1_DED_CHG:
 				DEBUG_FSA9480("Dedicated Charger ");
 				DEBUG_FSA9480("\n");
-				usbic_state = MICROUSBIC_TA_CHARGER;
+				fsa9480_update_microusbic(MICROUSBIC_TA_CHARGER);
 			break;
 
 			case FSA9480_DEV_TY1_USB_OTG:
@@ -422,20 +349,19 @@ static void fsa9480_process_device(u8 dev1, u8 dev2, u8 attach)
 				{
 					DEBUG_FSA9480("FSA9480_DEV_TY2_JIG_USB_ON --- ATTACH\n");
 					MicroJigUSBOnStatus = _ATTACH;
-					usbic_state = MICROUSBIC_USB_CABLE;
+					fsa9480_update_microusbic(MICROUSBIC_USB_CABLE);
 					
 				}
 				else if(attach & FSA9480_INT1_DETACH)
 				{
 					DEBUG_FSA9480("FSA9480_DEV_TY2_JIG_USB_ON --- DETACH\n");
 					MicroJigUSBOnStatus = DETACH;
-					usbic_state = MICROUSBIC_NO_DEVICE;
+					fsa9480_update_microusbic(MICROUSBIC_NO_DEVICE);
 					interruptible_sleep_on_timeout(&usb_disconnect_waitq, USB_DISCONNECT_WAIT_TIMEOUT);
 				}
 
 				//msleep(200);
 				wake_up_interruptible(&usb_detect_waitq);
-				microusb_usbjig_detect();
 			break;
 
 			case FSA9480_DEV_TY2_JIG_USB_OFF:
@@ -444,19 +370,18 @@ static void fsa9480_process_device(u8 dev1, u8 dev2, u8 attach)
 				{
 					DEBUG_FSA9480("FSA9480_DEV_TY2_JIG_USB_OFF --- ATTACH\n");
 					MicroJigUSBOffStatus = _ATTACH;
-					usbic_state = MICROUSBIC_USB_CABLE;
+					fsa9480_update_microusbic(MICROUSBIC_USB_CABLE);
 				}
 				else if(attach & FSA9480_INT1_DETACH)
 				{
 					DEBUG_FSA9480("FSA9480_DEV_TY2_JIG_USB_OFF --- DETACH\n");
 					MicroJigUSBOffStatus = DETACH;
-					usbic_state = MICROUSBIC_NO_DEVICE;
+					fsa9480_update_microusbic(MICROUSBIC_NO_DEVICE);
 					interruptible_sleep_on_timeout(&usb_disconnect_waitq, USB_DISCONNECT_WAIT_TIMEOUT);
 				}
 
                // msleep(200);
 				wake_up_interruptible(&usb_detect_waitq);
-				microusb_usbjig_detect();
 			break;
 
 			case FSA9480_DEV_TY2_JIG_UART_ON:
@@ -596,7 +521,7 @@ static void fsa9480_read_int_register(struct work_struct *work)
 	{
 		fsa9480_device1 = 0;
 		fsa9480_device2 = 0;
-		usbic_state = MICROUSBIC_NO_DEVICE;
+		fsa9480_update_microusbic(MICROUSBIC_NO_DEVICE);
 	}
 
 	enable_irq(fsa9480_i2c_client->irq);
@@ -700,6 +625,10 @@ static int fsa9480_probe(struct i2c_client *client, const struct i2c_device_id *
 {
 	int ret = 0;
 
+	struct fsa9480_platform_data *pdata = client->dev.platform_data;
+
+	fsa9480_pdata = pdata;
+
 	init_waitqueue_head(&usb_detect_waitq);
 	init_waitqueue_head(&usb_disconnect_waitq);
 	INIT_WORK(&fsa9480_work, fsa9480_read_int_register);
@@ -728,6 +657,9 @@ static int fsa9480_probe(struct i2c_client *client, const struct i2c_device_id *
 	if (device_create_file(sio_switch_dev, &dev_attr_dock) < 0)		
 		pr_err("Failed to create device file(%s)!\n", dev_attr_dock.attr.name);
 #endif
+
+	// Device detection on boot
+	fsa9480_update_microusbic(get_real_usbic_state());
 
 	return ret;
 }
@@ -822,30 +754,6 @@ void microusb_disconnect_notify(void)
 	wake_up_interruptible(&usb_disconnect_waitq);
 }
 EXPORT_SYMBOL(microusb_disconnect_notify);
-
-#ifdef CONFIG_TWL4030_USB
-// Called by switch sio driver
-int microusb_enable(void)
-{
-	int retval;
-
-	retval = i2c_add_driver(&fsa9480_i2c_driver);
-	if (retval != 0) {
-		printk("[Micro-USB] can't add i2c driver");
-	}
-
-	return retval;
-}
-EXPORT_SYMBOL(microusb_enable);
-
-
-void microusb_disable(void)
-{
-	i2c_del_driver(&fsa9480_i2c_driver);
-}
-EXPORT_SYMBOL(microusb_disable);
-#endif
-
 
 #if 1 // Called by charger MAX8845 driver and twl4030 usb tranceiver driver
 int get_real_usbic_state(void)
@@ -1056,6 +964,26 @@ static void _ftm_enable_usb_sw(int mode)
 	}
 }
 #endif /* FEATURE_FTM_SLEEP */
+
+static int __init fsa9480_i2c_init(void)
+{
+	int retval;
+
+	retval = i2c_add_driver(&fsa9480_i2c_driver);
+	if (retval != 0) {
+		printk("[Micro-USB] can't add i2c driver");
+	}
+
+	return retval;
+}
+
+static void __exit fsa9480_i2c_exit(void)
+{
+	i2c_del_driver(&fsa9480_i2c_driver);
+}
+
+late_initcall(fsa9480_i2c_init);
+module_exit(fsa9480_i2c_exit);
 
 MODULE_AUTHOR("SAMSUNG ELECTRONICS CO., LTD");
 MODULE_DESCRIPTION("FSA9480 MicroUSB driver");

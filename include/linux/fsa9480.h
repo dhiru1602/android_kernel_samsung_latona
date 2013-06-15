@@ -24,6 +24,8 @@
 #define DEBUG_FSA9480(fmt,args...) do {} while(0)
 #endif
 
+#define DEVICE_CONNECTED       1
+#define DEVICE_DISCONNECTED    0
 
 /********************************************************************/
 /* FSA9480 Register definition                                                                                */
@@ -290,6 +292,10 @@ typedef enum
 	CONNECTIVITY_NV_MAX = 7, 		// BIT 16-19
 }DRV_CONNECTIVITY_NV_TYPE;
 
+struct fsa9480_platform_data {
+	void				(*detected)(int device);
+};
+
 // microusb device id
 #define MICROUSBIC_5W_CHARGER		6
 #define MICROUSBIC_JIG_UART_OFF		5
@@ -303,8 +309,6 @@ typedef enum
 //define some manual switch value
 #define MICROUSBIC_V_AUDIO_LR      0x90
 #define MICROUSBIC_AUDIO_LR        0x48
-
-void microusb_usbjig_detect(void);
 
 int microusb_enable(void);
 void microusb_disable(void);

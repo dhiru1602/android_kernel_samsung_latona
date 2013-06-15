@@ -459,13 +459,6 @@ static void __init board_onenand_init(void)
 }
 
 static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
-#ifdef CONFIG_FSA9480_MICROUSB
-	{
-		I2C_BOARD_INFO("fsa9480", 0x25),
-		.flags = I2C_CLIENT_WAKE,
-		.irq = OMAP_GPIO_IRQ(OMAP_GPIO_JACK_NINT),
-	},
-#endif
 #if defined(CONFIG_SND_SOC_MAX97000)
 	{
 		I2C_BOARD_INFO("max97000", 0x4d),
@@ -624,6 +617,7 @@ void __init latona_peripherals_init(void)
 	twl4030_get_scripts(&latona_t2scripts_data);
 	board_onenand_init();
 	latona_power_init();
+	latona_connector_init();
 	platform_add_devices(latona_i2c_gpio_devices,
 		ARRAY_SIZE(latona_i2c_gpio_devices));
 	omap_i2c_init();
