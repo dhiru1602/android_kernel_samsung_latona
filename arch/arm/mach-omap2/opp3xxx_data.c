@@ -101,8 +101,8 @@ struct omap_volt_data omap36xx_vddmpu_volt_data[] = {
 
 /* VDD2 */
 
-#define OMAP3630_VDD_CORE_OPP50_UV		930000
-#define OMAP3630_VDD_CORE_OPP100_UV		1162500
+#define OMAP3630_VDD_CORE_OPP50_UV		1000000
+#define OMAP3630_VDD_CORE_OPP100_UV		1200000
 
 struct omap_volt_data omap36xx_vddcore_volt_data[] = {
 	VOLT_DATA_DEFINE(OMAP3630_VDD_CORE_OPP50_UV, 0, OMAP3630_CONTROL_FUSE_OPP50_VDD2, 0xf4, 0x0c, OMAP_ABB_NONE),
@@ -165,14 +165,14 @@ static struct omap_opp_def __initdata omap36xx_opp_def_list[] = {
 	/* L3 OPP1 - OPP50 */
 #ifdef CONFIG_MACH_OMAP_LATONA
 	OPP_INITIALIZER("l3_main", "l3_ick", "core", false,
-				100000000, OMAP3630_VDD_CORE_OPP50_UV),
+				200000000, OMAP3630_VDD_CORE_OPP50_UV),
 #else
 	OPP_INITIALIZER("l3_main", "l3_ick", "core", true,
-				100000000, OMAP3630_VDD_CORE_OPP50_UV),
+				200000000, OMAP3630_VDD_CORE_OPP50_UV),
 #endif
 	/* L3 OPP2 - OPP100, OPP-Turbo, OPP-SB */
 	OPP_INITIALIZER("l3_main", "l3_ick", "core", true,
-				200000000, OMAP3630_VDD_CORE_OPP100_UV),
+				400000000, OMAP3630_VDD_CORE_OPP100_UV),
 
 	/* DSP OPP1 - OPP50 */
 	OPP_INITIALIZER("iva", "dpll2_ck", "mpu_iva", true,  260000000, OMAP3630_VDD_MPU_OPP50_UV),
