@@ -23,14 +23,25 @@
 #include <plat/omap-pm.h>
 #include "mux.h"
 
+static int latona_panel_enable_lcd(struct omap_dss_device *dssdev)
+{
+	// Run the L3@400Mhz while the LCD is ON
+	omap_pm_set_min_bus_tput(&(dssdev->dev), OCP_INITIATOR_AGENT , 400000 * 4);
+}
+
+static int latona_panel_disable_lcd(struct omap_dss_device *dssdev)
+{
+	omap_pm_set_min_bus_tput(&(dssdev->dev), OCP_INITIATOR_AGENT ,0);
+}
+
 struct omap_dss_device omap_board_lcd_device = {
     .name = "lcd",
     .driver_name = "nt35510_panel",
     .type = OMAP_DISPLAY_TYPE_DPI,
     .channel = OMAP_DSS_CHANNEL_LCD,
     .phy.dpi.data_lines = 24,
-    .platform_enable = NULL,
-    .platform_disable = NULL,
+    .platform_enable = latona_panel_enable_lcd,
+    .platform_disable = latona_panel_disable_lcd,
 
 };
 
