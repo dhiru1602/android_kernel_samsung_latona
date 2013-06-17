@@ -39,10 +39,7 @@
 
 #define ADC_NUM_SAMPLES			5
 #define ADC_LIMIT_ERR_COUNT		5
-#define ISET_ADC_CHANNEL		4
 #define TEMP_ADC_CHANNEL		0
-
-#define CHARGE_FULL_ADC		250 /*188*/
 
 #define HIGH_BLOCK_TEMP_LATONA		650
 #define HIGH_RECOVER_TEMP_LATONA	430
@@ -160,12 +157,6 @@ enum {
 	GPIO_CHG_EN
 };
 
-enum {
-	NOT_FULL = 0,
-	FULL_CHARGED_PRE,
-	FULL_CHARGED
-};
-
 static struct gpio charger_gpios[] = {
 	[GPIO_CHG_ING_N] = {
 		.flags = GPIOF_IN,
@@ -222,11 +213,6 @@ static int twl4030_get_adc_data(int ch)
 	return (adc_total - adc_max - adc_min) / (ADC_NUM_SAMPLES - 2);
 }
 
-static int iset_adc_value(void)
-{
-	return twl4030_get_adc_data(ISET_ADC_CHANNEL);
-}
-
 static int temp_adc_value(void)
 {
 	return twl4030_get_adc_data(TEMP_ADC_CHANNEL);
@@ -234,17 +220,8 @@ static int temp_adc_value(void)
 
 static bool check_charge_full(void)
 {
-	int ret;
-
-	ret = iset_adc_value();
-	if (ret < 0) {
-		pr_err("%s: invalid iset adc value [%d]\n",
-			__func__, ret);
-		return false;
-	}
-	pr_debug("%s : iset adc value : %d\n", __func__, ret);
-
-	return ret < CHARGE_FULL_ADC;
+	// HIGH : BATT_FULL || LOW : CHARGING / DISCHARGING
+	return gpio_get_value(charger_gpios[GPIO_CHG_ING_N].gpio);
 }
 
 
@@ -356,8 +333,8 @@ static struct max17040_platform_data max17040_pdata = {
 	.high_recover_temp = HIGH_RECOVER_TEMP_LATONA,
 	.low_block_temp = LOW_BLOCK_TEMP_LATONA,
 	.low_recover_temp = LOW_RECOVER_TEMP_LATONA,
-	.fully_charged_vol = 4150000,
-	.recharge_vol = 4140000,
+	.fully_charged_vol = 419000,
+	.recharge_vol = 418000,
 	.limit_charging_time = 21600,  /* 6 hours */
 	.limit_recharging_time = 5400, /* 90 min */
 };
