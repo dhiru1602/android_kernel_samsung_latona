@@ -2826,8 +2826,9 @@ geomagnetic_input_work_func(struct work_struct *work)
 }
 
 static int
-geomagnetic_suspend(struct i2c_client *client, pm_message_t mesg)
+geomagnetic_suspend(struct device *dev)
 {
+	struct i2c_client *client = to_i2c_client(dev);
 	struct geomagnetic_data *data = i2c_get_clientdata(client);
 	if (atomic_read(&data->enable))
 		cancel_delayed_work_sync(&data->work);
@@ -2835,8 +2836,9 @@ geomagnetic_suspend(struct i2c_client *client, pm_message_t mesg)
 }
 
 static int
-geomagnetic_resume(struct i2c_client *client)
+geomagnetic_resume(struct device *dev)
 {
+	struct i2c_client *client = to_i2c_client(dev);
 	struct geomagnetic_data *data = i2c_get_clientdata(client);
 
 	if (atomic_read(&data->enable))
@@ -2895,7 +2897,7 @@ geomagnetic_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	int rt, sysfs_created = 0, sysfs_raw_created = 0;
 	int data_registered = 0, raw_registered = 0, i;
 
-	printk("\n !!!!!!!! YAS529 probe !!!!!! \n");
+	printk("Yamaha YAS529 GeoMagnetic PROBE");
     // gpio init
     if(gpio_is_valid(OMAP_GPIO_MSENSE_NRST))
     {
@@ -3071,7 +3073,7 @@ err:
 	return rt;
 }
 
-static int
+static int __devexit
 geomagnetic_remove(struct i2c_client *client)
 {
 	struct geomagnetic_data *data = i2c_get_clientdata(client);
@@ -3100,17 +3102,21 @@ static struct i2c_device_id geomagnetic_idtable[] = {
 };
 MODULE_DEVICE_TABLE(i2c, geomagnetic_idtable);
 
+static const struct dev_pm_ops geomagnetic_pm_ops = {
+	.suspend	= geomagnetic_suspend,
+	.resume		= geomagnetic_resume,
+};
+
 static struct i2c_driver geomagnetic_i2c_driver = {
 	.driver = {
 		.name = GEOMAGNETIC_I2C_DEVICE_NAME,
 		.owner = THIS_MODULE,
+		.pm	= &geomagnetic_pm_ops,
 	},
 
 	.id_table = geomagnetic_idtable,
 	.probe = geomagnetic_probe,
-	.remove = geomagnetic_remove,
-	.suspend = geomagnetic_suspend,
-	.resume = geomagnetic_resume,
+	.remove = __devexit_p(geomagnetic_remove),
 };
 
 static int __init
