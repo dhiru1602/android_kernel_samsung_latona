@@ -574,5 +574,6 @@ source "drivers/misc/carma/Kconfig"
 source "drivers/misc/gc-core/Kconfig"
 source "drivers/misc/sensors_core/Kconfig"
 source "drivers/misc/fm_Si4709/Kconfig"
+source "drivers/misc/phone_svn/Kconfig"
 
 endif # MISC_DEVICES
