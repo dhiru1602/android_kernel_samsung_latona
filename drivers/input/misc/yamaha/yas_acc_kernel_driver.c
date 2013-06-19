@@ -29,11 +29,6 @@
 #include <linux/slab.h>
 #include <mach/board-latona.h>
 
-#if defined(CONFIG_HAS_EARLYSUSPEND)
-#include <linux/earlysuspend.h>
-#endif
-
-
 #define __LINUX_KERNEL_DRIVER__
 #include <yas.h>
 #include "yas_acc_driver-bma222.c"
@@ -97,15 +92,15 @@ static ssize_t yas_acc_wake_store(struct device *, struct device_attribute *, co
 static ssize_t yas_acc_private_data_show(struct device *, struct device_attribute *, char *);
 #if DEBUG
 static ssize_t yas_acc_debug_reg_show(struct device *, struct device_attribute *, char *);
-static int yas_acc_suspend(struct i2c_client * client , pm_message_t mesg);
-static int yas_acc_resume(struct i2c_client * client);
+static int yas_acc_suspend(struct device *dev);
+static int yas_acc_resume(struct device *dev);
 #endif
 
 static void yas_acc_work_func(struct work_struct *);
 static int yas_acc_probe(struct i2c_client *, const struct i2c_device_id *);
 static int yas_acc_remove(struct i2c_client *);
-static int yas_acc_suspend(struct i2c_client * client , pm_message_t mesg);
-static int yas_acc_resume(struct i2c_client * client);
+static int yas_acc_suspend(struct device *dev);
+static int yas_acc_resume(struct device *dev);
 
 /* ---------------------------------------------------------------------------------------- *
    Driver private data
@@ -118,13 +113,8 @@ struct yas_acc_private_data {
     struct yas_acc_driver *driver;
     struct delayed_work work;
     struct yas_acc_data last;
-#if 1//DEBUG	
     int suspend;
     int suspend_enable;
-#endif	
-#if defined(CONFIG_HAS_EARLYSUSPEND)
-    struct early_suspend early_suspend;
-#endif	
 };
 
 static struct yas_acc_private_data *yas_acc_private_data = NULL;
@@ -889,11 +879,10 @@ static void yas_acc_work_func(struct work_struct *work)
     schedule_delayed_work(&data->work, delay);
 }
 
-#if defined(CONFIG_HAS_EARLYSUSPEND)
-static int bma222_early_suspend(struct early_suspend *handler)
+static int yas_acc_suspend(struct device *dev)
 {
-/*
-    struct yas_acc_private_data *data =yas_acc_get_data();
+    struct i2c_client *client = to_i2c_client(dev);
+    struct yas_acc_private_data *data = i2c_get_clientdata(client);
     struct yas_acc_driver *driver = data->driver;
 
     mutex_lock(&data->data_mutex);
@@ -901,43 +890,21 @@ static int bma222_early_suspend(struct early_suspend *handler)
     if (data->suspend == 0) {
         data->suspend_enable = yas_acc_get_enable(driver);
         if (data->suspend_enable) {
-            cancel_delayed_work_sync(&data->work);
+         // cancel_delayed_work_sync(&data->work);
             yas_acc_set_enable(driver, 0);
         }
     }
     data->suspend = 1;
 
     mutex_unlock(&data->data_mutex);
-*/
-    return 0;
-}
-#endif
 
-static int yas_acc_suspend(struct i2c_client * client , pm_message_t mesg)
-{
-/*    struct yas_acc_private_data *data =yas_acc_get_data();
-    struct yas_acc_driver *driver = data->driver;
-
-    mutex_lock(&data->data_mutex);
-
-    if (data->suspend == 0) {
-        data->suspend_enable = yas_acc_get_enable(driver);
-        if (data->suspend_enable) {
-            cancel_delayed_work_sync(&data->work);
-            yas_acc_set_enable(driver, 0);
-        }
-    }
-    data->suspend = 1;
-
-    mutex_unlock(&data->data_mutex);
-*/
     return 0;
 }
 
-#if defined(CONFIG_HAS_EARLYSUSPEND)
-static int bma222_early_resume(struct early_suspend *handler)
+static int yas_acc_resume(struct device *dev)
 {
-/*    struct yas_acc_private_data *data =yas_acc_get_data();
+    struct i2c_client *client = to_i2c_client(dev);
+    struct yas_acc_private_data *data = i2c_get_clientdata(client);
     struct yas_acc_driver *driver = data->driver;
     int delay;
 
@@ -946,38 +913,14 @@ static int bma222_early_resume(struct early_suspend *handler)
     if (data->suspend == 1) {
         if (data->suspend_enable) {
             delay = yas_acc_get_delay(driver);
-            schedule_delayed_work(&data->work, delay_to_jiffies(delay) + 1);
+           // schedule_delayed_work(&data->work, delay_to_jiffies(delay) + 1);
             yas_acc_set_enable(driver, 1);
         }
     }
     data->suspend = 0;
 
     mutex_unlock(&data->data_mutex);
-*/
-    return 0;
 
-}
-#endif
-
-static int yas_acc_resume(struct i2c_client * client)
-{
- /*   struct yas_acc_private_data *data =yas_acc_get_data();
-    struct yas_acc_driver *driver = data->driver;
-    int delay;
-
-    mutex_lock(&data->data_mutex);
-
-    if (data->suspend == 1) {
-        if (data->suspend_enable) {
-            delay = yas_acc_get_delay(driver);
-            schedule_delayed_work(&data->work, delay_to_jiffies(delay) + 1);
-            yas_acc_set_enable(driver, 1);
-        }
-    }
-    data->suspend = 0;
-
-    mutex_unlock(&data->data_mutex);
-*/
     return 0;
 }
 
@@ -1037,13 +980,6 @@ static int yas_acc_probe(struct i2c_client *client, const struct i2c_device_id *
     	printk(KERN_ERR "%s: cound not register accelerometer sensor device(%d).\n", __func__, err);
     }
 	
-#if defined(CONFIG_HAS_EARLYSUSPEND)
-    data->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
-    data->early_suspend.suspend = (void *)bma222_early_suspend;
-    data->early_suspend.resume  = (void *)bma222_early_resume;
-    register_early_suspend(&data->early_suspend);
-#endif	
-
 	printk(KERN_ERR "bma222_init_proc -\n");
 
 
@@ -1059,14 +995,10 @@ static int yas_acc_probe(struct i2c_client *client, const struct i2c_device_id *
     return err;
 }
 
-static int yas_acc_remove(struct i2c_client *client)
+static int __devexit yas_acc_remove(struct i2c_client *client)
 {
     struct yas_acc_private_data *data = i2c_get_clientdata(client);
     struct yas_acc_driver *driver = data->driver;
-
-#if defined(CONFIG_HAS_EARLYSUSPEND)
-		unregister_early_suspend(&data->early_suspend);
-#endif
 
     yas_acc_set_enable(driver, 0);
     sysfs_remove_group(&data->input->dev.kobj, &yas_acc_attribute_group);
@@ -1076,6 +1008,11 @@ static int yas_acc_remove(struct i2c_client *client)
 
     return 0;
 }
+
+static const struct dev_pm_ops yas_acc_pm_ops = {
+	.suspend	= yas_acc_suspend,
+	.resume		= yas_acc_resume,
+};
 
 static const struct i2c_device_id yas_acc_id[] = {
     {YAS_ACC_KERNEL_NAME, 0},
@@ -1088,11 +1025,10 @@ struct i2c_driver yas_acc_driver = {
     .driver = {
         .name = YAS_ACC_KERNEL_NAME,
         .owner = THIS_MODULE,
+	.pm	= &yas_acc_pm_ops,
     },
     .probe = yas_acc_probe,
-    .remove = yas_acc_remove,
-    .suspend = yas_acc_suspend,
-    .resume = yas_acc_resume,
+    .remove = __devexit_p(yas_acc_remove),
     .id_table = yas_acc_id,
 };
 
