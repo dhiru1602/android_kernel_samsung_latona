@@ -525,6 +525,7 @@ static void fsa9480_read_int_register(struct work_struct *work)
 	}
 
 	enable_irq(fsa9480_i2c_client->irq);
+	enable_irq_wake(fsa9480_i2c_client->irq);
 
 	wake_lock_timeout(&fsa9480_wake_lock, 3*HZ);
 }
@@ -535,6 +536,7 @@ static irqreturn_t fsa9480_interrupt(int irq, void *ptr)
 	wake_lock_timeout(&fsa9480_wake_lock, 3*HZ);
 
 	disable_irq_nosync(irq);
+	disable_irq_wake(irq);
 
 	queue_work(fsa9480_workqueue, &fsa9480_work);
 
@@ -544,11 +546,7 @@ static irqreturn_t fsa9480_interrupt(int irq, void *ptr)
 
 static void fsa9480_interrupt_init(int irq, void *dev_id)
 {
-#define FSA9480_IRQ_FLAGS (IRQF_DISABLED | IRQF_SHARED)
-
-	irq_set_irq_type(irq, IRQ_TYPE_LEVEL_LOW/*IRQ_TYPE_EDGE_FALLING*/);
-
-	if (request_irq(irq, fsa9480_interrupt, FSA9480_IRQ_FLAGS, "FSA9480 Detected", dev_id))
+	if (request_threaded_irq(irq, NULL, fsa9480_interrupt, IRQF_TRIGGER_LOW | IRQF_ONESHOT, "FSA9480", dev_id))
 	{
 		DEBUG_FSA9480("[FSA9480]fail to register IRQ[%d] for FSA9480 USB Switch \n", irq);
 	}
@@ -673,8 +671,9 @@ static int __devexit fsa9480_remove(struct i2c_client *client)
 }
 
 
-static int fsa9480_resume(struct i2c_client *client)
+static int fsa9480_resume(struct device *dev)
 {
+	struct i2c_client *client = to_i2c_client(dev);
 #ifdef FEATURE_FTM_SLEEP
 	if(ftm_sleep)
 	{
@@ -693,9 +692,23 @@ static int fsa9480_resume(struct i2c_client *client)
 	}
 #endif
 
+	enable_irq(client->irq);
+
 	return 0;
 }
 
+static int fsa9480_suspend(struct device *dev)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	disable_irq(client->irq);
+
+	return 0;
+}
+
+static const struct dev_pm_ops fsa9480_pm_ops = {
+	.suspend	= fsa9480_suspend,
+	.resume         = fsa9480_resume,
+};
 
 static const struct i2c_device_id fsa9480_id[] = {
         { "fsa9480", 0 },
@@ -707,10 +720,10 @@ struct i2c_driver fsa9480_i2c_driver = {
 	.driver = {
 		.name = "fsa9480",
 		.owner = THIS_MODULE,
+		.pm	= &fsa9480_pm_ops,
 	},
 	.probe		= fsa9480_probe,
 	.remove		= __devexit_p(fsa9480_remove),
-	.resume		= fsa9480_resume,
 	.id_table	= fsa9480_id,
 };
 
