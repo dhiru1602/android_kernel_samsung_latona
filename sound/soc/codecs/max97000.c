@@ -852,7 +852,7 @@ static __devexit int max97000_i2c_remove(struct i2c_client *client)
         return 0;
 }
 
-static int max97000_suspend(struct i2c_client *client, pm_message_t mesg)
+static int max97000_suspend(struct device *dev)
 {
 	P("");
 	curr_output_mode = OUTPUT_OFF;
@@ -871,11 +871,16 @@ static void max97000_shutdown(struct i2c_client *client)
 	max97000_write_regs();
 }
 
-static int max97000_resume(struct i2c_client *client)
+static int max97000_resume(struct device *dev)
 {
 	curr_output_mode = OUTPUT_OFF;
 	return 0;
 }
+
+static const struct dev_pm_ops max97000_pm_ops = {
+        .suspend        = max97000_suspend,
+        .resume         = max97000_resume,
+};
 
 static const struct i2c_device_id max97000_i2c_id[] = {
         { "max97000", 0 },
@@ -887,12 +892,11 @@ static struct i2c_driver max97000_i2c_driver = {
         .driver = {
                 .name = "max97000",
                 .owner = THIS_MODULE,
+                .pm    = &max97000_pm_ops,
         },
 	.probe = max97000_i2c_probe,
 	.remove = __devexit_p(max97000_i2c_remove),
 	.shutdown = max97000_shutdown,
-	.suspend = max97000_suspend,
-	.resume = max97000_resume,
 	.id_table = max97000_i2c_id,
 };
 
