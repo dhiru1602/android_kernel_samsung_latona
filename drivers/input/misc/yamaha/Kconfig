@@ -1,0 +1,53 @@
+#
+#    Yamaha Input Devices
+#
+
+if INPUT_YAMAHA
+
+config INPUT_BMA222_ACCEL
+	tristate "Bosch Sensortec BMA222 Acceleration Sensor"
+	depends on I2C
+	default n
+
+config INPUT_BMA222_POSITION
+	int "BMA222 Mounting Position on Board"
+	depends on INPUT_BMA222_ACCEL
+	default "0"
+	help
+	  Chip mounting position (pin 1).
+	    0: top, upper-left
+	    1: top, upper-right
+	    2: top, lower-right
+	    3: top, lower-left
+	    4: bottom, upper-left
+	    5: bottom, upper-right
+	    6: bottom, lower-right
+	    7: bottom, lower-left
+
+config INPUT_YAS_ORIENTATION
+	tristate "Yamaha Orientation Sensor"
+	depends on I2C
+	default n
+
+config INPUT_YAS529_MAGNETIC
+	tristate "Yamaha YAS529 geomagnetic sensor"
+	default n
+	help
+		Say Y to enable YAS529 geomagnetic support.
+
+config INPUT_YAS529_POSITION
+	int "YAS529 Mounting Position on Board"
+	depends on INPUT_YAS529_MAGNETIC
+	default "0"
+	help
+	  Chip mounting position (pin 1).
+	    0: top, upper-left
+	    1: top, upper-right
+	    2: top, lower-right
+	    3: top, lower-left
+	    4: bottom, upper-left
+	    5: bottom, upper-right
+	    6: bottom, lower-right
+	    7: bottom, lower-left
+
+endif

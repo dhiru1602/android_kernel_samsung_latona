@@ -475,11 +475,9 @@ static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
 	{
 		I2C_BOARD_INFO("cam_pmic", CAM_PMIC_I2C_ADDR),
 	},
-#ifdef CONFIG_INPUT_YAS529
 	{
 		I2C_BOARD_INFO("Yas529Geomag", 0x2E),
 	},
-#endif
 	{
 		I2C_BOARD_INFO("gp2a", 0x44),
 		.platform_data = &gp2a_pdata,

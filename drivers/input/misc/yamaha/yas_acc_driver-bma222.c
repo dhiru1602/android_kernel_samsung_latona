@@ -18,7 +18,7 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
-#include <linux/yas.h>
+#include <yas.h>
 
 #define YAS_BMA222_VERSION                                                "4.0.0"
 #define YAS_BMA222_NAME                                                  "bma222"
