@@ -13,8 +13,13 @@ void Si4709_i2c_drv_exit(void);
 /*static functions*/
 static int Si4709_probe (struct i2c_client *);
 static int Si4709_remove(struct i2c_client *);
-static int Si4709_suspend(struct i2c_client *, pm_message_t mesg);
-static int Si4709_resume(struct i2c_client *);
+static int Si4709_suspend(struct device *dev);
+static int Si4709_resume(struct device *dev);
+
+static const struct dev_pm_ops Si4709_pm_ops = {
+	.suspend	= Si4709_suspend,
+	.resume         = Si4709_resume,
+};
 
 static const struct i2c_device_id Si4709_i2c_id[] = {
  { "Si4709_driver", 0 },
@@ -24,16 +29,14 @@ static const struct i2c_device_id Si4709_i2c_id[] = {
 static struct i2c_driver Si4709_i2c_driver =
 {
     .driver = {
-        .name = "Si4709_driver",
+        .name  = "Si4709_driver",
 	.owner = THIS_MODULE,
+	.pm    = &Si4709_pm_ops,
     },
     .id_table   = Si4709_i2c_id,    
 	
     .probe = Si4709_probe,
     .remove = Si4709_remove,
-
-    .suspend = &Si4709_suspend,
-    .resume = &Si4709_resume,
 };
 
 
@@ -76,8 +79,9 @@ static int Si4709_remove(struct i2c_client *client)
     return ret;
 }
 
-static int Si4709_suspend(struct i2c_client *client, pm_message_t mesg)
+static int Si4709_suspend(struct device *dev)
 {
+    struct i2c_client *client = to_i2c_client(dev);
     int ret = 0;
 	   
     debug("Si4709 i2c driver Si4709_suspend called"); 
@@ -95,8 +99,9 @@ static int Si4709_suspend(struct i2c_client *client, pm_message_t mesg)
     return 0;
 }
 
-static int Si4709_resume(struct i2c_client *client)
+static int Si4709_resume(struct device *dev)
 {
+    struct i2c_client *client = to_i2c_client(dev);
     int ret = 0;
 	   
 //    debug("Si4709 i2c driver Si4709_resume called"); 
