@@ -427,6 +427,9 @@ static int __devinit twl_rtc_probe(struct platform_device *pdev)
 	if (irq <= 0)
 		goto out1;
 
+	/* Starting backup battery charge - configuration 3v, 25uA */
+	ret = twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x14, 0x12 /*BB_CFG*/);
+
 	ret = twl_rtc_read_u8(&rd_reg, REG_RTC_STATUS_REG);
 	if (ret < 0)
 		goto out1;
