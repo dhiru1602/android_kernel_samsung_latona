@@ -883,14 +883,14 @@ static IMG_BOOL ProcessFlipV2(IMG_HANDLE hCmdCookie,
 	} asMemInfo[5];
 
 	memset(asMemInfo, 0, sizeof(asMemInfo));
-#if 0
+
 	if(uiDssDataLength != sizeof(*psDssData))
 	{
 		WARN(1, "invalid size of private data (%d vs %d)",
 		     uiDssDataLength, sizeof(*psDssData));
 		return IMG_FALSE;
 	}
-#endif
+
 	if (ui32NumMemInfos == 0)
 	{
 		WARN(1, "must have at least one layer");
