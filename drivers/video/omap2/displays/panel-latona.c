@@ -329,11 +329,6 @@ static void nt35510_get_resolution(struct omap_dss_device *dssdev,
 	*xres = dssdev->panel.timings.x_res;
 }
 
-static int nt35510_get_recommended_bpp(struct omap_dss_device *dssdev)
-{
-	return 16; //16 bit color
-}
-
 static struct omap_dss_driver nt35510_driver = {
 	.probe          = nt35510_panel_probe,
 	.remove         = nt35510_panel_remove,
@@ -344,7 +339,7 @@ static struct omap_dss_driver nt35510_driver = {
 	.resume         = nt35510_panel_resume,
 
 	.get_resolution	= nt35510_get_resolution,
-	.get_recommended_bpp = nt35510_get_recommended_bpp,
+	.get_recommended_bpp = omapdss_default_get_recommended_bpp,
 
 	.set_timings	= nt35510_panel_set_timings,
 	.get_timings	= nt35510_panel_get_timings,
