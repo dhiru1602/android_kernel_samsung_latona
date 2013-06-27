@@ -27,9 +27,11 @@ static int latona_panel_enable_lcd(struct omap_dss_device *dssdev)
 {
 	// Run the L3@400Mhz while the LCD is ON
 	omap_pm_set_min_bus_tput(&(dssdev->dev), OCP_INITIATOR_AGENT , 400000 * 4);
+
+	return 0;
 }
 
-static int latona_panel_disable_lcd(struct omap_dss_device *dssdev)
+static void latona_panel_disable_lcd(struct omap_dss_device *dssdev)
 {
 	omap_pm_set_min_bus_tput(&(dssdev->dev), OCP_INITIATOR_AGENT ,0);
 }
