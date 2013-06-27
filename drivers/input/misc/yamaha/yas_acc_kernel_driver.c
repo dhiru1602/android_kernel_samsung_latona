@@ -30,7 +30,7 @@
 #include <mach/board-latona.h>
 
 #define __LINUX_KERNEL_DRIVER__
-#include <yas.h>
+#include "yas.h"
 #include "yas_acc_driver-bma222.c"
 
 #define YAS_ACC_KERNEL_VERSION                                                        "3.0.401"
