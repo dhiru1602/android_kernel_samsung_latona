@@ -1769,13 +1769,38 @@ static int isp_try_pipeline(struct device *dev,
 		}
 		pix_output->width = pipe->prv.out.crop.width;
 		pix_output->height = pipe->prv.out.crop.height;
-		pix_output->bytesperline = pipe->prv.out.image.width *
-					   ISP_BYTES_PER_PIXEL;
+		/*
+		 * Ugly fix for 720 hack which using "ISP Resizer".
+		 * The code will be removed after 720p implementation cleanup.
+		 */
+		if (pix_output->width == 1280 && pix_output->height == 720 &&
+		    pipe->prv.out.path == PREVIEW_MEM)
+			pipe->prv.out.image.width = pipe->prv.out.crop.width;
+		pix_output->bytesperline =
+			pipe->prv.out.image.width * ISP_BYTES_PER_PIXEL;
 	}
+#if 0
+ 		pix_output->bytesperline = pipe->prv.out.image.width *
+ 					   ISP_BYTES_PER_PIXEL;
 
-	if (pipe->modules & OMAP_ISP_RESIZER) {
+	}
+#endif
+
+ 	if (pipe->modules & OMAP_ISP_RESIZER) {
+
+		if (CCDC_RESZ_CAPTURE(isp))
+			pipe->rsz.in.path = RSZ_OTFLY_YUV;
+
+		pipe->rsz.in.image.width = pix_output->width;
+		pipe->rsz.in.image.height = pix_output->height;
+		pipe->rsz.in.image.pixelformat = pix_output->pixelformat;
+		pipe->rsz.in.crop.left = pipe->rsz.in.crop.top = 0;
+		pipe->rsz.in.crop.width = pipe->rsz.in.image.width;
+		pipe->rsz.in.crop.height = pipe->rsz.in.image.height;
+
 		pipe->rsz.out.image.width = wanted_width;
 		pipe->rsz.out.image.height = wanted_height;
+#if 0
 
 		if (pipe->rsz.in.path == RSZ_OTFLY_YUV) {
 			pipe->rsz.in.image.width =
@@ -1792,7 +1817,7 @@ static int isp_try_pipeline(struct device *dev,
 		pipe->rsz.in.crop.left = pipe->rsz.in.crop.top = 0;
 		pipe->rsz.in.crop.width = pipe->prv.out.crop.width;
 		pipe->rsz.in.crop.height = pipe->prv.out.crop.height;
-
+#endif
 		rval = ispresizer_try_pipeline(&isp->isp_res, &pipe->rsz);
 		if (rval) {
 			dev_dbg(dev, "The dimensions %dx%d are not"
