@@ -732,7 +732,6 @@ void __init latona_peripherals_init(void)
 {
 	platform_add_devices(latona_board_devices,
 		ARRAY_SIZE(latona_board_devices));
-	twl4030_get_scripts(&latona_t2scripts_data);
 	board_onenand_init();
 	latona_power_init();
 	latona_connector_init();
