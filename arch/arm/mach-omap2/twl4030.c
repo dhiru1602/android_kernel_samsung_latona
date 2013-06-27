@@ -19,12 +19,10 @@
  */
 static struct twl4030_ins __initdata sleep_on_seq[] = {
 	/* Broadcast message to put res to sleep */
-    {MSG_BROADCAST(DEV_GRP_ALL, RES_GRP_ALL, RES_TYPE_ALL, RES_TYPE2_R0,
-                            RES_STATE_SLEEP), 2},
-    {MSG_BROADCAST(DEV_GRP_ALL, RES_GRP_ALL, RES_TYPE_ALL, RES_TYPE2_R1,
-                            RES_STATE_SLEEP), 2},
-    {MSG_BROADCAST(DEV_GRP_ALL, RES_GRP_ALL, RES_TYPE_ALL, RES_TYPE2_R2,
-                            RES_STATE_SLEEP), 2},
+	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_ALL, RES_TYPE_R0, RES_TYPE2_R1,
+							RES_STATE_SLEEP), 2},
+	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_ALL, RES_TYPE_R0, RES_TYPE2_R2,
+							RES_STATE_SLEEP), 2},
 };
 
 static struct twl4030_script sleep_on_script __initdata = {
@@ -40,7 +38,7 @@ static struct twl4030_script sleep_on_script __initdata = {
  */
 static struct twl4030_ins wakeup_p12_seq[] __initdata = {
 	/* Broadcast message to put res to active */
-	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_ALL, RES_TYPE_ALL, RES_TYPE2_R0,
+	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_ALL, RES_TYPE_R0, RES_TYPE2_R1,
 							RES_STATE_ACTIVE), 2},
 };
 
@@ -82,9 +80,7 @@ static struct twl4030_ins wrst_seq[] __initdata = {
  * Reset RC.
  * Reenable twl4030.
  */
-#ifndef CONFIG_MACH_OMAP_LATONA
 	{MSG_SINGULAR(DEV_GRP_NULL, RES_NRES_PWRON, RES_STATE_OFF), 2},
-#endif
 	{MSG_SINGULAR(DEV_GRP_NULL, RES_RESET, RES_STATE_OFF), 2},
 	{MSG_SINGULAR(DEV_GRP_NULL, RES_MAIN_REF, RES_STATE_WRST), 2},
 	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_ALL, RES_TYPE_R0, RES_TYPE2_R2,
@@ -95,9 +91,7 @@ static struct twl4030_ins wrst_seq[] __initdata = {
 	{MSG_BROADCAST(DEV_GRP_NULL, RES_GRP_RC, RES_TYPE_ALL, RES_TYPE2_R0,
 							RES_STATE_WRST), 2},
 	{MSG_SINGULAR(DEV_GRP_NULL, RES_RESET, RES_STATE_ACTIVE), 2},
-#ifndef CONFIG_MACH_OMAP_LATONA
 	{MSG_SINGULAR(DEV_GRP_NULL, RES_NRES_PWRON, RES_STATE_ACTIVE), 2},
-#endif
 };
 
 static struct twl4030_script wrst_script __initdata = {
@@ -115,52 +109,28 @@ static struct twl4030_script *twl4030_scripts[] __initdata = {
 };
 
 static struct twl4030_resconfig twl4030_rconfig[] = {
-	{ .resource = RES_VAUX1, .devgroup = DEV_GRP_P1,
-		.type = 0, .type2 = 0, .remap_sleep = RES_STATE_OFF },
-	{ .resource = RES_VAUX2, .devgroup = DEV_GRP_P1,
-		.type = 0, .type2 = 0, .remap_sleep = RES_STATE_OFF },
-	{ .resource = RES_VAUX3, .devgroup = DEV_GRP_P1,
-		.type = 0, .type2 = 0, .remap_sleep = RES_STATE_OFF },
-	{ .resource = RES_VAUX4, .devgroup = DEV_GRP_P1,
-		.type = 0, .type2 = 0, .remap_sleep = RES_STATE_OFF },
-	{ .resource = RES_VMMC1, .devgroup = DEV_GRP_P1,
-		.type = 0, .type2 = 0, .remap_sleep = RES_STATE_OFF },
-	{ .resource = RES_VMMC2, .devgroup = DEV_GRP_P1,
-		.type = 0, .type2 = 0, .remap_sleep = RES_STATE_OFF },
-	{ .resource = RES_VPLL1, .devgroup = DEV_GRP_P1,
-		.type = 3, .type2 = 1, .remap_sleep = RES_STATE_OFF },
-	{ .resource = RES_VPLL2, .devgroup = DEV_GRP_P1,
-		.type = 0, .type2 = 0, .remap_sleep = RES_STATE_OFF },
-	{ .resource = RES_VSIM, .devgroup = DEV_GRP_P1,
-		.type = 0, .type2 = 0, .remap_sleep = RES_STATE_SLEEP},
-
-	{ .resource = RES_VINTANA1, .devgroup = DEV_GRP_P1,
-		.type = 1, .type2 = 2, .remap_sleep = RES_STATE_SLEEP},
-	{ .resource = RES_VINTANA2, .devgroup = DEV_GRP_P1,
-		.type = 0, .type2 = 2, .remap_sleep = RES_STATE_OFF },
-	{ .resource = RES_VINTDIG, .devgroup = DEV_GRP_P1,
-		.type = 1, .type2 = 2, .remap_sleep = RES_STATE_SLEEP },
-	{ .resource = RES_VIO, .devgroup = DEV_GRP_ALL,
-		.type = 2, .type2 = 2, .remap_sleep = RES_STATE_SLEEP },
+	{ .resource = RES_VPLL1, .devgroup = DEV_GRP_P1, .type = 3,
+		.type2 = 1, .remap_sleep = RES_STATE_OFF },
+	{ .resource = RES_VINTANA1, .devgroup = DEV_GRP_ALL, .type = 1,
+		.type2 = 2, .remap_sleep = RES_STATE_SLEEP },
+	{ .resource = RES_VINTANA2, .devgroup = DEV_GRP_ALL, .type = 0,
+		.type2 = 2, .remap_sleep = RES_STATE_SLEEP },
+	{ .resource = RES_VINTDIG, .devgroup = DEV_GRP_ALL, .type = 1,
+		.type2 = 2, .remap_sleep = RES_STATE_SLEEP },
+	{ .resource = RES_VIO, .devgroup = DEV_GRP_ALL, .type = 2,
+		.type2 = 2, .remap_sleep = RES_STATE_SLEEP },
 	{ .resource = RES_VDD1, .devgroup = DEV_GRP_P1,
 		.type = 4, .type2 = 1, .remap_sleep = RES_STATE_OFF },
 	{ .resource = RES_VDD2, .devgroup = DEV_GRP_P1,
 		.type = 3, .type2 = 1, .remap_sleep = RES_STATE_OFF },
-	{ .resource = RES_VUSB_1V5, .devgroup = DEV_GRP_P1,
-		.type = 0, .type2 = 0, .remap_sleep = RES_STATE_OFF },
-	{ .resource = RES_VUSB_1V8, .devgroup = DEV_GRP_P1,
-		.type = 0, .type2 = 0, .remap_sleep = RES_STATE_OFF },
-	{ .resource = RES_VUSB_3V1, .devgroup = DEV_GRP_P1,
-		.type = 0, .type2 = 0, .remap_sleep = RES_STATE_OFF },
-	{ .resource = RES_REGEN, .devgroup = DEV_GRP_ALL,
-		.type = 2, .type2 = 1, .remap_sleep = RES_STATE_OFF },
-
-	{ .resource = RES_NRES_PWRON, .devgroup = DEV_GRP_ALL,
-		.type = 0, .type2 = 1, .remap_sleep = RES_STATE_SLEEP },
-	{ .resource = RES_CLKEN, .devgroup = DEV_GRP_P3,
-		.type = 3, .type2 = 2, .remap_sleep = RES_STATE_SLEEP },
-	{ .resource = RES_SYSEN, .devgroup = DEV_GRP_ALL,
-		.type = 6, .type2 = 1, .remap_sleep = RES_STATE_SLEEP },
+	{ .resource = RES_REGEN, .devgroup = DEV_GRP_ALL, .type = 2,
+		.type2 = 1, .remap_sleep = RES_STATE_SLEEP },
+	{ .resource = RES_NRES_PWRON, .devgroup = DEV_GRP_ALL, .type = 0,
+		.type2 = 1, .remap_sleep = RES_STATE_SLEEP },
+	{ .resource = RES_CLKEN, .devgroup = DEV_GRP_ALL, .type = 3,
+		.type2 = 2, .remap_sleep = RES_STATE_SLEEP },
+	{ .resource = RES_SYSEN, .devgroup = DEV_GRP_ALL, .type = 6,
+		.type2 = 1, .remap_sleep = RES_STATE_SLEEP },
 	{ .resource = RES_HFCLKOUT, .devgroup = DEV_GRP_P3,
 		.type = 0, .type2 = 2, .remap_sleep = RES_STATE_SLEEP },
 	{ 0, 0},
