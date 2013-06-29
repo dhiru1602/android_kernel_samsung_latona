@@ -11,20 +11,17 @@
 #include <linux/miscdevice.h>
 #include <plat/mux.h>
 #include <mach/gpio.h>
+#include <linux/input.h>
 
-#define DRIVER_NAME "secLedDriver"
+#define DRIVER_NAME "LatonaLedDriver"
 
-struct sec_led_data {
+struct latona_led_data {
 	struct led_classdev cdev;
 	unsigned gpio1;
 	unsigned gpio2;
-//	struct work_struct work;
 	u8 new_level;
 	u8 can_sleep1;
 	u8 can_sleep2;
-//	u8 active_low;
-//	int (*platform_gpio_blink_set)(unsigned gpio,
-//			unsigned long *delay_on, unsigned long *delay_off);
 };
 
 static int led_state =0;
@@ -49,7 +46,7 @@ static void bl_off(struct work_struct *bl_off_work)
 	led_state = 0;
 }
 
-static void bl_set_timeout() {
+void bl_set_timeout() {
 	if (bl_timeout > 0) {
 		mod_timer(&bl_timer, jiffies + msecs_to_jiffies(bl_timeout));
 	}
@@ -79,8 +76,6 @@ void trigger_touchkey_led(int event)
 	}
 }
 
-EXPORT_SYMBOL(trigger_touchkey_led);
-
 void suspend_touchkey_led(void)
 {
 	if(bln_state==0)
@@ -91,15 +86,33 @@ void suspend_touchkey_led(void)
 	led_state = 0;
 }
 
-EXPORT_SYMBOL(suspend_touchkey_led);
+void latona_leds_report_event(int key_code, int value)
+{
+	if (key_code == KEY_POWER) {
+		if (value)
+			trigger_touchkey_led(0);
+		else
+			suspend_touchkey_led();
+	}else if (key_code == KEY_MENU) {
+		if (value)
+			trigger_touchkey_led(1);
+		else
+			trigger_touchkey_led(3);
+	}else if (key_code == KEY_BACK) {
+		if (value)
+			trigger_touchkey_led(2);
+		else
+			trigger_touchkey_led(3);
+	}
+	return;
+}
 
-static void sec_led_set(struct led_classdev *led_cdev,
+static void latona_led_set(struct led_classdev *led_cdev,
 	enum led_brightness value)
 {
-	struct sec_led_data *led_dat =
-		container_of(led_cdev, struct sec_led_data, cdev);
+	struct latona_led_data *led_dat =
+		container_of(led_cdev, struct latona_led_data, cdev);
     
-	// printk("[LED] %s ::: value=%d , led_state=%d\n", __func__, value, bln_state);
 	if ((value == LED_OFF)&&( bln_state==1))
 	{
 		if (led_state && bl_timer.expires < jiffies)
@@ -119,7 +132,6 @@ static void sec_led_set(struct led_classdev *led_cdev,
 	}
 	else
 	{ 
-		// printk("[LED] %s ::: same state ... \n", __func__);
 		return ;
 	}
 }
@@ -150,12 +162,12 @@ static struct miscdevice bl_led_device = {
 .name = "notification",
 };
 
-static int sec_led_probe(struct platform_device *pdev)
+static int latona_led_probe(struct platform_device *pdev)
 {	
 
 	struct led_platform_data *pdata = pdev->dev.platform_data;
 	struct led_info *cur_led;
-	struct sec_led_data *leds_data, *led_dat;
+	struct latona_led_data *leds_data, *led_dat;
 	
 	int i, ret = 0;
 
@@ -164,7 +176,7 @@ static int sec_led_probe(struct platform_device *pdev)
 	if (!pdata)
 		return -EBUSY;
 
-	leds_data = kzalloc(sizeof(struct sec_led_data) * pdata->num_leds,
+	leds_data = kzalloc(sizeof(struct latona_led_data) * pdata->num_leds,
 				GFP_KERNEL);
 	if (!leds_data)
 		return -ENOMEM;
@@ -181,7 +193,7 @@ static int sec_led_probe(struct platform_device *pdev)
 
 		led_dat->cdev.name = cur_led->name;
 		led_dat->cdev.default_trigger = cur_led->default_trigger;
-		led_dat->cdev.brightness_set = sec_led_set;
+		led_dat->cdev.brightness_set = latona_led_set;
 		led_dat->cdev.brightness = LED_OFF;
 
 		ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
@@ -207,7 +219,6 @@ err:
 	if (i > 0) {
 		for (i = i - 1; i >= 0; i--) {
 			led_classdev_unregister(&leds_data[i].cdev);
-//			cancel_work_sync(&leds_data[i].work);
 		}
 	}
 
@@ -216,19 +227,16 @@ err:
 	return ret;
 }
 
-static int __devexit sec_led_remove(struct platform_device *pdev)
+static int __devexit latona_led_remove(struct platform_device *pdev)
 {
 	int i;
-//	struct gpio_led_platform_data *pdata = pdev->dev.platform_data;
-//	struct gpio_led_data *leds_data;
 	struct led_platform_data *pdata = pdev->dev.platform_data;
-	struct sec_led_data *leds_data;
+	struct latona_led_data *leds_data;
 
 	leds_data = platform_get_drvdata(pdev);
 
 	for (i = 0; i < pdata->num_leds; i++) {
 		led_classdev_unregister(&leds_data[i].cdev);
-//		cancel_work_sync(&leds_data[i].work);
 	}	
 
 	kfree(leds_data);
@@ -236,7 +244,7 @@ static int __devexit sec_led_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static int sec_led_shutdown(struct platform_device *pdev)
+static int latona_led_shutdown(struct platform_device *pdev)
 {
 	gpio_direction_output(OMAP_GPIO_LED_EN1, 0);
 	gpio_direction_output(OMAP_GPIO_LED_EN2, 0);
@@ -245,62 +253,29 @@ static int sec_led_shutdown(struct platform_device *pdev)
 	return 0;
 }
 
-#if 0
-static int sec_led_suspend(struct platform_device *dev, pm_message_t state)
-{
-	struct led_platform_data *pdata = dev->dev.platform_data;
-	struct sec_led_data *leds_data;
-	int i;
-  
-	printk("[LED] %s +\n", __func__);  
-	printk("[LED] %s nuim_leds=%d \n", __func__, pdata->num_leds);
-	for (i = 0; i < pdata->num_leds; i++) 
-		led_classdev_suspend(&leds_data[i].cdev);
-
-	return 0;
-}
-
-static int sec_led_resume(struct platform_device *dev)
-{
-	struct led_platform_data *pdata = dev->dev.platform_data;
-	struct sec_led_data *leds_data;
-	int i;
-
-	printk("[LED] %s +\n", __func__);
-
-	for (i = 0; i < pdata->num_leds; i++) 
-		led_classdev_resume(&leds_data[i].cdev);
-
-	return 0;
-}
-#endif
-
-static struct platform_driver sec_led_driver = {
-	.probe		= sec_led_probe,
-	.remove		= __devexit_p(sec_led_remove),
-	.shutdown	= sec_led_shutdown,
-//	.suspend		= sec_led_suspend,
-//	.resume		= sec_led_resume,
+static struct platform_driver latona_led_driver = {
+	.probe		= latona_led_probe,
+	.remove		= __devexit_p(latona_led_remove),
+	.shutdown	= latona_led_shutdown,
 	.driver		= {
 		.name	= DRIVER_NAME,
 		.owner	= THIS_MODULE,
 	},	
 };
 
-static int __init sec_led_init(void)
+static int __init latona_led_init(void)
 {
 	printk("[LED] %s +\n", __func__);
-	return platform_driver_register(&sec_led_driver);
+	return platform_driver_register(&latona_led_driver);
 }
 
-static void __exit sec_led_exit(void)
+static void __exit latona_led_exit(void)
 {
-	platform_driver_unregister(&sec_led_driver);
+	platform_driver_unregister(&latona_led_driver);
 }
 
-module_init(sec_led_init);
-module_exit(sec_led_exit);
+module_init(latona_led_init);
+module_exit(latona_led_exit);
 
-MODULE_DESCRIPTION("SAMSUNG LED driver");
+MODULE_DESCRIPTION("LATONA LED driver");
 MODULE_LICENSE("GPL");
-

@@ -121,29 +121,29 @@ static inline void __init board_init_zeus_key(void)
 }
 /* End: ZEUS Key and Headset Switch */
 
-/* Samsung LEDs support */
+/* Latona LEDs support */
 
-static struct led_info sec_keyled_list[] = {
+static struct led_info latona_keyled_list[] = {
 	{
 	 .name = "button-backlight",
 	 },
 };
 
-static struct led_platform_data sec_keyled_data = {
-	.num_leds = ARRAY_SIZE(sec_keyled_list),
-	.leds = sec_keyled_list,
+static struct led_platform_data latona_keyled_data = {
+	.num_leds = ARRAY_SIZE(latona_keyled_list),
+	.leds = latona_keyled_list,
 };
 
-static struct platform_device samsung_led_device = {
-	.name = "secLedDriver",
+static struct platform_device latona_led_device = {
+	.name = "LatonaLedDriver",
 	.id = -1,
 	.num_resources = 0,
 	.dev = {
-		.platform_data = &sec_keyled_data,
+		.platform_data = &latona_keyled_data,
 		},
 };
 
-/* End: Samsung LED's support */ 
+/* End: Latona LED's support */ 
 
 /* LATONA has only Volume UP/DOWN */
 static uint32_t board_keymap[] = {
@@ -358,7 +358,7 @@ static struct fixed_voltage_config latona_vwlan = {
 static struct platform_device *latona_board_devices[] __initdata = {
 	&headset_switch_device,
 	&board_zeus_key_device,     /* ZEUS KEY */ 
-	&samsung_led_device,         /* SAMSUNG LEDs */ 
+	&latona_led_device,         /* SAMSUNG LEDs */ 
 };
 
 static int gp2a_light_adc_value(void)
