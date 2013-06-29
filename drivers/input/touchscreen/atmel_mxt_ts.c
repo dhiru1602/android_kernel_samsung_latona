@@ -20,6 +20,11 @@
 #include <linux/input/mt.h>
 #include <linux/interrupt.h>
 #include <linux/slab.h>
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+#include <linux/earlysuspend.h>
+/* Early-suspend level */
+#define MXT_SUSPEND_LEVEL 1
+#endif
 
 /* Version */
 #define MXT_VER_20		20
@@ -253,6 +258,9 @@ struct mxt_data {
 	unsigned int max_y;
 	u32 keyarray_old;
 	u32 keyarray_new;
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+	struct early_suspend early_suspend;
+#endif
 };
 
 static bool mxt_object_readable(unsigned int type)
@@ -1102,6 +1110,68 @@ static void mxt_input_close(struct input_dev *dev)
 	mxt_stop(data);
 }
 
+#ifdef CONFIG_PM
+static int mxt_suspend(struct device *dev)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct mxt_data *data = i2c_get_clientdata(client);
+	struct input_dev *input_dev = data->input_dev;
+
+	mutex_lock(&input_dev->mutex);
+
+	if (input_dev->users)
+		mxt_stop(data);
+
+	mutex_unlock(&input_dev->mutex);
+
+	return 0;
+}
+
+static int mxt_resume(struct device *dev)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct mxt_data *data = i2c_get_clientdata(client);
+	struct input_dev *input_dev = data->input_dev;
+
+	/* Soft reset */
+	mxt_write_object(data, MXT_GEN_COMMAND,
+			MXT_COMMAND_RESET, 1);
+
+	msleep(MXT_RESET_TIME);
+
+	mutex_lock(&input_dev->mutex);
+
+	if (input_dev->users)
+		mxt_start(data);
+
+	mutex_unlock(&input_dev->mutex);
+
+	return 0;
+}
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+static void mxt_early_suspend(struct early_suspend *h)
+{
+	struct mxt_data *data = container_of(h, struct mxt_data, early_suspend);
+
+	mxt_suspend(&data->client->dev);
+}
+
+static void mxt_late_resume(struct early_suspend *h)
+{
+	struct mxt_data *data = container_of(h, struct mxt_data, early_suspend);
+
+	mxt_resume(&data->client->dev);
+}
+#endif
+
+static const struct dev_pm_ops mxt_pm_ops = {
+#ifndef CONFIG_HAS_EARLYSUSPEND
+	.suspend	= mxt_suspend,
+	.resume		= mxt_resume,
+#endif
+};
+#endif
+
 static int __devinit mxt_probe(struct i2c_client *client,
 		const struct i2c_device_id *id)
 {
@@ -1188,6 +1258,14 @@ static int __devinit mxt_probe(struct i2c_client *client,
 	if (error)
 		goto err_unregister_device;
 
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+	data->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN +
+						MXT_SUSPEND_LEVEL;
+	data->early_suspend.suspend = mxt_early_suspend;
+	data->early_suspend.resume = mxt_late_resume;
+	register_early_suspend(&data->early_suspend);
+#endif
+
 	return 0;
 
 err_unregister_device:
@@ -1210,56 +1288,14 @@ static int __devexit mxt_remove(struct i2c_client *client)
 	sysfs_remove_group(&client->dev.kobj, &mxt_attr_group);
 	free_irq(data->irq, data);
 	input_unregister_device(data->input_dev);
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+	unregister_early_suspend(&data->early_suspend);
+#endif
 	kfree(data->object_table);
 	kfree(data);
 
 	return 0;
 }
-
-#ifdef CONFIG_PM
-static int mxt_suspend(struct device *dev)
-{
-	struct i2c_client *client = to_i2c_client(dev);
-	struct mxt_data *data = i2c_get_clientdata(client);
-	struct input_dev *input_dev = data->input_dev;
-
-	mutex_lock(&input_dev->mutex);
-
-	if (input_dev->users)
-		mxt_stop(data);
-
-	mutex_unlock(&input_dev->mutex);
-
-	return 0;
-}
-
-static int mxt_resume(struct device *dev)
-{
-	struct i2c_client *client = to_i2c_client(dev);
-	struct mxt_data *data = i2c_get_clientdata(client);
-	struct input_dev *input_dev = data->input_dev;
-
-	/* Soft reset */
-	mxt_write_object(data, MXT_GEN_COMMAND,
-			MXT_COMMAND_RESET, 1);
-
-	msleep(MXT_RESET_TIME);
-
-	mutex_lock(&input_dev->mutex);
-
-	if (input_dev->users)
-		mxt_start(data);
-
-	mutex_unlock(&input_dev->mutex);
-
-	return 0;
-}
-
-static const struct dev_pm_ops mxt_pm_ops = {
-	.suspend	= mxt_suspend,
-	.resume		= mxt_resume,
-};
-#endif
 
 static const struct i2c_device_id mxt_id[] = {
 	{ "qt602240_ts", 0 },
