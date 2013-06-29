@@ -26,14 +26,11 @@
 #include <linux/wl12xx.h>
 #include <linux/mmc/host.h>
 #include <linux/leds.h>
-
-
 #include <media/v4l2-int-device.h>
-
+#include <linux/i2c/atmel_mxt_ts.h>
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
-
 #include <plat/common.h>
 #include <plat/usb.h>
 #include <linux/switch.h>
@@ -53,9 +50,6 @@
 
 struct ce147_platform_data omap_board_ce147_platform_data;
 struct s5ka3dfx_platform_data omap_board_s5ka3dfx_platform_data;
-
-/* Atmel Touchscreen */
-#define OMAP_GPIO_TSP_INT 142
 
 #define GP2A_LIGHT_ADC_CHANNEL	4
 
@@ -578,6 +572,18 @@ static void __init board_onenand_init(void)
 	gpmc_onenand_init(&board_onenand_data);
 }
 
+static struct mxt_platform_data latona_mxt_platform_data = {
+	.x_line         = 18,
+	.y_line         = 11,
+	.x_size         = 800,
+	.y_size         = 480,
+	.blen           = 0x10,
+	.threshold      = 0x20,
+	.voltage        = 2800000,              /* 2.8V */
+	.orient         = MXT_DIAGONAL,
+	.irqflags       = IRQF_TRIGGER_FALLING,
+};
+
 static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
 #if defined(CONFIG_SND_SOC_MAX97000)
 	{
@@ -606,7 +612,9 @@ static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
 
 static struct i2c_board_info __initdata latona_i2c_bus3_info[] = {
 	{
-		I2C_BOARD_INFO("qt602240_ts", 0x4A),
+		I2C_BOARD_INFO("atmel_mxt_ts", 0x4A),
+		.platform_data = &latona_mxt_platform_data,
+		.irq = OMAP_GPIO_IRQ(OMAP_GPIO_TOUCH_INT),
 	},
 };
 
@@ -713,11 +721,11 @@ static int __init omap_i2c_init(void)
 static void atmel_dev_init(void)
 {
 	/* Set the ts_gpio pin mux */
-	if (gpio_request(OMAP_GPIO_TSP_INT, "touch_atmel") < 0) {
+	if (gpio_request(OMAP_GPIO_TOUCH_INT, "touch_atmel") < 0) {
 		printk(KERN_ERR "can't get synaptics pen down GPIO\n");
 		return;
 	}
-	gpio_direction_input(OMAP_GPIO_TSP_INT);
+	gpio_direction_input(OMAP_GPIO_TOUCH_INT);
 	
 }
 
@@ -737,8 +745,8 @@ void __init latona_peripherals_init(void)
 	latona_connector_init();
 	platform_add_devices(latona_i2c_gpio_devices,
 		ARRAY_SIZE(latona_i2c_gpio_devices));
-	omap_i2c_init();
 	atmel_dev_init();
+	omap_i2c_init();
 	platform_device_register(&omap_vwlan_device);
 	usb_musb_init(&latona_musb_board_data);
 #ifdef CONFIG_SAMSUNG_PHONE_SVNET
