@@ -25,6 +25,9 @@
 #define MXT_ROTATED_180		0x6
 #define MXT_DIAGONAL_COUNTER	0x7
 
+/* MXT_TOUCH_KEYARRAY_T15 */
+#define MXT_KEYARRAY_MAX_KEYS 32
+
 /* The platform data for the Atmel maXTouch touchscreen driver */
 struct mxt_platform_data {
 	const u8 *config;
@@ -39,6 +42,7 @@ struct mxt_platform_data {
 	unsigned int voltage;
 	unsigned char orient;
 	unsigned long irqflags;
+	int *key_codes;
 };
 
 #endif /* __LINUX_ATMEL_MXT_TS_H */

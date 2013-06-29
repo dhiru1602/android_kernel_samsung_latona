@@ -572,6 +572,11 @@ static void __init board_onenand_init(void)
 	gpmc_onenand_init(&board_onenand_data);
 }
 
+static int latona_mxt_key_codes[MXT_KEYARRAY_MAX_KEYS] = {
+	[0] = KEY_MENU,
+	[1] = KEY_BACK,
+};
+
 /* Latona specific TSP configuration */
 static u8 mxt_init_vals[] = {
 	/* MXT_GEN_COMMAND(6) */
@@ -625,6 +630,7 @@ static struct mxt_platform_data latona_mxt_platform_data = {
 	.voltage        = 2800000,              /* 2.8V */
 	.orient         = MXT_DIAGONAL,
 	.irqflags       = IRQF_TRIGGER_FALLING,
+	.key_codes	= latona_mxt_key_codes,
 };
 
 static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
