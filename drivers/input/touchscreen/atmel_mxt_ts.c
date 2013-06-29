@@ -20,6 +20,7 @@
 #include <linux/input/mt.h>
 #include <linux/interrupt.h>
 #include <linux/slab.h>
+#include <mach/gpio.h>
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 #include <linux/earlysuspend.h>
 /* Early-suspend level */
@@ -176,6 +177,7 @@
 #define MXT_BACKUP_VALUE	0x55
 #define MXT_BACKUP_TIME		25	/* msec */
 #define MXT_RESET_TIME		65	/* msec */
+#define MXT_ENABLE_TIME		80	/* msec */
 
 #define MXT_FWRESET_TIME	175	/* msec */
 
@@ -1117,12 +1119,16 @@ static int mxt_suspend(struct device *dev)
 	struct mxt_data *data = i2c_get_clientdata(client);
 	struct input_dev *input_dev = data->input_dev;
 
+	disable_irq(data->irq);
+
 	mutex_lock(&input_dev->mutex);
 
 	if (input_dev->users)
 		mxt_stop(data);
 
 	mutex_unlock(&input_dev->mutex);
+
+	gpio_direction_output(data->pdata->lcden_gpio, 0);
 
 	return 0;
 }
@@ -1132,6 +1138,11 @@ static int mxt_resume(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	struct mxt_data *data = i2c_get_clientdata(client);
 	struct input_dev *input_dev = data->input_dev;
+
+	gpio_direction_output(data->pdata->lcden_gpio, 1);
+	msleep(MXT_ENABLE_TIME);
+
+	enable_irq(data->irq);
 
 	/* Soft reset */
 	mxt_write_object(data, MXT_GEN_COMMAND,
@@ -1201,6 +1212,17 @@ static int __devinit mxt_probe(struct i2c_client *client,
 	data->input_dev = input_dev;
 	data->pdata = pdata;
 	data->irq = client->irq;
+
+	/* configure touchscreen enable gpio */
+	error = gpio_request(pdata->lcden_gpio, "atmel_en_gpio");
+	if (error) {
+		dev_err(&client->dev, "unable to request gpio [%d]\n",
+					pdata->lcden_gpio);
+		goto err_free_mem;
+	} else {
+		gpio_direction_output(pdata->lcden_gpio, 1);
+		msleep(MXT_ENABLE_TIME);
+	}
 
 	mxt_calc_resolution(data);
 
@@ -1287,6 +1309,10 @@ static int __devexit mxt_remove(struct i2c_client *client)
 
 	sysfs_remove_group(&client->dev.kobj, &mxt_attr_group);
 	free_irq(data->irq, data);
+
+	if (gpio_is_valid(data->pdata->lcden_gpio))
+		gpio_free(data->pdata->lcden_gpio);
+
 	input_unregister_device(data->input_dev);
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	unregister_early_suspend(&data->early_suspend);

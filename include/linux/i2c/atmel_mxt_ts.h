@@ -43,6 +43,7 @@ struct mxt_platform_data {
 	unsigned char orient;
 	unsigned long irqflags;
 	int *key_codes;
+	int lcden_gpio;
 };
 
 #endif /* __LINUX_ATMEL_MXT_TS_H */
