@@ -1121,7 +1121,7 @@ static int __devinit mxt_probe(struct i2c_client *client,
 		goto err_free_mem;
 	}
 
-	input_dev->name = "Atmel maXTouch Touchscreen";
+	input_dev->name = "atmel_mxt_ts";
 	input_dev->id.bustype = BUS_I2C;
 	input_dev->dev.parent = &client->dev;
 	input_dev->open = mxt_input_open;
