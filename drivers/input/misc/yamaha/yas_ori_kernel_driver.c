@@ -219,7 +219,7 @@ sensor_status_show(struct device *dev,
     return sprintf(buf, "%d\n", status);
 }
 
-static DEVICE_ATTR(delay, S_IRUGO|S_IWUSR|S_IWGRP,
+static DEVICE_ATTR(poll_delay, S_IRUGO|S_IWUSR|S_IWGRP,
         sensor_delay_show, sensor_delay_store);
 static DEVICE_ATTR(enable, S_IRUGO|S_IWUSR|S_IWGRP,
         sensor_enable_show, sensor_enable_store);
@@ -234,7 +234,7 @@ static DEVICE_ATTR(debug_suspend, S_IRUGO|S_IWUSR,
 #endif /* DEBUG */
 
 static struct attribute *sensor_attributes[] = {
-    &dev_attr_delay.attr,
+    &dev_attr_poll_delay.attr,
     &dev_attr_enable.attr,
     &dev_attr_wake.attr,
     &dev_attr_data.attr,
