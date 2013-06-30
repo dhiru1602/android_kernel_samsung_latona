@@ -14,6 +14,11 @@
 #include <linux/input.h>
 
 #define DRIVER_NAME "LatonaLedDriver"
+//Touch Keys State
+#define TOUCHKEY_ALL 0
+#define TOUCHKEY_MENU 1
+#define TOUCHKEY_BACK 2
+#define TOUCHKEY_NONE 3
 
 struct latona_led_data {
 	struct led_classdev cdev;
@@ -90,19 +95,19 @@ void latona_leds_report_event(int key_code, int value)
 {
 	if (key_code == KEY_POWER) {
 		if (value)
-			trigger_touchkey_led(0);
+			trigger_touchkey_led(TOUCHKEY_ALL);
 		else
 			suspend_touchkey_led();
 	}else if (key_code == KEY_MENU) {
 		if (value)
-			trigger_touchkey_led(1);
+			trigger_touchkey_led(TOUCHKEY_MENU);
 		else
-			trigger_touchkey_led(3);
+			trigger_touchkey_led(TOUCHKEY_NONE);
 	}else if (key_code == KEY_BACK) {
 		if (value)
-			trigger_touchkey_led(2);
+			trigger_touchkey_led(TOUCHKEY_BACK);
 		else
-			trigger_touchkey_led(3);
+			trigger_touchkey_led(TOUCHKEY_NONE);
 	}
 	return;
 }
