@@ -197,6 +197,10 @@ static void max17040_get_soc(struct i2c_client *client)
 	val = FIXED_MULT(TO_FIXED(100, 0), val - fmin_cap);
 	val = FIXED_DIV(val, TO_FIXED(100, 0) - fmin_cap);
 	chip->soc = clamp(FIXED_TO_INT(val), 0, 100);
+
+	/* Board Specific soc calibration */
+	if (chip->pdata->adjust_soc)
+		chip->pdata->adjust_soc(&chip->soc);
 }
 
 static void max17040_get_version(struct i2c_client *client)

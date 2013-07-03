@@ -15,6 +15,7 @@ struct max17040_platform_data {
 	int (*charger_online)(void);
 	int (*charger_enable)(void);
 	bool(*is_full_charge)(void);
+	void (*adjust_soc)(int *);
 	int (*get_bat_temp)(int *);
 	bool skip_reset;
 	int min_capacity; /* minimum allowable capacity. The reported capacity

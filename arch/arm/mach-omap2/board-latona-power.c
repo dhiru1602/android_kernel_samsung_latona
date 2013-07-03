@@ -310,6 +310,26 @@ static char *latona_charger_supplied_to[] = {
 	"battery",
 };
 
+// Latona specific battery percentage calibration
+static void latona_adjust_soc(int *soc_value)
+{
+	int value = *soc_value;
+
+	if(value == 100)
+		value = 100;
+	else if(value < 30)
+		value = ((value*100*4/3) + 50)/115;
+	else if(value < 76)
+		value = value + 5;
+	else
+		value = ((value*100-7600)*8/10+50)/80+81;
+
+	if(value > 100)
+		value = 100;
+
+	*soc_value = value;
+}
+
 static const __initdata struct pda_power_pdata charger_pdata = {
 	.init = charger_init,
 	.exit = charger_exit,
@@ -328,13 +348,14 @@ static struct max17040_platform_data max17040_pdata = {
 	.skip_reset = true,
 	.min_capacity = 3,
 	.is_full_charge = check_charge_full,
+	.adjust_soc = latona_adjust_soc,
 	.get_bat_temp = get_bat_temp_by_adc,
 	.high_block_temp = HIGH_BLOCK_TEMP_LATONA,
 	.high_recover_temp = HIGH_RECOVER_TEMP_LATONA,
 	.low_block_temp = LOW_BLOCK_TEMP_LATONA,
 	.low_recover_temp = LOW_RECOVER_TEMP_LATONA,
-	.fully_charged_vol = 419000,
-	.recharge_vol = 418000,
+	.fully_charged_vol = 4180000,
+	.recharge_vol = 4100000,
 	.limit_charging_time = 21600,  /* 6 hours */
 	.limit_recharging_time = 5400, /* 90 min */
 };
