@@ -267,7 +267,6 @@ obj-$(CONFIG_MACH_OMAP_LATONA)		+= board-latona.o \
 					   board-latona-cmdline.o \
 					   board-latona-power.o \
 					   board-latona-connector.o \
-					   omap3-gptimer12.o \
 					   hsmmc.o
 obj-$(CONFIG_MACH_OMAP_3630SDP)		+= board-3630sdp.o \
 					   board-zoom-peripherals.o \
