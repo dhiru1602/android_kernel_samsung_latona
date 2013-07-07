@@ -427,6 +427,36 @@ void omap_sram_idle(bool suspend)
 
 	pwrdm_pre_transition();
 
+	/*
+	 * Hardware maintains sleep dependencies which will keep the core
+	 * domain from sleeping if certain other domains are active.  However,
+	 * we will be making decisions based on what core is doing.  For
+	 * example, should we call set_dpll3_volt_freq() or not.  So let's
+	 * find out what core will really do.
+	 */
+	if (core_next_state < PWRDM_POWER_ON) {
+		cam_fclken = omap2_cm_read_mod_reg(OMAP3430_CAM_MOD, CM_FCLKEN);
+		dss_fclken = omap2_cm_read_mod_reg(OMAP3430_DSS_MOD, CM_FCLKEN);
+		sgx_fclken = omap2_cm_read_mod_reg(OMAP3430ES2_SGX_MOD,
+							CM_FCLKEN);
+		usb_fclken = omap2_cm_read_mod_reg(OMAP3430ES2_USBHOST_MOD,
+							CM_FCLKEN);
+		iva2_idlest = omap2_cm_read_mod_reg(OMAP3430_IVA2_MOD,
+							CM_IDLEST);
+		dma_idlest = omap2_cm_read_mod_reg(CORE_MOD, CM_IDLEST) &
+							OMAP3430_ST_SDMA_MASK;
+
+		if ((cam_fclken != 0) ||
+			(dss_fclken != 0) ||
+			(sgx_fclken != 0) ||
+			(usb_fclken != 0) ||
+			(iva2_idlest == 0) ||
+			(dma_idlest == 0)) {
+			core_next_state = PWRDM_POWER_ON;
+			pwrdm_set_next_pwrst(core_pwrdm, core_next_state);
+		}
+	}
+
 	/* PER */
 	if (per_next_state < PWRDM_POWER_ON) {
 		per_going_off = (per_next_state == PWRDM_POWER_OFF) ? 1 : 0;
