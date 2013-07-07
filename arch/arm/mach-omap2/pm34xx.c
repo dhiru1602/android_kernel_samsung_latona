@@ -93,9 +93,6 @@ static int (*_omap_save_secure_sram)(u32 *addr);
 static struct powerdomain *mpu_pwrdm, *neon_pwrdm;
 static struct powerdomain *core_pwrdm, *per_pwrdm;
 static struct powerdomain *cam_pwrdm;
-#ifdef CONFIG_MACH_OMAP_LATONA
-static struct powerdomain *dss_pwrdm;
-#endif
 
 static void omap3_enable_io_chain(void)
 {
@@ -389,10 +386,6 @@ void omap_sram_idle(bool suspend)
 	int usb_fclken;
 	int iva2_idlest;
 	int dma_idlest;
-#ifdef CONFIG_MACH_OMAP_LATONA
-	int dss_next_state = PWRDM_POWER_ON;
-	int dss_state_modified = 0;
-#endif
 
 	if (!_omap_sram_idle)
 		return;
@@ -401,9 +394,6 @@ void omap_sram_idle(bool suspend)
 	pwrdm_clear_all_prev_pwrst(neon_pwrdm);
 	pwrdm_clear_all_prev_pwrst(core_pwrdm);
 	pwrdm_clear_all_prev_pwrst(per_pwrdm);
-#ifdef CONFIG_MACH_OMAP_LATONA
-	pwrdm_clear_all_prev_pwrst(dss_pwrdm);
-#endif
 
 	mpu_next_state = pwrdm_read_next_pwrst(mpu_pwrdm);
 	switch (mpu_next_state) {
@@ -428,9 +418,6 @@ void omap_sram_idle(bool suspend)
 	/* Enable IO-PAD and IO-CHAIN wakeups */
 	per_next_state = pwrdm_read_next_pwrst(per_pwrdm);
 	core_next_state = pwrdm_read_next_pwrst(core_pwrdm);
-#ifdef CONFIG_MACH_OMAP_LATONA
-	dss_next_state = pwrdm_read_next_pwrst(dss_pwrdm);
-#endif
 	if (omap3_has_io_wakeup() &&
 	    (per_next_state < PWRDM_POWER_ON ||
 	     core_next_state < PWRDM_POWER_ON)) {
@@ -439,25 +426,6 @@ void omap_sram_idle(bool suspend)
 	}
 
 	pwrdm_pre_transition();
-
-#ifdef CONFIG_MACH_OMAP_LATONA
-	/* DSS */
-	if(dss_next_state < PWRDM_POWER_ON){
-		if(dss_next_state == PWRDM_POWER_OFF){
-			if(core_next_state == PWRDM_POWER_ON){
-				dss_next_state = PWRDM_POWER_RET;
-				pwrdm_set_next_pwrst(dss_pwrdm, dss_next_state);
-				dss_state_modified = 1;
-			}
-			/* allow dss sleep */
-			clkdm_add_sleepdep(dss_pwrdm->pwrdm_clkdms[0],
-					mpu_pwrdm->pwrdm_clkdms[0]);
-		}else{
-			dss_next_state = PWRDM_POWER_RET;
-			pwrdm_set_next_pwrst(dss_pwrdm, dss_next_state);
-		}
-	}
-#endif
 
 	/* PER */
 	if (per_next_state < PWRDM_POWER_ON) {
@@ -546,19 +514,6 @@ void omap_sram_idle(bool suspend)
 		per_prev_state = pwrdm_read_prev_pwrst(per_pwrdm);
 		omap2_gpio_resume_after_idle(per_going_off);
 	}
-
-#ifdef CONFIG_MACH_OMAP_LATONA
-	/* DSS */
-	if (dss_next_state < PWRDM_POWER_ON) {
-		if (dss_next_state == PWRDM_POWER_OFF){
-			/* return to the previous state. */
-			clkdm_del_sleepdep(dss_pwrdm->pwrdm_clkdms[0],
-					mpu_pwrdm->pwrdm_clkdms[0]);
-		}
-		if (dss_state_modified)
-			pwrdm_set_next_pwrst(dss_pwrdm, PWRDM_POWER_OFF);
-	}
-#endif
 
 	/* Disable IO-PAD and IO-CHAIN wakeup */
 	if (omap3_has_io_wakeup() &&
