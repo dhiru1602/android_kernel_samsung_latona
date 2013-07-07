@@ -37,6 +37,7 @@
 
 #include "board-flash.h"
 #include "mux.h"
+#include "pm.h"
 #include "sdram-qimonda-hyb18m512160af-6.h"
 #include "omap_ion.h"
 #include "omap_ram_console.h"
@@ -187,9 +188,27 @@ out:
 	return ret;
 }
 
+static struct cpuidle_params latona_cpuidle_params[] = {
+	/* C1 */
+	{0 + 12, 15 , 1},
+	/* C2 */
+	{0 + 18, 20, 1},
+	/* C3 */
+	{50 + 50, 300, 1},
+	/* C4 */
+	{1500 + 1800, 4000, 0},
+	/* C5 */
+	{2500 + 7500, 12000, 1},
+	/* C6 */
+	{3000 + 8500, 15000, 0},
+	/* C7 */
+	{10000 + 30000, 300000, 1},
+};
+
 static void __init latona_init(void)
 {
 	omap3_mux_init(latona_board_mux_ptr, OMAP_PACKAGE_CBP);
+	omap3_pm_init_cpuidle(latona_cpuidle_params);
 	latona_mux_init_gpio_out();
 	latona_mux_set_wakeup_gpio();
 	msecure_init();
