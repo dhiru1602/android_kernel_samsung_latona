@@ -383,6 +383,12 @@ void omap_sram_idle(bool suspend)
 	int per_going_off;
 	int core_prev_state, per_prev_state;
 	u32 sdrc_pwr = 0;
+	int cam_fclken;
+	int dss_fclken;
+	int sgx_fclken;
+	int usb_fclken;
+	int iva2_idlest;
+	int dma_idlest;
 #ifdef CONFIG_MACH_OMAP_LATONA
 	int dss_next_state = PWRDM_POWER_ON;
 	int dss_state_modified = 0;
