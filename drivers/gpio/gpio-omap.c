@@ -1838,6 +1838,7 @@ static void omap3_gpio_save_pad_context(void)
 
 	list_for_each_entry(bank, &omap_gpio_list, node) {
 
+		omap_gpio_save_context(bank);
 		tmp_oe[i] = bank->context.oe;
 		gbank_gpio_oe[i] = bank->context.oe;
 		gpio_bank[i] = bank;
