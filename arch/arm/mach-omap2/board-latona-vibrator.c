@@ -107,6 +107,7 @@ static int pwm_set(unsigned long force)
 			OMAP_TIMER_TRIGGER_OVERFLOW_AND_COMPARE);
 	omap_dm_timer_enable(vibdata.gptimer);
 	omap_dm_timer_write_counter(vibdata.gptimer, -2);
+	omap_dm_timer_save_context(vibdata.gptimer);
 
 	return 0;
 }
