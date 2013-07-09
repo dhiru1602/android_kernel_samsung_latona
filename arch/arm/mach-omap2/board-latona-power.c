@@ -42,111 +42,44 @@
 #define TEMP_ADC_CHANNEL		0
 
 #define HIGH_BLOCK_TEMP_LATONA		650
-#define HIGH_RECOVER_TEMP_LATONA	430
+#define HIGH_RECOVER_TEMP_LATONA	550
 #define LOW_BLOCK_TEMP_LATONA		(-30)
-#define LOW_RECOVER_TEMP_LATONA		0
+#define LOW_RECOVER_TEMP_LATONA		10
 
-/**
-** temp_adc_table_data
-** @adc_value : thermistor adc value
-** @temperature : temperature(C) * 10
-**/
-struct temp_adc_table_data {
-	int adc_value;
-	int temperature;
+static int NCP15WB473_batt_table[] =
+{
+    /* -15C ~ 85C */
+
+    /*0[-15] ~  14[-1]*/
+    360850,342567,322720,304162,287000,
+    271697,255331,241075,227712,215182,
+    206463,192394,182034,172302,163156,
+    /*15[0] ~ 34[19]*/
+    158214,146469,138859,131694,124947,
+    122259,118590,112599,106949,101621,
+    95227, 91845, 87363, 83128, 79126,
+    74730, 71764, 68379, 65175, 62141,
+    /*35[20] ~ 74[59]*/
+    59065, 56546, 53966, 51520, 49201,
+    47000, 44912, 42929, 41046, 39257,
+    37643, 35942, 34406, 32945, 31555,
+    30334, 28972, 27773, 26630, 25542,
+    24591, 23515, 22571, 21672, 20813,
+    20048, 19211, 18463, 17750, 17068,
+    16433, 15793, 15197, 14627, 14082,
+    13539, 13060, 12582, 12124, 11685,
+    /*75[60] ~ 100[85]*/
+    11209, 10862, 10476, 10106,  9751,
+    9328,  9083,  8770,  8469,  8180,
+    7798,  7635,  7379,  7133,  6896,
+    6544,  6450,  6240,  6038,  5843,
+    5518,  5475,  5302,  5134,  4973,
+    4674
 };
 
 static DEFINE_SPINLOCK(charge_en_lock);
 static int charger_state;
 static bool is_charging_mode;
-
-static struct temp_adc_table_data temper_table_latona[] = {
-	/* ADC, Temperature (C/10) */
-	{69, 700},
-	{70, 690},
-	{72, 680},
-	{75, 670},
-	{78, 660},
-	{81, 650},
-	{83, 640},
-	{86, 630},
-	{89, 620},
-	{92, 610},
-	{95, 600},
-	{99, 590},
-	{103, 580},
-	{107, 570},
-	{111, 560},
-	{115, 550},
-	{119, 540},
-	{123, 530},
-	{127, 520},
-	{131, 510},
-	{135, 500},
-	{139, 490},
-	{144, 480},
-	{149, 470},
-	{154, 460},
-	{159, 450},
-	{164, 440},
-	{169, 430},
-	{176, 420},
-	{182, 410},
-	{189, 400},
-	{196, 390},
-	{204, 380},
-	{211, 370},
-	{218, 360},
-	{225, 350},
-	{233, 340},
-	{240, 330},
-	{247, 320},
-	{254, 310},
-	{262, 300},
-	{271, 290},
-	{280, 280},
-	{290, 270},
-	{299, 260},
-	{309, 250},
-	{318, 240},
-	{327, 230},
-	{337, 220},
-	{346, 210},
-	{356, 200},
-	{367, 190},
-	{379, 180},
-	{390, 170},
-	{402, 160},
-	{414, 150},
-	{425, 140},
-	{437, 130},
-	{449, 120},
-	{460, 110},
-	{472, 100},
-	{484, 90},
-	{496, 80},
-	{509, 70},
-	{521, 60},
-	{533, 50},
-	{545, 40},
-	{557, 30},
-	{570, 20},
-	{582, 10},
-	{594, 0},
-	{600, (-10)},
-	{607, (-20)},
-	{613, (-30)},
-	{621, (-40)},
-	{629, (-50)},
-	{637, (-60)},
-	{646, (-70)},
-	{654, (-80)},
-	{662, (-90)},
-	{670, (-100)},
-};
-
-static struct temp_adc_table_data *temper_table = temper_table_latona;
-static int temper_table_size = ARRAY_SIZE(temper_table_latona);
 
 static bool enable_sr = true;
 module_param(enable_sr, bool, S_IRUSR | S_IRGRP | S_IROTH);
@@ -215,7 +148,13 @@ static int twl4030_get_adc_data(int ch)
 
 static int temp_adc_value(void)
 {
-	return twl4030_get_adc_data(TEMP_ADC_CHANNEL);
+	int ret;
+
+	gpio_set_value(OMAP_GPIO_EN_TEMP_VDD, 1);
+	ret = twl4030_get_adc_data(TEMP_ADC_CHANNEL);
+	gpio_set_value(OMAP_GPIO_EN_TEMP_VDD, 0);
+
+	return ret;
 }
 
 static bool check_charge_full(void)
@@ -224,38 +163,25 @@ static bool check_charge_full(void)
 	return gpio_get_value(charger_gpios[GPIO_CHG_ING_N].gpio);
 }
 
-
 static int get_bat_temp_by_adc(int *batt_temp)
 {
-	int array_size = temper_table_size;
 	int temp_adc = temp_adc_value();
-	int mid;
-	int left_side = 0;
-	int right_side = array_size - 1;
-	int temp = 0;
+	int mvolt, r;
+	int temp;
 
-	if (temp_adc < 0) {
-		pr_err("%s : Invalid temperature adc value [%d]\n",
-			__func__, temp_adc);
-		return temp_adc;
-	}
+	mvolt = temp_adc * 1500 / 1023;
+	r = ( 100000 * mvolt ) / ( 3000 - 2 * mvolt );
 
-	while (left_side <= right_side) {
-		mid = (left_side + right_side) / 2;
-		if (mid == 0 || mid == array_size - 1 ||
-				(temper_table[mid].adc_value <= temp_adc &&
-				 temper_table[mid+1].adc_value > temp_adc)) {
-			temp = temper_table[mid].temperature;
+	/*calculating temperature*/
+	for( temp = 100; temp >= 0; temp-- )
+		if( ( NCP15WB473_batt_table[temp] - r ) >= 0 )
 			break;
-		} else if (temp_adc - temper_table[mid].adc_value > 0) {
-			left_side = mid + 1;
-		} else {
-			right_side = mid - 1;
-		}
-	}
+
+	temp -= 15;
+	temp=temp-1;
 
 	pr_debug("%s: temp adc : %d, temp : %d\n", __func__, temp_adc, temp);
-	*batt_temp = temp;
+	*batt_temp = temp * 10;
 	return 0;
 }
 
@@ -386,10 +312,6 @@ static const __initdata struct i2c_board_info latona_i2c4_boardinfo[] = {
 void __init latona_power_init(void)
 {
 	struct platform_device *pdev;
-
-	/* Update temperature data from board type */
-	temper_table = temper_table_latona;
-	temper_table_size = ARRAY_SIZE(temper_table_latona);
 
 	/* Update oscillator information */
 	omap_pm_set_osc_lp_time(15000, 1);

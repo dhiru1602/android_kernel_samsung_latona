@@ -69,6 +69,7 @@ static unsigned int __omap_board_output_gpio[][3] = {
 	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_CON_CP_SEL, 0)
 	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_UART_SEL, 1)
 	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_EARPATH_SEL, 0)
+	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_EN_TEMP_VDD, 0)
 };	/* end array __omap_output_gpio */
 
 unsigned int latona_board_output_gpio_size = ARRAY_SIZE(__omap_board_output_gpio);
