@@ -23,12 +23,18 @@
 
 #include <linux/netdevice.h>
 
+#define PDP_HARD_HEADER_LEN	0
+#define PDP_ADDR_LEN		0
+#define PDP_TX_QUEUE_LEN	1000
+#define PDP_WATCHDOG_TIMEO	(5 * HZ)
+
 struct pdp_priv {
 	int channel;
 	struct net_device *parent;
 };
 
-extern struct net_device* create_pdp(int channel, struct net_device *parent);
+extern struct net_device *create_pdp(int channel, struct net_device *parent);
 extern void destroy_pdp(struct net_device **);
+extern int vnet_start_xmit(struct sk_buff *skb, struct net_device *ndev);
 
 #endif /* __PACKET_DATA_PROTOCOL_H__ */

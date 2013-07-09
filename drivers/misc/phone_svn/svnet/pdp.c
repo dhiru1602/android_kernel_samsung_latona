@@ -18,8 +18,6 @@
  * 02110-1301 USA
  */
 
-//#define DEBUG
-
 #include <linux/netdevice.h>
 #include <linux/skbuff.h>
 #include <net/sock.h>
@@ -27,8 +25,6 @@
 #include <linux/if_arp.h>
 
 #include "pdp.h"
-
-extern int vnet_start_xmit(struct sk_buff *skb, struct net_device *ndev);
 
 static int vnet_open(struct net_device *ndev)
 {
@@ -42,18 +38,9 @@ static int vnet_stop(struct net_device *ndev)
 	return 0;
 }
 
-//static void vnet_tx_timeout(struct net_device *ndev)
-//{
-//	ndev->trans_start = jiffies;
-//	ndev->stats.tx_errors++;
-//	netif_wake_queue(ndev);
-//}
-
 static struct net_device_ops vnet_ops = {
 	.ndo_open = vnet_open,
 	.ndo_stop = vnet_stop,
-//	.ndo_tx_timeout = vnet_tx_timeout,
-//	.ndo_start_xmit = vnet_start_xmit,
 };
 
 static void vnet_setup(struct net_device *ndev)
@@ -63,14 +50,14 @@ static void vnet_setup(struct net_device *ndev)
 	ndev->netdev_ops = &vnet_ops;
 	ndev->type = ARPHRD_PPP;
 	ndev->flags = IFF_POINTOPOINT | IFF_NOARP | IFF_MULTICAST;
-	ndev->hard_header_len = 0;
-	ndev->addr_len = 0;
-	ndev->tx_queue_len = 1000;
+	ndev->hard_header_len = PDP_HARD_HEADER_LEN;
+	ndev->addr_len = PDP_ADDR_LEN;
+	ndev->tx_queue_len = PDP_TX_QUEUE_LEN;
 	ndev->mtu = ETH_DATA_LEN;
-	ndev->watchdog_timeo = 5 * HZ;
+	ndev->watchdog_timeo = PDP_WATCHDOG_TIMEO;
 }
 
-struct net_device* create_pdp(int channel, struct net_device *parent)
+struct net_device *create_pdp(int channel, struct net_device *parent)
 {
 	int r;
 	struct pdp_priv *priv;
@@ -107,4 +94,3 @@ void destroy_pdp(struct net_device **ndev)
 	free_netdev(*ndev);
 	*ndev = NULL;
 }
-

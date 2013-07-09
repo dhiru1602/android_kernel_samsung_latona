@@ -27,20 +27,12 @@
 
 extern const char *sipc_version;
 
-/*
-#if 1
-#  include "sipc4.h"
-#else
-#  error "Unknown version"
-#endif
-*/
-
 #define SIPC_RESET_MB 0xFFFFFF7E /* -2 & ~(INT_VALID) */
 #define SIPC_EXIT_MB 0xFFFFFF7F /* -1 & ~(INT_VALID) */
 
 struct sipc;
 
-extern struct sipc* sipc_open(void (*queue)(u32 mailbox, void *data),
+extern struct sipc *sipc_open(void (*queue)(u32 mailbox, void *data),
 		struct net_device *ndev);
 extern void sipc_close(struct sipc **);
 

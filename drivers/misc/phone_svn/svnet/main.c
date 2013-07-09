@@ -18,12 +18,6 @@
  * 02110-1301 USA
  */
 
-//#define DEBUG
-
-#if defined(DEBUG)
-#define NOISY_DEBUG
-#endif
-
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/workqueue.h>
@@ -40,6 +34,9 @@
 #include <linux/phonet.h>
 #include <net/phonet/phonet.h>
 
+#include "sipc.h"
+#include "pdp.h"
+
 #ifdef CONFIG_HAS_WAKELOCK
 #include <linux/wakelock.h>
 
@@ -47,17 +44,9 @@
 #define DEFAULT_FMT_WAKE_TIME (HZ/2)
 #endif
 
-#if defined(NOISY_DEBUG)
-#  define _dbg(dev, format, arg...) dev_dbg(dev, format, ## arg)
-#else
-#  define _dbg(dev, format, arg...) do { } while (0)
-#endif
-
-#include "sipc.h"
-#include "pdp.h"
-
 #define SVNET_DEV_ADDR 0xa0
-
+#define NDEV_TX_QUEUE_MAX_LEN 1000
+#define NDEV_HARD_HEADER_LEN 1
 enum {
 	SVNET_NORMAL = 0,
 	SVNET_RESET,
@@ -130,7 +119,8 @@ static inline void _wake_lock_timeout(struct svnet *sn)
 	wake_lock_timeout(&sn->wlock, sn->wake_time);
 }
 
-void _non_fmt_wakelock_timeout( void ) {
+void _non_fmt_wakelock_timeout(void)
+{
 	if (svnet_dev)
 		_wake_lock_timeout(svnet_dev);
 }
@@ -140,7 +130,8 @@ static inline void _wake_process_lock_timeout(struct svnet *sn)
 	wake_lock_timeout(&sn->wlock, sn->wake_process_time);
 }
 
-void _fmt_wakelock_timeout( void ) {
+void _fmt_wakelock_timeout(void)
+{
 	if (svnet_dev)
 		_wake_process_lock_timeout(svnet_dev);
 }
@@ -153,16 +144,16 @@ static inline void _wake_lock_settime(struct svnet *sn, long time)
 
 static inline long _wake_lock_gettime(struct svnet *sn)
 {
-	return sn?sn->wake_time:DEFAULT_RAW_WAKE_TIME;
+	return sn ? sn->wake_time : DEFAULT_RAW_WAKE_TIME;
 }
 #else
-#define _wake_lock_init(sn) do { } while(0)
-#define _wake_lock_destroy(sn) do { } while(0)
-#define _wake_lock_timeout(sn) do { } while(0)
-#define _wake_process_lock_timeout(sn) do { } while(0)
-#define _non_fmt_wakelock_timeout() do { } while(0)
-#define _fmt_wakelock_timeout() do { } while(0)
-#define _wake_lock_settime(sn, time) do { } while(0)
+#define _wake_lock_init(sn) do { } while (0)
+#define _wake_lock_destroy(sn) do { } while (0)
+#define _wake_lock_timeout(sn) do { } while (0)
+#define _wake_process_lock_timeout(sn) do { } while (0)
+#define _non_fmt_wakelock_timeout() do { } while (0)
+#define _fmt_wakelock_timeout() do { } while (0)
+#define _wake_lock_settime(sn, time) do { } while (0)
 #define _wake_lock_gettime(sn) (0)
 #endif
 
@@ -173,8 +164,9 @@ static unsigned long long time_max_xtow;
 static unsigned long long time_max_read;
 static unsigned long long time_max_write;
 
+/*
 extern unsigned long long time_max_semlat;
-
+*/
 static int _queue_evt(struct svnet_evt_head *h, u32 event);
 
 static ssize_t show_version(struct device *d,
@@ -224,7 +216,7 @@ static inline int _show_stat(char *buf)
 {
 	char *p = buf;
 
-	p += sprintf(p, "Stat -------- \n");
+	p += sprintf(p, "Stat --------\n");
 	p += sprintf(p, "\twork state: %d\n", stat.st_wq_state);
 	p += sprintf(p, "\trecv mailbox: %lu\n", stat.st_recv_evt);
 	p += sprintf(p, "\trecv phonet: %lu\n", stat.st_recv_pkt_ph);
@@ -246,7 +238,6 @@ static ssize_t show_latency(struct device *d,
 	p += sprintf(p, "Max read time:     %12llu ns\n", time_max_read);
 	p += sprintf(p, "Max write latency: %12llu ns\n", time_max_xtow);
 	p += sprintf(p, "Max write time:    %12llu ns\n", time_max_write);
-	p += sprintf(p, "Max sem. latency:  %12llu ns\n", time_max_semlat);
 
 	return p - buf;
 }
@@ -261,7 +252,7 @@ static ssize_t show_debug(struct device *d,
 
 	p += _show_stat(p);
 
-	p += sprintf(p, "Event queue ----- \n");
+	p += sprintf(p, "Event queue -----\n");
 	p += sprintf(p, "\tTX queue\t%u\n", skb_queue_len(&svnet_dev->txq));
 	p += sprintf(p, "\tRX queue\t%u\n", svnet_dev->rxq.len);
 
@@ -308,7 +299,8 @@ static ssize_t store_whitelist(struct device *d,
 
 static DEVICE_ATTR(version, S_IRUGO, show_version, NULL);
 static DEVICE_ATTR(latency, S_IRUGO, show_latency, NULL);
-static DEVICE_ATTR(waketime, S_IRUGO | S_IWUSR | S_IWGRP, show_waketime, store_waketime);
+static DEVICE_ATTR(waketime, S_IRUGO | S_IWUSR | S_IWGRP,
+			show_waketime, store_waketime);
 static DEVICE_ATTR(debug, S_IRUGO | S_IWUSR, show_debug, store_debug);
 static DEVICE_ATTR(whitelist, S_IRUSR | S_IWUSR, NULL, store_whitelist);
 
@@ -331,7 +323,7 @@ int vnet_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 	struct svnet *sn;
 	struct pdp_priv *priv;
 
-	dev_dbg(&ndev->dev, "recv inet packet %p: %d bytes\n", skb, skb->len);
+	pr_debug("recv inet packet %p: %d bytes\n", skb, skb->len);
 	stat.st_recv_pkt_pdp++;
 
 	priv = netdev_priv(ndev);
@@ -363,12 +355,12 @@ static int svnet_xmit(struct sk_buff *skb, struct net_device *ndev)
 	struct svnet *sn;
 
 	if (skb->protocol != __constant_htons(ETH_P_PHONET)) {
-		dev_err(&ndev->dev, "recv not a phonet message\n");
+		pr_err("recv not a phonet message\n");
 		goto drop;
 	}
 
 	stat.st_recv_pkt_ph++;
-	dev_dbg(&ndev->dev, "recv packet %p: %d bytes\n", skb, skb->len);
+	pr_debug("recv packet %p: %d bytes\n", skb, skb->len);
 
 	sn = netdev_priv(ndev);
 
@@ -447,27 +439,29 @@ static u32 _dequeue_evt(struct svnet_evt_head *h)
 	spin_unlock_irqrestore(&h->lock, flags);
 
 	if (e)
-		kfree(e);
+		kfree(NULL);
 
 	return event;
 }
 
 static int _proc_private_event(struct svnet *sn, u32 evt)
 {
-	switch(evt) {
+	switch (evt) {
 	case SIPC_EXIT_MB:
-		dev_err(&sn->ndev->dev, "Modem crash message received\n");
+		pr_debug("Modem crash message received\n");
 		sn->exit_flag = SVNET_EXIT;
 		break;
 	case SIPC_RESET_MB:
-		dev_err(&sn->ndev->dev, "Modem reset message received\n");
+		pr_debug("Modem reset message received\n");
 		sn->exit_flag = SVNET_RESET;
 		break;
 	default:
 		return 0;
 	}
 
+	/* //block for pdp_activate fail - jongmoon.suh
 	queue_work(sn->wq, &sn->work_exit);
+	*/
 
 	return 1;
 }
@@ -496,7 +490,7 @@ static void svnet_queue_event(u32 evt, void *data)
 
 	r = _queue_evt(&sn->rxq, evt);
 	if (r) {
-		dev_err(&sn->ndev->dev, "Not enough memory: event skipped\n");
+		pr_err("Not enough memory: event skipped\n");
 		return;
 	}
 
@@ -508,14 +502,14 @@ static int svnet_open(struct net_device *ndev)
 {
 	struct svnet *sn = netdev_priv(ndev);
 
-	dev_dbg(&ndev->dev, "%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	/* TODO: check modem state */
 
 	if (!sn->si) {
 		sn->si = sipc_open(svnet_queue_event, ndev);
 		if (IS_ERR(sn->si)) {
-			dev_err(&ndev->dev, "IPC init error\n");
+			pr_err("IPC init error\n");
 			return PTR_ERR(sn->si);
 		}
 		sn->exit_flag = SVNET_NORMAL;
@@ -529,7 +523,7 @@ static int svnet_close(struct net_device *ndev)
 {
 	struct svnet *sn = netdev_priv(ndev);
 
-	dev_dbg(&ndev->dev, "%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	if (sn->wq)
 		flush_workqueue(sn->wq);
@@ -567,6 +561,7 @@ static const struct net_device_ops svnet_ops = {
 	.ndo_do_ioctl = svnet_ioctl,
 };
 
+
 static void svnet_setup(struct net_device *ndev)
 {
 	ndev->features = 0;
@@ -575,12 +570,12 @@ static void svnet_setup(struct net_device *ndev)
 	ndev->type = ARPHRD_PHONET;
 	ndev->flags = IFF_POINTOPOINT | IFF_NOARP;
 	ndev->mtu = PHONET_MAX_MTU;
-	ndev->hard_header_len = 1;
+	ndev->hard_header_len = NDEV_HARD_HEADER_LEN;
 	ndev->dev_addr[0] = SVNET_DEV_ADDR;
 	ndev->addr_len = 1;
-	ndev->tx_queue_len = 1000;
+	ndev->tx_queue_len = NDEV_TX_QUEUE_MAX_LEN;
 
-//	ndev->destructor = free_netdev;
+/*	ndev->destructor = free_netdev; */
 }
 
 static void svnet_read_wq(struct work_struct *work)
@@ -595,32 +590,31 @@ static void svnet_read_wq(struct work_struct *work)
 	t = cpu_clock(smp_processor_id());
 	if (tmp_itor) {
 		d = t - tmp_itor;
-		_dbg(&sn->ndev->dev, "int_to_read %llu ns\n", d);
+		pr_debug("int_to_read %llu ns\n", d);
 		tmp_itor = 0;
 		if (time_max_itor < d)
 			time_max_itor = d;
 	}
 
-	dev_dbg(&sn->ndev->dev, "%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	stat.st_do_read++;
 
 	stat.st_wq_state = 1;
 	event = _dequeue_evt(&sn->rxq);
 	while (event) {
-		// isn't it possible that merge the events?
-		dev_dbg(&sn->ndev->dev, "event %x\n", event);
+		/* isn't it possible that merge the events? */
+		pr_debug("event %x\n", event);
 
 		if (sn->si) {
 			r = sipc_read(sn->si, event, &contd);
 			if (r < 0) {
-				dev_err(&sn->ndev->dev, "ret %d -> queue %x\n",
+				pr_err("ret %d -> queue %x\n",
 						r, event);
 				_queue_evt(&sn->rxq, event);
 				break;
 			}
 		} else {
-			dev_err(&sn->ndev->dev,
-					"IPC not work, skip event %x\n", event);
+			pr_err("IPC not work, skip event %x\n", event);
 		}
 		event = _dequeue_evt(&sn->rxq);
 	}
@@ -630,13 +624,13 @@ static void svnet_read_wq(struct work_struct *work)
 
 	switch (r) {
 	case -EINVAL:
-		dev_err(&sn->ndev->dev, "Invalid argument\n");
+		pr_err("Invalid argument\n");
 		break;
 	case -EBADMSG:
-		dev_err(&sn->ndev->dev, "Bad message, purge the buffer\n");
+		pr_err("Bad message, purge the buffer\n");
 		break;
 	case -ETIMEDOUT:
-		dev_err(&sn->ndev->dev, "Timed out\n");
+		pr_err("Timed out\n");
 		break;
 	default:
 
@@ -646,7 +640,7 @@ static void svnet_read_wq(struct work_struct *work)
 	stat.st_wq_state = 2;
 
 	d = cpu_clock(smp_processor_id()) - t;
-	_dbg(&sn->ndev->dev, "read_time %llu ns\n", d);
+	pr_debug("read_time %llu ns\n", d);
 	if (d > time_max_read)
 		time_max_read = d;
 }
@@ -661,13 +655,13 @@ static void svnet_write_wq(struct work_struct *work)
 	t = cpu_clock(smp_processor_id());
 	if (tmp_xtow) {
 		d = t - tmp_xtow;
-		_dbg(&sn->ndev->dev, "xmit_to_write %llu ns\n", d);
+		pr_debug("xmit_to_write %llu ns\n", d);
 		tmp_xtow = 0;
 		if (d > time_max_xtow)
 			time_max_xtow = d;
 	}
 
-	dev_dbg(&sn->ndev->dev, "%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	stat.st_do_write++;
 
 	stat.st_wq_state = 3;
@@ -675,23 +669,23 @@ static void svnet_write_wq(struct work_struct *work)
 		r = sipc_write(sn->si, &sn->txq);
 	else {
 		skb_queue_purge(&sn->txq);
-		dev_err(&sn->ndev->dev, "IPC not work, drop packet\n");
+		pr_err("IPC not work, drop packet\n");
 		r = 0;
 	}
 
 	switch (r) {
 	case -ENOSPC:
-		dev_err(&sn->ndev->dev, "buffer is full, wait...\n");
+		pr_err("buffer is full, wait...\n");
 		queue_delayed_work(sn->wq, &sn->work_write, HZ/10);
 		break;
 	case -EINVAL:
-		dev_err(&sn->ndev->dev, "Invalid arugment\n");
+		pr_err("Invalid arugment\n");
 		break;
 	case -ENXIO:
-		dev_err(&sn->ndev->dev, "IPC not work, purge the queue\n");
+		pr_err("IPC not work, purge the queue\n");
 		break;
 	case -ETIMEDOUT:
-		dev_err(&sn->ndev->dev, "Timed out\n");
+		pr_err("Timed out\n");
 		break;
 	default:
 		/* do nothing */
@@ -700,7 +694,7 @@ static void svnet_write_wq(struct work_struct *work)
 
 	stat.st_wq_state = 4;
 	d = cpu_clock(smp_processor_id()) - t;
-	_dbg(&sn->ndev->dev, "write_time %llu ns\n", d);
+	pr_debug("write_time %llu ns\n", d);
 	if (d > time_max_write)
 		time_max_write = d;
 }
@@ -711,7 +705,7 @@ static void svnet_rx_wq(struct work_struct *work)
 			struct svnet, work_rx.work);
 	int r = 0;
 
-	dev_dbg(&sn->ndev->dev, "%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	stat.st_do_rx++;
 
 	stat.st_wq_state = 5;
@@ -735,7 +729,7 @@ static void svnet_exit_wq(struct work_struct *work)
 			struct svnet, work_exit);
 	char *envs[2] = { NULL, NULL };
 
-	dev_dbg(&sn->ndev->dev, "%s: %d\n", __func__, sn->exit_flag);
+	pr_debug("%s: %d\n", __func__, sn->exit_flag);
 
 	if (sn->exit_flag == SVNET_NORMAL || sn->exit_flag >= SVNET_MAX)
 		return;
@@ -749,12 +743,6 @@ static void svnet_exit_wq(struct work_struct *work)
 	if (sn->exit_flag == SVNET_EXIT)
 		sipc_ramdump(sn->si);
 
-#if 0
-	rtnl_lock();
-	if (netif_running(sn->ndev))
-		dev_close(sn->ndev);
-	rtnl_unlock();
-#endif
 }
 
 static inline void _init_data(struct svnet *sn)
@@ -793,7 +781,7 @@ static void _free(struct svnet *sn)
 	if (sn->ndev)
 		unregister_netdev(sn->ndev);
 
-	// sn is ndev's priv
+	/* sn is ndev's priv */
 	free_netdev(sn->ndev);
 }
 
@@ -803,7 +791,7 @@ static int __init svnet_init(void)
 	struct svnet *sn = NULL;
 	struct net_device *ndev;
 
-	printk("[%s]\n",__func__);
+	printk(KERN_ERR "[%s]\n", __func__);
 	ndev = alloc_netdev(sizeof(struct svnet), "svnet%d", svnet_setup);
 	if (!ndev) {
 		r = -ENOMEM;
@@ -816,7 +804,7 @@ static int __init svnet_init(void)
 
 	r = register_netdev(ndev);
 	if (r) {
-		dev_err(&ndev->dev, "failed to register netdev\n");
+		pr_err("failed to register netdev\n");
 		goto err;
 	}
 	sn->ndev = ndev;
@@ -825,18 +813,18 @@ static int __init svnet_init(void)
 
 	sn->wq = create_workqueue("svnetd");
 	if (!sn->wq) {
-		dev_err(&ndev->dev, "failed to create a workqueue\n");
+		pr_err("failed to create a workqueue\n");
 		goto err;
 	}
 
 	r = sysfs_create_group(&sn->ndev->dev.kobj, &svnet_group);
 	if (r) {
-		dev_err(&ndev->dev, "failed to create sysfs group\n");
+		pr_err("failed to create sysfs group\n");
 		goto err;
 	}
 	sn->group = &svnet_group;
 
-	dev_dbg(&ndev->dev, "Svnet dev: %p\n", sn);
+	pr_debug("Svnet dev: %p\n", sn);
 	svnet_dev = sn;
 
 	return 0;
