@@ -1015,18 +1015,6 @@ static void _init_data( struct ipc_spi *od )
 	sema_init( &transfer_event_sem, 0 );
 }
 
-#define FMT_OUT		0x0FE000
-#define FMT_IN			0x0FF000
-#define FMT_SZ			0x1000
-
-#define RAW_OUT		0x100000
-#define RAW_IN			0x200000
-#define RAW_SZ			0x100000
-
-#define RFS_OUT		0x300000
-#define RFS_IN			0x400000
-#define RFS_SZ			0x100000
-
 static u32 ipc_spi_get_send_vbuff_command( void )
 {
 	u32 cmd = 0;

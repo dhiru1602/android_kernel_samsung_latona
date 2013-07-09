@@ -58,19 +58,6 @@
 	0xFF_FFFF       ===========================================
 */
 
-#if defined(CONFIG_PHONE_IPC_SPI)
-#define FMT_OUT	0x0FE000
-#define FMT_IN		0x10E000
-#define FMT_SZ		0x10000   /* 65536 bytes */
-
-#define RAW_OUT	0x11E000
-#define RAW_IN		0x21E000
-#define RAW_SZ		0x100000 /* 1 MB */
-
-#define RFS_OUT	0x31E000
-#define RFS_IN		0x41E000
-#define RFS_SZ		0x100000 /* 1 MB */
-#else
 #if defined(CONFIG_PHONE_IPC_HSI)
 #define FMT_OUT	0x0FE000
 #define FMT_IN		0x10E000
@@ -83,7 +70,6 @@
 #define RFS_OUT	0x31E000
 #define RFS_IN		0x41E000
 #define RFS_SZ		0x100000 /* 1 MB */
-#endif
 #endif
 
 #define FATAL_DISP     0x001000

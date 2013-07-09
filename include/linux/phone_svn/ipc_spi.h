@@ -24,6 +24,19 @@
 #include <linux/ioport.h>
 #include <linux/types.h>
 
+// CELLULAR PROCESSOR PARTITION MAP INFO
+#define FMT_OUT	0x0FE000
+#define FMT_IN	0x0FF000
+#define FMT_SZ	0x1000
+
+#define RAW_OUT	0x100000
+#define RAW_IN	0x200000
+#define RAW_SZ	0x100000
+
+#define RFS_OUT	0x300000
+#define RFS_IN	0x400000
+#define RFS_SZ	0x100000
+
 struct ipc_spi_platform_data {
 	unsigned gpio_ipc_mrdy;
 	unsigned gpio_ipc_srdy;
