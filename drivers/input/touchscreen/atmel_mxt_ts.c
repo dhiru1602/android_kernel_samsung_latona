@@ -632,6 +632,17 @@ static void mxt_handle_key_array(struct mxt_data *data,
 	data->keyarray_old = data->keyarray_new;
 }
 
+static void mxt_release_all(struct mxt_data *data)
+{
+	int id;
+
+	for (id = 0; id < MXT_MAX_FINGER; id++)
+		if (data->finger[id].status)
+			data->finger[id].status = MXT_RELEASE;
+
+	mxt_input_report(data, 0);
+}
+
 static irqreturn_t mxt_interrupt(int irq, void *dev_id)
 {
 	struct mxt_data *data = dev_id;
@@ -1127,6 +1138,7 @@ static int mxt_suspend(struct device *dev)
 	struct input_dev *input_dev = data->input_dev;
 
 	disable_irq(data->irq);
+	mxt_release_all(data);
 
 	mutex_lock(&input_dev->mutex);
 
