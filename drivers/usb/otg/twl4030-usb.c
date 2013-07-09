@@ -143,6 +143,9 @@
 #define PMBR1				0x0D
 #define GPIO_USB_4PIN_ULPI_2430C	(3 << 0)
 
+#define TWL4030_USB_SEL_MADC_MCPC	(1<<3)
+#define TWL4030_USB_CARKIT_ANA_CTRL	0xBB 
+
 struct twl4030_usb {
 	struct otg_transceiver	otg;
 	struct device		*dev;
@@ -392,6 +395,11 @@ static void twl4030_phy_power(struct twl4030_usb *twl, int on)
 		regulator_disable(twl->usb1v8);
 		regulator_disable(twl->usb3v1);
 	}
+
+	/* Ensure that ADCIN3-6 are enabled */
+	twl4030_usb_write(twl, TWL4030_USB_CARKIT_ANA_CTRL,
+			  twl4030_usb_read(twl, TWL4030_USB_CARKIT_ANA_CTRL) |
+					   TWL4030_USB_SEL_MADC_MCPC);
 }
 
 static void twl4030_phy_suspend(struct twl4030_usb *twl, int controller_off)
@@ -538,7 +546,13 @@ static void twl4030_usb_phy_init(struct twl4030_usb *twl)
 	status = twl4030_usb_linkstat(twl);
 	if (status >= 0) {
 		if (status == USB_EVENT_NONE) {
+#ifdef CONFIG_MACH_OMAP_LATONA
+			/* power up PHY at least once for the light sensor */
+			__twl4030_phy_resume(twl);
+			twl4030_phy_power(twl, 0);
+#else
 			__twl4030_phy_power(twl, 0);
+#endif
 			twl->asleep = 1;
 		} else {
 			__twl4030_phy_resume(twl);
