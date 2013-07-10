@@ -3,9 +3,7 @@
  *
  * Modified from mach-omap2/board-zoom-display.c
  *
- * Dheeraj "dhiru1602" CVR <cvr.dheeraj@gmail.com>
- * Mark "Hill Beast" Kennard <komcomputers@gmail.com>
- * Phinitnan "Crackerizer" Chanasabaeng <phinitnan_c@xtony.us>
+ * Dheeraj CVR "dhiru1602" <cvr.dheeraj@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

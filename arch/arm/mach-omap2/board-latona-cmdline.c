@@ -3,6 +3,8 @@
  *
  * Copyright (C) 2011 LGE, Inc
  *
+ * Dheeraj CVR "dhiru1602" <cvr.dheeraj@gmail.com>
+ *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
  * may be copied, distributed, and modified under those terms.

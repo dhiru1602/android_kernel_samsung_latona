@@ -3,10 +3,8 @@
  *
  * Modified from mach-omap2/board-zoom-peripherals.c
  *
+ * Dheeraj CVR "dhiru1602" <cvr.dheeraj@gmail.com>
  * Aditya Patange "Adi_Pat" <adithemagnificent@gmail.com>
- *
- * Mark "Hill Beast" Kennard <komcomputers@gmail.com>
- * crackerizer <github.com/crackerizer>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

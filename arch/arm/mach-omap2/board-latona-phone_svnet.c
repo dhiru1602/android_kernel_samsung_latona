@@ -1,6 +1,7 @@
 /*
  * board-latona-phone_svnet.c
  *
+ * Dheeraj CVR "dhiru1602" <cvr.dheeraj@gmail.com>
  * Aditya Patange "Adi_Pat" <adithemagnificent@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify

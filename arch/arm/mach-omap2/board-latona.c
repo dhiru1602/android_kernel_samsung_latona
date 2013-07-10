@@ -5,9 +5,8 @@
  *
  * Modified from mach-omap2/board-zoom.c for Samsung Latona board
  *
+ * Dheeraj CVR "dhiru1602" <cvr.dheeraj@gmail.com>
  * Aditya Patange aka "Adi_Pat" <adithemagnficent@gmail.com> 
- * Mark "Hill Beast" Kennard <komcomputers@gmail.com>
- * Phinitnan "Crackerizer" Chanasabaeng <phinitnan_c@xtony.us>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
