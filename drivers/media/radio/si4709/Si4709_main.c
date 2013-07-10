@@ -94,14 +94,14 @@ static long Si4709_ioctl(struct file *filp,
 	switch (ioctl_cmd)
 	{
 		case Si4709_IOC_POWERUP:
-			error("Si4709_IOC_POWERUP called");      
+			debug("Si4709_IOC_POWERUP called");      
 	
 			if( (ret = Si4709_dev_powerup()) < 0 )
 				error("Si4709_IOC_POWERUP failed");
 			break;
 
 		case Si4709_IOC_POWERDOWN:
-			error("Si4709_IOC_POWERDOWN called");      
+			debug("Si4709_IOC_POWERDOWN called");      
 
 			if( (ret = Si4709_dev_powerdown()) < 0 )
 				error("Si4709_IOC_POWERDOWN failed");
@@ -110,7 +110,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_BAND_SET:
 			{
 				int band;
-				error("Si4709_IOC_BAND_SET called");      
+				debug("Si4709_IOC_BAND_SET called");      
 
 				if(copy_from_user((void*) &band, argp, sizeof(int)))
 					ret = -EFAULT;
@@ -123,7 +123,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_CHAN_SPACING_SET:
 			{
 				int ch_spacing;
-				error("Si4709_IOC_CHAN_SPACING_SET called");      
+				debug("Si4709_IOC_CHAN_SPACING_SET called");      
 
 				if( copy_from_user((void*) &ch_spacing, argp, sizeof(int)) )
 					ret = -EFAULT;
@@ -136,7 +136,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_CHAN_SELECT:
 			{
 				u32 frequency;
-				error("Si4709_IOC_CHAN_SELECT called");      
+				debug("Si4709_IOC_CHAN_SELECT called");      
 
 				if( copy_from_user((void*) &frequency, argp, sizeof(u32)) )
 					ret = -EFAULT;
@@ -148,7 +148,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_CHAN_GET:
 			{
 				u32 frequency;
-				error("Si4709_IOC_CHAN_GET called");      
+				debug("Si4709_IOC_CHAN_GET called");      
 
 				if( (ret = Si4709_dev_chan_get(&frequency)) < 0)
 					error("Si4709_IOC_CHAN_GET failed");
@@ -160,7 +160,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_SEEK_UP:
 			{
 				u32 frequency;
-				error("Si4709_IOC_SEEK_UP called");
+				debug("Si4709_IOC_SEEK_UP called");
 
 				if( (ret = Si4709_dev_seek_up(&frequency)) < 0)
 					error("Si4709_IOC_SEEK_UP failed");
@@ -172,7 +172,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_SEEK_DOWN:
 			{
 				u32 frequency;
-				error("Si4709_IOC_SEEK_DOWN called");
+				debug("Si4709_IOC_SEEK_DOWN called");
 
 				if( (ret = Si4709_dev_seek_down(&frequency)) < 0)
 					error("Si4709_IOC_SEEK_DOWN failed");
@@ -216,7 +216,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_RSSI_SEEK_TH_SET:
 			{
 				u8 RSSI_seek_th;
-				error("Si4709_IOC_RSSI_SEEK_TH_SET called");
+				debug("Si4709_IOC_RSSI_SEEK_TH_SET called");
 
 				if( copy_from_user((void*) &RSSI_seek_th, argp, sizeof(u8)) )
 					ret = -EFAULT;
@@ -228,7 +228,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_SEEK_SNR_SET:
 			{
 				u8 seek_SNR_th;
-				error("Si4709_IOC_SEEK_SNR_SET called");
+				debug("Si4709_IOC_SEEK_SNR_SET called");
 
 				if( copy_from_user((void*) &seek_SNR_th, argp, sizeof(u8)) )
 					ret = -EFAULT;
@@ -240,7 +240,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_SEEK_CNT_SET:
 			{
 				u8 seek_FM_ID_th;
-				error("Si4709_IOC_SEEK_CNT_SET called");
+				debug("Si4709_IOC_SEEK_CNT_SET called");
 
 				if( copy_from_user((void*) &seek_FM_ID_th, argp, sizeof(u8)) )
 					ret = -EFAULT;
@@ -252,26 +252,26 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_CUR_RSSI_GET:
 			{
 				rssi_snr_t  data;
-				error("Si4709_IOC_CUR_RSSI_GET called");
+				debug("Si4709_IOC_CUR_RSSI_GET called");
              
 				if( (ret = Si4709_dev_cur_RSSI_get(&data)) < 0)
 					error("Si4709_IOC_CUR_RSSI_GET failed");
 				else if( copy_to_user(argp, (void*) &data, sizeof(rssi_snr_t )) )
 					ret = -EFAULT;
 				
-				error("curr_rssi:%d\ncurr_rssi_th:%d\ncurr_snr:%d\n",data.curr_rssi,data.curr_rssi_th,data.curr_snr);
+				debug("curr_rssi:%d\ncurr_rssi_th:%d\ncurr_snr:%d\n",data.curr_rssi,data.curr_rssi_th,data.curr_snr);
 			}
 			break;
 
 		case Si4709_IOC_VOLEXT_ENB:
-			error("Si4709_IOC_VOLEXT_ENB called");      
+			debug("Si4709_IOC_VOLEXT_ENB called");      
 
 			if( (ret = Si4709_dev_VOLEXT_ENB()) < 0 )
 				error("Si4709_IOC_VOLEXT_ENB failed");
 			break;
 
 		case Si4709_IOC_VOLEXT_DISB:
-			error("Si4709_IOC_VOLEXT_DISB called");      
+			debug("Si4709_IOC_VOLEXT_DISB called");      
 
 			if( (ret = Si4709_dev_VOLEXT_DISB()) < 0 )
 				error("Si4709_IOC_VOLEXT_DISB failed");
@@ -280,7 +280,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_VOLUME_SET:
 			{
 				u8 volume;
-				error("Si4709_IOC_VOLUME_SET called");
+				debug("Si4709_IOC_VOLUME_SET called");
 
 				if( copy_from_user((void*) &volume, argp, sizeof(u8)) )
 					ret = -EFAULT;
@@ -292,7 +292,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_VOLUME_GET:
 			{
 				u8 volume;
-				error("Si4709_IOC_VOLUME_GET called");
+				debug("Si4709_IOC_VOLUME_GET called");
 
 				if( (ret = Si4709_dev_volume_get(&volume)) < 0)
 					error("Si4709_IOC_VOLUME_GET failed");
@@ -302,42 +302,42 @@ static long Si4709_ioctl(struct file *filp,
 			break;
 
 		case Si4709_IOC_DSMUTE_ON:
-			error("Si4709_IOC_DSMUTE_ON called");      
+			debug("Si4709_IOC_DSMUTE_ON called");      
 
 			if( (ret = Si4709_dev_DSMUTE_ON()) < 0 )
 				error("Si4709_IOC_DSMUTE_ON failed");
 			break;
 
 		case Si4709_IOC_DSMUTE_OFF:
-			error("Si4709_IOC_DSMUTE_OFF called");      
+			debug("Si4709_IOC_DSMUTE_OFF called");      
 
 			if( (ret = Si4709_dev_DSMUTE_OFF()) < 0 )
 				error("Si4709_IOC_DSMUTE_OFF failed");
 			break;
 
 		case Si4709_IOC_MUTE_ON:
-			error("Si4709_IOC_MUTE_ON called");      
+			debug("Si4709_IOC_MUTE_ON called");      
 
 			if( (ret = Si4709_dev_MUTE_ON()) < 0 )
 				error("Si4709_IOC_MUTE_ON failed");
 			break;
 
 		case Si4709_IOC_MUTE_OFF:
-			error("Si4709_IOC_MUTE_OFF called");      
+			debug("Si4709_IOC_MUTE_OFF called");      
 
 			if( (ret = Si4709_dev_MUTE_OFF()) < 0 )
 				error("Si4709_IOC_MUTE_OFF failed");
 			break;
 
 		case Si4709_IOC_MONO_SET:
-			error("Si4709_IOC_MONO_SET called");      
+			debug("Si4709_IOC_MONO_SET called");      
 
 			if( (ret = Si4709_dev_MONO_SET()) < 0 )
 				error("Si4709_IOC_MONO_SET failed");
 			break;
 
 		case Si4709_IOC_STEREO_SET:
-			error("Si4709_IOC_STEREO_SET called");      
+			debug("Si4709_IOC_STEREO_SET called");      
 
 			if( (ret = Si4709_dev_STEREO_SET()) < 0 )
 				error("Si4709_IOC_STEREO_SET failed");
@@ -347,7 +347,7 @@ static long Si4709_ioctl(struct file *filp,
 			{
 				dev_state_t dev_state;
 
-				error("Si4709_IOC_RSTATE_GET called");      
+				debug("Si4709_IOC_RSTATE_GET called");      
 
 				if( (ret = Si4709_dev_rstate_get(&dev_state)) < 0)
 					error("Si4709_IOC_RSTATE_GET failed");
@@ -359,24 +359,24 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_RDS_DATA_GET:
 			{
 				radio_data_t data;
-				error("Si4709_IOC_RDS_DATA_GET called");      
+				debug("Si4709_IOC_RDS_DATA_GET called");      
 
 				if( (ret = Si4709_dev_RDS_data_get(&data)) < 0)
-					debug("Si4709_IOC_RDS_DATA_GET failed");
+					error("Si4709_IOC_RDS_DATA_GET failed");
 				else if( copy_to_user(argp, (void*) &data, sizeof(radio_data_t)) )
 					ret = -EFAULT;
 			}     
 			break;
             
 		case Si4709_IOC_RDS_ENABLE:
-			error("Si4709_IOC_RDS_ENABLE called");      
+			debug("Si4709_IOC_RDS_ENABLE called");      
 
 			if( (ret = Si4709_dev_RDS_ENABLE()) < 0 )
 				error("Si4709_IOC_RDS_ENABLE failed");   
 			break; 
 
 		case Si4709_IOC_RDS_DISABLE:
-			error("Si4709_IOC_RDS_DISABLE called");      
+			debug("Si4709_IOC_RDS_DISABLE called");      
  
 			if( (ret = Si4709_dev_RDS_DISABLE()) < 0 )
 				error("Si4709_IOC_RDS_DISABLE failed");		
@@ -385,7 +385,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_RDS_TIMEOUT_SET:
           		{
 				u32  time_out;
-				error("Si4709_IOC_RDS_TIMEOUT_SET called");
+				debug("Si4709_IOC_RDS_TIMEOUT_SET called");
 
 				if( copy_from_user((void*) &time_out, argp, sizeof(u32)) )
 					ret = -EFAULT;
@@ -395,7 +395,7 @@ static long Si4709_ioctl(struct file *filp,
 			break; 
 
 		case Si4709_IOC_SEEK_CANCEL:
-			error("Si4709_IOC_SEEK_CANCEL called");      
+			debug("Si4709_IOC_SEEK_CANCEL called");      
 
 			if( Si4709_dev_wait_flag == SEEK_WAITING )
 			{
@@ -409,7 +409,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_CHIP_ID_GET:
 			{
 				chip_id chp_id;
-				error("Si4709_IOC_CHIP_ID called");      
+				debug("Si4709_IOC_CHIP_ID called");      
 
 				if( (ret = Si4709_dev_chip_id(&chp_id)) < 0)
 					error("Si4709_IOC_CHIP_ID failed");
@@ -421,7 +421,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_DEVICE_ID_GET:
 			{
 				device_id dev_id;
-				error("Si4709_IOC_DEVICE_ID called");      
+				debug("Si4709_IOC_DEVICE_ID called");      
 
 				if( (ret = Si4709_dev_device_id(&dev_id)) < 0)
 					error("Si4709_IOC_DEVICE_ID failed");
@@ -433,7 +433,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_SYS_CONFIG2_GET:
 			{
 				sys_config2 sys_conf2;
-				error("Si4709_IOC_SYS_CONFIG2 called");
+				debug("Si4709_IOC_SYS_CONFIG2 called");
 
 				if( (ret = Si4709_dev_sys_config2(&sys_conf2)) < 0)
 					error("Si4709_IOC_SYS_CONFIG2 failed");
@@ -445,7 +445,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_SYS_CONFIG3_GET:
 			{
 				sys_config3 sys_conf3;
-				error("Si4709_IOC_SYS_CONFIG3 called");
+				debug("Si4709_IOC_SYS_CONFIG3 called");
 
 				if( (ret = Si4709_dev_sys_config3(&sys_conf3)) < 0)
 					error("Si4709_IOC_SYS_CONFIG3 failed");
@@ -457,7 +457,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_POWER_CONFIG_GET:
 			{
 				power_config pow_conf;
-				error("Si4709_IOC_POWER_CONFIG called");      
+				debug("Si4709_IOC_POWER_CONFIG called");      
 
 				if( (ret = Si4709_dev_power_config(&pow_conf)) < 0)
 					error("Si4709_IOC_POWER_CONFIG failed");
@@ -471,7 +471,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_AFCRL_GET:
 			{
 				u8 afc;
-				error("Si4709_IOC_AFCRL_GET called");
+				debug("Si4709_IOC_AFCRL_GET called");
 
 				if( (ret = Si4709_dev_AFCRL_get(&afc)) < 0)
 					error("Si4709_IOC_AFCRL_GET failed");
@@ -483,7 +483,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_DE_SET:
 			{
 				u8 de_tc;
-				error("Si4709_IOC_DE_SET called");
+				debug("Si4709_IOC_DE_SET called");
 
 				if( copy_from_user((void*) &de_tc, argp, sizeof(u8)) )
 					ret = -EFAULT;
@@ -495,7 +495,7 @@ static long Si4709_ioctl(struct file *filp,
 		case Si4709_IOC_STATUS_RSSI_GET:
 			{
 				status_rssi status;
-				error("Si4709_IOC_STATUS_RSSI_GET called");
+				debug("Si4709_IOC_STATUS_RSSI_GET called");
 
 				if( (ret = Si4709_dev_status_rssi(&status)) < 0)
 					error("Si4709_IOC_STATUS_RSSI_GET failed");
@@ -509,7 +509,7 @@ static long Si4709_ioctl(struct file *filp,
 			{
 				sys_config2 sys_conf2;
 				unsigned long n;
-				error("Si4709_IOC_SYS_CONFIG2_SET called");
+				debug("Si4709_IOC_SYS_CONFIG2_SET called");
 
 				n = copy_from_user((void*) &sys_conf2, argp, sizeof(sys_config2));
 				
@@ -528,7 +528,7 @@ static long Si4709_ioctl(struct file *filp,
 				sys_config3 sys_conf3;
 				unsigned long n;
 				
-				error("Si4709_IOC_SYS_CONFIG3_SET called");
+				debug("Si4709_IOC_SYS_CONFIG3_SET called");
 
 				n = copy_from_user((void*) &sys_conf3, argp, sizeof(sys_config3));
 
@@ -543,7 +543,7 @@ static long Si4709_ioctl(struct file *filp,
 		/*Resetting the RDS Data Buffer*/
 		case Si4709_IOC_RESET_RDS_DATA:
 			{				
-				error("Si4709_IOC_RESET_RDS_DATA called");
+				debug("Si4709_IOC_RESET_RDS_DATA called");
 				
 				if( (ret = Si4709_dev_reset_rds_data()) < 0)
 					error("Si4709_IOC_RESET_RDS_DATA failed");
@@ -562,21 +562,21 @@ static long Si4709_ioctl(struct file *filp,
 
 static irqreturn_t Si4709_isr( int irq, void *unused )
 {
-	printk("Si4709_isr: FM device called IRQ: %d\n",irq);  
+	debug("Si4709_isr: FM device called IRQ: %d\n",irq);  
 #ifdef RDS_INTERRUPT_ON_ALWAYS
 	if( (Si4709_dev_wait_flag == SEEK_WAITING) || (Si4709_dev_wait_flag == TUNE_WAITING))
 	{
-		printk("Si4709_isr: FM Seek/Tune Interrupt called IRQ %d",irq); 
+		debug("Si4709_isr: FM Seek/Tune Interrupt called IRQ %d",irq); 
         Si4709_dev_wait_flag = WAIT_OVER;
         wake_up_interruptible(&Si4709_waitq);
     }
 	else if(Si4709_RDS_flag == RDS_WAITING) //RDS Interrupt
 	{
-		printk("Si4709_isr: FM RDS Interrupt called IRQ %d",irq); 
+		debug("Si4709_isr: FM RDS Interrupt called IRQ %d",irq); 
 		RDS_Data_Available++;
 		RDS_Groups_Available_till_now++;
 		
-		printk("RDS_Groups_Available_till_now b/w Power ON/OFF : %d",RDS_Groups_Available_till_now);
+		debug("RDS_Groups_Available_till_now b/w Power ON/OFF : %d",RDS_Groups_Available_till_now);
         
         if (RDS_Data_Available > 1)
 			RDS_Data_Lost++;        

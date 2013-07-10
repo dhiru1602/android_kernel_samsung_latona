@@ -1,5 +1,0 @@
-config FMRADIO
-	tristate "Si4709 FM radio"
-	default n
-	help
-		Si4709 FM radio

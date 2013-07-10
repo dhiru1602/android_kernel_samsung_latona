@@ -1,0 +1,5 @@
+config RADIO_SI4709
+	tristate "Si4709 FM radio"
+	default n
+	help
+		Silicon Labs Si4709 FM radio support

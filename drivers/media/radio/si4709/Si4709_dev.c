@@ -18,7 +18,7 @@
 #include <asm/mach/irq.h>
 #include <asm/io.h>
 #include <linux/delay.h>
-#include "../../staging/android/timed_output.h"
+#include "../../../staging/android/timed_output.h"
 
 #include <linux/kernel.h>
 #include <linux/time.h>
@@ -2444,7 +2444,7 @@ static u32 channel_to_freq(u16 channel)
    protected by a mutex, so no race conditions can arise*/
 static void wait(void)
 {
-	printk("fmradio : wait_event_interruptible\n");
+	debug("fmradio : wait_event_interruptible\n");
 	//mutex_unlock(&(Si4709_dev.lock)); //changoh.heo 2010.11.12
     wait_event_interruptible(Si4709_waitq, 
     	(Si4709_dev_wait_flag == WAIT_OVER) || (Si4709_dev_wait_flag == SEEK_CANCEL));
@@ -2453,7 +2453,7 @@ static void wait(void)
 
 static void wait_RDS(void)
 {
-	printk("fmradio : wait_RDS_event_interruptible\n");
+	debug("fmradio : wait_RDS_event_interruptible\n");
    wait_event_interruptible_timeout(Si4709_waitq, 
   	(Si4709_dev_wait_flag == WAIT_OVER),Si4709_dev.settings.timeout_RDS);
 }

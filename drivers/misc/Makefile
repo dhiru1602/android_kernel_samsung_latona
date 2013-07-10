@@ -55,7 +55,6 @@ obj-$(CONFIG_OMAP_DIE_TEMP_SENSOR)	+= omap_temp_sensor.o
 obj-$(CONFIG_OMAP4_DUTY_CYCLE)  += omap4_duty_cycle.o
 obj-$(CONFIG_TWL6040_VIB)	+= twl6040-vib.o
 obj-$(CONFIG_GC_CORE)		+= gc-core/
-obj-$(CONFIG_FMRADIO)           += fm_Si4709/
 obj-$(CONFIG_SUPPORT_GPS)       += gps.o
 obj-$(CONFIG_FSA9480_MICROUSB)  += fsa9480.o
 obj-$(CONFIG_SAMSUNG_PHONE_SVNET) += phone_svn/
