@@ -583,10 +583,14 @@ static int __devinit max17040_probe(struct i2c_client *client,
 	if (HAS_ALERT_INTERRUPT(chip->ver) && chip->pdata->use_fuel_alert) {
 		/* setting the low SOC alert threshold */
 		if (!max17040_read_reg(client, MAX17040_RCOMP_MSB, &val)) {
+#ifdef CONFIG_MACH_OMAP_LATONA
+			max17040_write_reg(client, MAX17040_RCOMP_MSB, 0xd01f);
+#else
 			athd = chip->pdata->min_capacity > 1 ?
 				chip->pdata->min_capacity - 1 : 0;
 			max17040_write_reg(client, MAX17040_RCOMP_MSB,
 					   (val & ~0x1f) | (-athd & 0x1f));
+#endif
 		} else {
 			dev_err(&client->dev,
 				"Error setting battery alert threshold\n");
