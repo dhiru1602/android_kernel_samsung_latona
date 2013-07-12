@@ -688,7 +688,7 @@ static struct mxt_platform_data latona_mxt_platform_data = {
 	.orient         = MXT_DIAGONAL,
 	.irqflags       = IRQF_TRIGGER_FALLING,
 	.key_codes	= latona_mxt_key_codes,
-	.lcden_gpio	= OMAP_GPIO_TOUCH_EN,
+	.tsp_en_gpio	= OMAP_GPIO_TOUCH_EN,
 };
 
 static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {

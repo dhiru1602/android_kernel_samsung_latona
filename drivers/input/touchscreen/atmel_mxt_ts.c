@@ -1187,7 +1187,7 @@ static int mxt_suspend(struct device *dev)
 
 	mutex_unlock(&input_dev->mutex);
 
-	gpio_direction_output(data->pdata->lcden_gpio, 0);
+	gpio_direction_output(data->pdata->tsp_en_gpio, 0);
 
 #ifdef CONFIG_LEDS_LATONA
 	latona_leds_report_event(KEY_POWER, 0);
@@ -1202,7 +1202,7 @@ static int mxt_resume(struct device *dev)
 	struct mxt_data *data = i2c_get_clientdata(client);
 	struct input_dev *input_dev = data->input_dev;
 
-	gpio_direction_output(data->pdata->lcden_gpio, 1);
+	gpio_direction_output(data->pdata->tsp_en_gpio, 1);
 	msleep(MXT_ENABLE_TIME);
 
 	enable_irq(data->irq);
@@ -1281,13 +1281,13 @@ static int __devinit mxt_probe(struct i2c_client *client,
 	data->irq = client->irq;
 
 	/* configure touchscreen enable gpio */
-	error = gpio_request(pdata->lcden_gpio, "atmel_en_gpio");
+	error = gpio_request(pdata->tsp_en_gpio, "atmel_en_gpio");
 	if (error) {
 		dev_err(&client->dev, "unable to request gpio [%d]\n",
-					pdata->lcden_gpio);
+					pdata->tsp_en_gpio);
 		goto err_free_mem;
 	} else {
-		gpio_direction_output(pdata->lcden_gpio, 1);
+		gpio_direction_output(pdata->tsp_en_gpio, 1);
 		msleep(MXT_ENABLE_TIME);
 	}
 
@@ -1377,8 +1377,8 @@ static int __devexit mxt_remove(struct i2c_client *client)
 	sysfs_remove_group(&client->dev.kobj, &mxt_attr_group);
 	free_irq(data->irq, data);
 
-	if (gpio_is_valid(data->pdata->lcden_gpio))
-		gpio_free(data->pdata->lcden_gpio);
+	if (gpio_is_valid(data->pdata->tsp_en_gpio))
+		gpio_free(data->pdata->tsp_en_gpio);
 
 	input_unregister_device(data->input_dev);
 #if defined(CONFIG_HAS_EARLYSUSPEND)
