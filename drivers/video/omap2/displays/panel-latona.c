@@ -278,7 +278,6 @@ static int nt35510_panel_resume(struct omap_dss_device *dssdev)
 	int r;
 
 	dev_dbg(&dssdev->dev, "panel resume\n");
-	printk("PANEL resume\n");
 
 	//necessary?
 	spi_setup(nt35510lcd_spi);
@@ -294,7 +293,6 @@ static int nt35510_panel_resume(struct omap_dss_device *dssdev)
 	if (r) {
 		dssdev->state = OMAP_DSS_DISPLAY_DISABLED;
 	} else {
-		printk("PANEL GPIO\n");
 		gpio_set_value(OMAP_GPIO_LCD_EN_SET, GPIO_LEVEL_LOW);
 		mdelay(1);
 		gpio_set_value(OMAP_GPIO_LCD_EN_SET, GPIO_LEVEL_HIGH);
