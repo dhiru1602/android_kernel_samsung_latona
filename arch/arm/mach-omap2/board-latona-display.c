@@ -20,6 +20,11 @@
 #include <video/omapdss.h>
 #include <plat/omap-pm.h>
 #include "mux.h"
+#include <plat/clock.h>
+#include <linux/clk.h>
+
+static struct clk *dss_sys_fclk;
+bool init_clk_disable = true;
 
 static int latona_panel_enable_lcd(struct omap_dss_device *dssdev)
 {
@@ -29,9 +34,19 @@ static int latona_panel_enable_lcd(struct omap_dss_device *dssdev)
 	return 0;
 }
 
+static void dss_clks_disable(void)
+{
+    clk_disable(dss_sys_fclk);
+}
+
 static void latona_panel_disable_lcd(struct omap_dss_device *dssdev)
 {
 	omap_pm_set_min_bus_tput(&(dssdev->dev), OCP_INITIATOR_AGENT ,0);
+
+	if (init_clk_disable) {
+		dss_clks_disable();
+		init_clk_disable = false;
+	}
 }
 
 struct omap_dss_device omap_board_lcd_device = {
@@ -42,7 +57,6 @@ struct omap_dss_device omap_board_lcd_device = {
     .phy.dpi.data_lines = 24,
     .platform_enable = latona_panel_enable_lcd,
     .platform_disable = latona_panel_disable_lcd,
-
 };
 
 static struct omap_dss_device *omap_board_dss_devices[] = {
@@ -75,7 +89,13 @@ static struct spi_board_info board_spi_board_info[] __initdata = {
 
 void __init latona_display_init(void)
 {
-	
+	dss_sys_fclk = omap_clk_get_by_name("dss1_alwon_fck");
+	if (IS_ERR(dss_sys_fclk)) {
+		pr_err("Could not get dss system clock\n");
+		/* return -ENOENT; */
+	}
+	clk_enable(dss_sys_fclk);
+
 	omap_display_init(&omap_board_dss_data);
 	spi_register_board_info(board_spi_board_info,
 				ARRAY_SIZE(board_spi_board_info));

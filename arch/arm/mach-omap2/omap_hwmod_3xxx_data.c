@@ -1719,9 +1719,6 @@ static struct omap_hwmod_opt_clk dss_opt_clks[] = {
 static struct omap_hwmod omap3430es1_dss_core_hwmod = {
 	.name		= "dss_core",
 	.class		= &omap3xxx_dss_hwmod_class,
-#ifdef CONFIG_FB_OMAP_BOOTLOADER_INIT
-	.flags		= HWMOD_INIT_NO_RESET,
-#endif
 	.main_clk	= "dss1_alwon_fck", /* instead of dss_fck */
 	.sdma_reqs	= omap3xxx_dss_sdma_chs,
 	.sdma_reqs_cnt	= ARRAY_SIZE(omap3xxx_dss_sdma_chs),
@@ -1742,7 +1739,11 @@ static struct omap_hwmod omap3430es1_dss_core_hwmod = {
 	.masters	= omap3xxx_dss_masters,
 	.masters_cnt	= ARRAY_SIZE(omap3xxx_dss_masters),
 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430ES1),
+#ifdef CONFIG_MACH_OMAP_LATONA
+	.flags		= HWMOD_NO_IDLEST | HWMOD_INIT_NO_RESET,
+#else
 	.flags		= HWMOD_NO_IDLEST,
+#endif
 };
 
 static struct omap_hwmod omap3xxx_dss_core_hwmod = {
@@ -1770,6 +1771,9 @@ static struct omap_hwmod omap3xxx_dss_core_hwmod = {
 	.masters_cnt	= ARRAY_SIZE(omap3xxx_dss_masters),
 	.omap_chip	= OMAP_CHIP_INIT(CHIP_GE_OMAP3430ES2 |
 				CHIP_IS_OMAP3630ES1 | CHIP_GE_OMAP3630ES1_1),
+#ifdef CONFIG_MACH_OMAP_LATONA
+	.flags		= HWMOD_INIT_NO_RESET,
+#endif
 };
 
 /*
@@ -1852,7 +1856,11 @@ static struct omap_hwmod omap3xxx_dss_dispc_hwmod = {
 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430ES1 |
 				CHIP_GE_OMAP3430ES2 | CHIP_IS_OMAP3630ES1 |
 				CHIP_GE_OMAP3630ES1_1),
+#ifdef CONFIG_MACH_OMAP_LATONA
+	.flags		= HWMOD_NO_IDLEST | HWMOD_INIT_NO_RESET,
+#else
 	.flags		= HWMOD_NO_IDLEST,
+#endif
 };
 
 /*
@@ -1923,7 +1931,11 @@ static struct omap_hwmod omap3xxx_dss_dsi1_hwmod = {
 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430ES1 |
 				CHIP_GE_OMAP3430ES2 | CHIP_IS_OMAP3630ES1 |
 				CHIP_GE_OMAP3630ES1_1),
+#ifdef CONFIG_MACH_OMAP_LATONA
+	.flags		= HWMOD_NO_IDLEST | HWMOD_INIT_NO_RESET,
+#else
 	.flags		= HWMOD_NO_IDLEST,
+#endif
 };
 
 /*
@@ -1998,7 +2010,11 @@ static struct omap_hwmod omap3xxx_dss_rfbi_hwmod = {
 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430ES1 |
 				CHIP_GE_OMAP3430ES2 | CHIP_IS_OMAP3630ES1 |
 				CHIP_GE_OMAP3630ES1_1),
+#ifdef CONFIG_MACH_OMAP_LATONA
+	.flags		= HWMOD_NO_IDLEST | HWMOD_INIT_NO_RESET,
+#else
 	.flags		= HWMOD_NO_IDLEST,
+#endif
 };
 
 /*
@@ -2066,7 +2082,11 @@ static struct omap_hwmod omap3xxx_dss_venc_hwmod = {
 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430ES1 |
 				CHIP_GE_OMAP3430ES2 | CHIP_IS_OMAP3630ES1 |
 				CHIP_GE_OMAP3630ES1_1),
+#ifdef CONFIG_MACH_OMAP_LATONA
+	.flags		= HWMOD_NO_IDLEST | HWMOD_INIT_NO_RESET,
+#else
 	.flags		= HWMOD_NO_IDLEST,
+#endif
 };
 
 /* I2C1 */
