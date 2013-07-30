@@ -1501,7 +1501,7 @@ void nt35510_lcd_poweroff(void)
 	// turn OFF VDD3 (1.8V)
 	nt35510_lcd_LDO_off();
 
-#if 0
+#if 1
 	omap_mux_init_signal("mcspi1_clk", OMAP_MUX_MODE7 | OMAP_PIN_INPUT_PULLDOWN);
 	omap_mux_init_signal("mcspi1_simo",  OMAP_MUX_MODE7 | OMAP_PIN_INPUT_PULLDOWN);
 	omap_mux_init_signal("mcspi1_somi", OMAP_MUX_MODE7 | OMAP_PIN_INPUT_PULLDOWN);
@@ -1511,7 +1511,7 @@ void nt35510_lcd_poweroff(void)
 
 void nt35510_lcd_poweron()
 {
-#if 0
+#if 1
 	omap_mux_init_signal("mcspi1_clk", OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLUP);
 	omap_mux_init_signal("mcspi1_simo", OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLDOWN);
 	omap_mux_init_signal("mcspi1_somi", OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLDOWN);

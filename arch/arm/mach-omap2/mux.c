@@ -237,7 +237,11 @@ omap_mux_get_by_name(const char *muxname,
 	return -ENODEV;
 }
 
+#ifdef CONFIG_MACH_OMAP_LATONA
+int omap_mux_init_signal(const char *muxname, int val)
+#else
 int __init omap_mux_init_signal(const char *muxname, int val)
+#endif
 {
 	struct omap_mux_partition *partition = NULL;
 	struct omap_mux *mux = NULL;
