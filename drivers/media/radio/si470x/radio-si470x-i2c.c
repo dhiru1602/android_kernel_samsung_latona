@@ -175,89 +175,6 @@ int si470x_disconnect_check(struct si470x_device *radio)
 	return 0;
 }
 
-
-#ifdef CONFIG_VIDEO_V4L2
-/**************************************************************************
- * File Operations Interface
- **************************************************************************/
-
-/*
- * si470x_fops_open - file open
- */
-int si470x_fops_open(struct file *file)
-{
-	struct si470x_device *radio = video_drvdata(file);
-	int retval = 0;
-
-	mutex_lock(&radio->lock);
-	radio->users++;
-
-	if (radio->users == 1) {
-		/* start radio */
-		retval = si470x_start(radio);
-		if (retval < 0)
-			goto done;
-
-		/* enable RDS / STC interrupt */
-		radio->registers[SYSCONFIG1] |= SYSCONFIG1_RDSIEN;
-		radio->registers[SYSCONFIG1] |= SYSCONFIG1_STCIEN;
-		radio->registers[SYSCONFIG1] &= ~SYSCONFIG1_GPIO2;
-		radio->registers[SYSCONFIG1] |= 0x1 << 2;
-		retval = si470x_set_register(radio, SYSCONFIG1);
-	}
-
-done:
-	mutex_unlock(&radio->lock);
-	return retval;
-}
-
-
-/*
- * si470x_fops_release - file release
- */
-int si470x_fops_release(struct file *file)
-{
-	struct si470x_device *radio = video_drvdata(file);
-	int retval = 0;
-
-	/* safety check */
-	if (!radio)
-		return -ENODEV;
-
-	mutex_lock(&radio->lock);
-	radio->users--;
-	if (radio->users == 0)
-		/* stop radio */
-		retval = si470x_stop(radio);
-
-	mutex_unlock(&radio->lock);
-
-	return retval;
-}
-
-
-
-/**************************************************************************
- * Video4Linux Interface
- **************************************************************************/
-
-/*
- * si470x_vidioc_querycap - query device capabilities
- */
-int si470x_vidioc_querycap(struct file *file, void *priv,
-		struct v4l2_capability *capability)
-{
-	strlcpy(capability->driver, DRIVER_NAME, sizeof(capability->driver));
-	strlcpy(capability->card, DRIVER_CARD, sizeof(capability->card));
-	capability->version = DRIVER_KERNEL_VERSION;
-	capability->capabilities = V4L2_CAP_HW_FREQ_SEEK |
-		V4L2_CAP_TUNER | V4L2_CAP_RADIO;
-
-	return 0;
-}
-
-
-#endif
 /**************************************************************************
  * I2C Interface
  **************************************************************************/
@@ -269,12 +186,7 @@ static irqreturn_t si470x_i2c_interrupt(int irq, void *dev_id)
 {
 	struct si470x_device *radio = dev_id;
 	unsigned char regnr;
-#ifdef CONFIG_VIDEO_V4L2
-	unsigned char blocknum;
-	unsigned short bler; /* rds block errors */
-	unsigned short rds;
-	unsigned char tmpbuf[3];
-#endif
+
 	int retval = 0;
 	int i;
 
@@ -315,57 +227,7 @@ static irqreturn_t si470x_i2c_interrupt(int irq, void *dev_id)
 	if (radio->wr_index >= RDS_BUF_LEN)
 		radio->wr_index = 0;
 
-#ifdef CONFIG_VIDEO_V4L2
-	for (blocknum = 0; blocknum < 4; blocknum++) {
-		switch (blocknum) {
-		default:
-			bler = (radio->registers[STATUSRSSI] &
-					STATUSRSSI_BLERA) >> 9;
-			rds = radio->registers[RDSA];
-			break;
-		case 1:
-			bler = (radio->registers[READCHAN] &
-					READCHAN_BLERB) >> 14;
-			rds = radio->registers[RDSB];
-			break;
-		case 2:
-			bler = (radio->registers[READCHAN] &
-					READCHAN_BLERC) >> 12;
-			rds = radio->registers[RDSC];
-			break;
-		case 3:
-			bler = (radio->registers[READCHAN] &
-					READCHAN_BLERD) >> 10;
-			rds = radio->registers[RDSD];
-			break;
-		};
 
-		/* Fill the V4L2 RDS buffer */
-		put_unaligned_le16(rds, &tmpbuf);
-		tmpbuf[2] = blocknum;		/* offset name */
-		tmpbuf[2] |= blocknum << 3;	/* received offset */
-		if (bler > max_rds_errors)
-			tmpbuf[2] |= 0x80;	/* uncorrectable errors */
-		else if (bler > 0)
-			tmpbuf[2] |= 0x40;	/* corrected error(s) */
-
-		/* copy RDS block to internal buffer */
-		memcpy(&radio->buffer[radio->wr_index], &tmpbuf, 3);
-		radio->wr_index += 3;
-
-		/* wrap write pointer */
-		if (radio->wr_index >= radio->buf_size)
-			radio->wr_index = 0;
-
-		/* check for overflow */
-		if (radio->wr_index == radio->rd_index) {
-			/* increment and wrap read pointer */
-			radio->rd_index += 3;
-			if (radio->rd_index >= radio->buf_size)
-				radio->rd_index = 0;
-		}
-	}
-#endif
 
 	if (radio->wr_index != radio->rd_index)
 		wake_up_interruptible(&radio->read_queue);
@@ -395,21 +257,10 @@ static int __devinit si470x_i2c_probe(struct i2c_client *client,
 	radio->users = 0;
 	radio->client = client;
 	mutex_init(&radio->lock);
-#ifdef CONFIG_VIDEO_V4L2
-	/* video device allocation and initialization */
-	radio->videodev = video_device_alloc();
-	if (!radio->videodev) {
-		retval = -ENOMEM;
-		goto err_radio;
-	}
-	memcpy(radio->videodev, &si470x_viddev_template,
-			sizeof(si470x_viddev_template));
-	video_set_drvdata(radio->videodev, radio);
-#else
+
 	retval = si470x_dev_make_node(radio, client);
 	if (unlikely(retval < 0))
 		goto err_radio;
-#endif
 
 	/* power up : need 110ms */
 	radio->registers[POWERCFG] = POWERCFG_ENABLE;
@@ -447,19 +298,10 @@ static int __devinit si470x_i2c_probe(struct i2c_client *client,
 
 	/* set initial frequency */
 	si470x_set_freq(radio, FREQ_87500_kHz); /* available in all regions */
-#ifdef CONFIG_VIDEO_V4L2
-	/* rds buffer allocation */
-	radio->buf_size = rds_buf * 3;
-	radio->buffer = kmalloc(radio->buf_size, GFP_KERNEL);
-	if (!radio->buffer) {
-		retval = -EIO;
-		goto err_video;
-	}
-#else
+
 	retval = si470x_dev_rdsbuff_init(radio);
 	if (unlikely(retval < 0))
 		goto err_rds;
-#endif
 
 	/* rds buffer configuration */
 	radio->wr_index = 0;
@@ -476,15 +318,6 @@ static int __devinit si470x_i2c_probe(struct i2c_client *client,
 		dev_err(&client->dev, "Failed to register interrupt\n");
 		goto err_rds;
 	}
-#ifdef CONFIG_VIDEO_V4L2
-	/* register video device */
-	retval = video_register_device(radio->videodev, VFL_TYPE_RADIO,
-			radio_nr);
-	if (retval) {
-		dev_warn(&client->dev, "Could not register video device\n");
-		goto err_all;
-	}
-#endif
 	i2c_set_clientdata(client, radio);
 	disable_irq(client->irq);
 	radio->pdata->reset_gpio_on(0);
@@ -494,13 +327,7 @@ err_all:
 	free_irq(client->irq, radio);
 err_rds:
 	kfree(radio->rds_data_buff);
-#ifdef CONFIG_VIDEO_V4L2
-	kfree(radio->buffer);
-#endif
 err_video:
-#ifdef CONFIG_VIDEO_V4L2
-	video_device_release(radio->videodev);
-#endif
 err_radio:
 	kfree(radio);
 err_initial:
@@ -516,9 +343,6 @@ static __devexit int si470x_i2c_remove(struct i2c_client *client)
 	struct si470x_device *radio = i2c_get_clientdata(client);
 
 	free_irq(client->irq, radio);
-#ifdef CONFIG_VIDEO_V4L2
-	video_unregister_device(radio->videodev);
-#endif
 	kfree(radio);
 
 	return 0;
@@ -533,10 +357,10 @@ static int si470x_i2c_suspend(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct si470x_device *radio = i2c_get_clientdata(client);
-#ifndef CONFIG_VIDEO_V4L2
+
 	if (radio->pdata->enabled == false)
 		return 0;
-#endif
+
 	/* power down */
 	radio->registers[POWERCFG] |= POWERCFG_DISABLE;
 	if (si470x_set_register(radio, POWERCFG) < 0)
@@ -553,10 +377,10 @@ static int si470x_i2c_resume(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct si470x_device *radio = i2c_get_clientdata(client);
-#ifndef CONFIG_VIDEO_V4L2
+
 	if (radio->pdata->enabled == false)
 		return 0;
-#endif
+
 	/* power up : need 110ms */
 	radio->registers[POWERCFG] |= POWERCFG_ENABLE;
 	if (si470x_set_register(radio, POWERCFG) < 0)

@@ -35,10 +35,6 @@
 #include <linux/version.h>
 #include <linux/videodev2.h>
 #include <linux/mutex.h>
-#ifdef CONFIG_VIDEO_V4L2
-#include <media/v4l2-common.h>
-#include <media/v4l2-ioctl.h>
-#endif
 #include <asm/unaligned.h>
 #include <linux/ioctl.h>
 
@@ -148,14 +144,11 @@
  * si470x_device - private data
  */
 struct si470x_device {
-#ifdef CONFIG_VIDEO_V4L2
-	struct video_device *videodev;
-#else
 	struct miscdevice miscdev;
 	struct si470x_platform_data *pdata;
 	unsigned int si470x_irq;
 	unsigned short *rds_data_buff;
-#endif
+
 	/* driver management */
 	unsigned int users;
 
