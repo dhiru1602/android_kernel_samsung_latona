@@ -27,6 +27,7 @@
 #include <linux/leds.h>
 #include <media/v4l2-int-device.h>
 #include <linux/i2c/atmel_mxt_ts.h>
+#include <linux/platform_data/fm-si470x.h>
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -49,6 +50,7 @@
 
 struct ce147_platform_data omap_board_ce147_platform_data;
 struct s5ka3dfx_platform_data omap_board_s5ka3dfx_platform_data;
+static void latona_fmradio_reset_gpio_on(int enable);
 
 #define GP2A_LIGHT_ADC_CHANNEL	4
 
@@ -691,6 +693,39 @@ static struct mxt_platform_data latona_mxt_platform_data = {
 	.tsp_en_gpio	= OMAP_GPIO_TOUCH_EN,
 };
 
+enum {
+	GPIO_FM_RST = 0,
+	GPIO_FM_INT
+};
+
+static struct gpio fm_gpios[] = {
+	[GPIO_FM_RST] = {
+		.flags	= GPIOF_OUT_INIT_HIGH,
+		.label	= "FM_RST",
+		.gpio	= OMAP_GPIO_FM_nRST,
+	},
+	[GPIO_FM_INT] = {
+		.flags	= GPIOF_IN,
+		.label	= "FM_INT",
+		.gpio	= OMAP_GPIO_FM_INT,
+	},
+};
+
+static struct si470x_platform_data latona_si470x_pdata = {
+	.reset_gpio_on	= latona_fmradio_reset_gpio_on,
+};
+
+static void latona_fmradio_reset_gpio_on(int enable)
+{
+	if (enable) {
+		latona_si470x_pdata.enabled = true;
+		gpio_set_value(fm_gpios[GPIO_FM_RST].gpio, 1);
+	} else {
+		gpio_set_value(fm_gpios[GPIO_FM_RST].gpio, 0);
+		latona_si470x_pdata.enabled = false;
+	}
+}
+
 static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
 #if defined(CONFIG_SND_SOC_MAX97000)
 	{
@@ -763,7 +798,8 @@ static struct platform_device latona_gpio_i2c5_device = {
 
 static __initdata struct i2c_board_info latona_i2c6_boardinfo[] = {
 	{
-		I2C_BOARD_INFO("Si4709_driver", 0x10),
+		I2C_BOARD_INFO("si470x", 0x10),
+		.platform_data	= &latona_si470x_pdata,
 	},
 };
 
@@ -820,9 +856,24 @@ static int __init omap_i2c_init(void)
 			ARRAY_SIZE(latona_i2c_bus3_info));
 
 	i2c_register_board_info(5, latona_i2c5_boardinfo, ARRAY_SIZE(latona_i2c5_boardinfo));
-	i2c_register_board_info(6, latona_i2c6_boardinfo, ARRAY_SIZE(latona_i2c6_boardinfo));
 
 	return 0;
+}
+
+static void latona_fmradio_gpio_init(void)
+{
+	gpio_request_array(fm_gpios, ARRAY_SIZE(fm_gpios));
+
+	latona_i2c6_boardinfo[0].irq =
+		gpio_to_irq(fm_gpios[GPIO_FM_INT].gpio);
+	latona_si470x_pdata.gpio = fm_gpios[GPIO_FM_INT].gpio;
+}
+
+static void latona_fmradio_init(void)
+{
+	latona_fmradio_gpio_init();
+
+	i2c_register_board_info(6, latona_i2c6_boardinfo, ARRAY_SIZE(latona_i2c6_boardinfo));
 }
 
 static void atmel_dev_init(void)
@@ -854,6 +905,7 @@ void __init latona_peripherals_init(void)
 		ARRAY_SIZE(latona_i2c_gpio_devices));
 	atmel_dev_init();
 	omap_i2c_init();
+	latona_fmradio_init();
 	platform_device_register(&omap_vwlan_device);
 	usb_musb_init(&latona_musb_board_data);
 #ifdef CONFIG_SAMSUNG_PHONE_SVNET
