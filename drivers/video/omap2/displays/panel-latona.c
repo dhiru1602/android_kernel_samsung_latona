@@ -413,6 +413,8 @@ void nt35510_ldi_poweron_hitachi(void)
 	spi1writeindex(0xB0);
 	spi1writedata(0x03);
 
+	aat1402_set_brightness(0); // default brightness : 0
+
 	spi1writeindex(0x29);
 
 	atomic_set(&ldi_power_state, POWER_ON);
