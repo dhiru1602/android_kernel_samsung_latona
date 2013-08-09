@@ -48,7 +48,7 @@
 
 #define LCD_XRES			480
 #define LCD_YRES			800
-#define LCD_PIXCLOCK_MAX		20571 // 26000
+#define LCD_PIXCLOCK_MAX		24000 // 26000
 
 static int current_panel = -1;	// 0:sony, 1:Hitachi(20mA) , 2:Hydis, 3:SMD, 4:Sony(a-Si), 5:Hitachi(17mA)
 static int is_nt35510_spi_shutdown = 0;
