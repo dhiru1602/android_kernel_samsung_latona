@@ -66,15 +66,15 @@ static atomic_t ldi_power_state = ATOMIC_INIT(POWER_ON);   // ldi power state
 struct regulator *vaux3;
 struct regulator *vaux4;
 
-void nt35510_lcd_poweron(void);
-void nt35510_lcd_poweroff(void);
-void nt35510_lcd_LDO_on(void);
-void nt35510_lcd_LDO_off(void);
-void nt35510_ldi_poweron_sony(void);
-void nt35510_ldi_poweroff_sony(void);
-void nt35510_ldi_poweron_hitachi(void);
-void nt35510_ldi_poweroff_hitachi(void);
-void aat1402_set_brightness(int);
+static void nt35510_lcd_poweron(void);
+static void nt35510_lcd_poweroff(void);
+static void nt35510_lcd_LDO_on(void);
+static void nt35510_lcd_LDO_off(void);
+static void nt35510_ldi_poweron_sony(void);
+static void nt35510_ldi_poweroff_sony(void);
+static void nt35510_ldi_poweron_hitachi(void);
+static void nt35510_ldi_poweroff_hitachi(void);
+static void aat1402_set_brightness(int);
 
 /*
     PANEL TIMINGS
@@ -386,7 +386,7 @@ static void spi1write(u8 index, u8 data)
 	udelay(100);
 }
 
-void nt35510_ldi_poweron_hitachi(void)
+static void nt35510_ldi_poweron_hitachi(void)
 {
 #if LCD_DEBUG
 	printk("[LCD] %s() + \n", __func__);
@@ -424,7 +424,7 @@ void nt35510_ldi_poweron_hitachi(void)
 }
 
 
-void nt35510_ldi_poweroff_hitachi(void)
+static void nt35510_ldi_poweroff_hitachi(void)
 {
 #if LCD_DEBUG
 	printk(" **** %s\n", __func__);
@@ -447,7 +447,7 @@ void nt35510_ldi_poweroff_hitachi(void)
 	atomic_set(&ldi_power_state, POWER_OFF);
 }
 
-void nt35510_ldi_poweron_sony(void)
+static void nt35510_ldi_poweron_sony(void)
 {
 #if LCD_DEBUG
 	printk("[LCD] %s() + \n", __func__);
@@ -509,7 +509,7 @@ void nt35510_ldi_poweron_sony(void)
 }
 
 
-void nt35510_ldi_poweroff_sony(void)
+static void nt35510_ldi_poweroff_sony(void)
 {
 #if LCD_DEBUG
 	printk(" **** %s\n", __func__);
@@ -529,7 +529,7 @@ void nt35510_ldi_poweroff_sony(void)
 	atomic_set(&ldi_power_state, POWER_OFF);
 }
 
-void nt35510_ldi_poweron_sony_a_si(void)
+static void nt35510_ldi_poweron_sony_a_si(void)
 {
 #if LCD_DEBUG
 	printk("[LCD] %s() + \n", __func__);
@@ -806,7 +806,7 @@ void nt35510_ldi_poweron_sony_a_si(void)
 }
 
 
-void nt35510_ldi_poweroff_sony_a_si(void)
+static void nt35510_ldi_poweroff_sony_a_si(void)
 {
 #if LCD_DEBUG
 	printk(" **** %s\n", __func__);
@@ -938,7 +938,7 @@ void lcd_hydis_gamma2(void)
 
 }
 
-void nt35510_ldi_poweron_hydis(void)
+static void nt35510_ldi_poweron_hydis(void)
 {
 #if LCD_DEBUG
 	printk("[LCD] %s() + \n", __func__);
@@ -1158,7 +1158,7 @@ void nt35510_ldi_poweron_hydis(void)
 #endif
 }
 
-void nt35510_ldi_poweroff_hydis(void)
+static void nt35510_ldi_poweroff_hydis(void)
 {
 #if LCD_DEBUG
 	printk(" **** %s\n", __func__);
@@ -1176,7 +1176,7 @@ void nt35510_ldi_poweroff_hydis(void)
 	atomic_set(&ldi_power_state, POWER_OFF);
 }
 
-void nt35510_ldi_poweron_smd(void)
+static void nt35510_ldi_poweron_smd(void)
 {
 #if LCD_DEBUG
 	printk("[LCD] %s() + \n", __func__);
@@ -1411,7 +1411,7 @@ void nt35510_ldi_poweron_smd(void)
 #endif
 }
 
-void nt35510_ldi_poweroff_smd(void)
+static void nt35510_ldi_poweroff_smd(void)
 {
 #if LCD_DEBUG
 	printk(" **** %s\n", __func__);
@@ -1427,7 +1427,7 @@ void nt35510_ldi_poweroff_smd(void)
 	atomic_set(&ldi_power_state, POWER_OFF);
 }
 
-void nt35510_lcd_LDO_on(void)
+static void nt35510_lcd_LDO_on(void)
 {
 	int ret;
 
@@ -1456,7 +1456,7 @@ void nt35510_lcd_LDO_on(void)
 #endif
 }
 
-void nt35510_lcd_LDO_off(void)
+static void nt35510_lcd_LDO_off(void)
 {
 	int ret;
 
@@ -1484,7 +1484,7 @@ void nt35510_lcd_LDO_off(void)
 #endif
 }
 
-void nt35510_lcd_poweroff(void)
+static void nt35510_lcd_poweroff(void)
 {
 	if (current_panel == 0) // Sony
 		nt35510_ldi_poweroff_sony();
@@ -1509,7 +1509,7 @@ void nt35510_lcd_poweroff(void)
 #endif
 }
 
-void nt35510_lcd_poweron()
+static void nt35510_lcd_poweron()
 {
 #if 1
 	omap_mux_init_signal("mcspi1_clk", OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLUP);
@@ -1542,7 +1542,7 @@ void nt35510_lcd_poweron()
 		nt35510_ldi_poweron_sony_a_si();
 }
 
-void aat1402_set_brightness(int current_intensity)
+static void aat1402_set_brightness(int current_intensity)
 {
 
 #if LCD_DEBUG
