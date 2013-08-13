@@ -1548,17 +1548,12 @@ void aat1402_set_brightness(int current_intensity)
 #if LCD_DEBUG
 	printk(KERN_DEBUG " *** aat1402_set_brightness : %d\n", current_intensity);
 #endif
-
 	if (current_panel == 1 || current_panel == 5) {  // if Hitachi 20mA, 17mA
 		int orig_intensity = current_intensity;
 
-		if(current_intensity>=108)
-			current_intensity = ((current_intensity-108)*(216-91))/(255-108) + 91;
-		else if(current_intensity>=34)
-			current_intensity = ((current_intensity-34)*(91-29))/(108-34) + 29;
-		else if(current_intensity>=20)
-			current_intensity = ((current_intensity-20)*(29-17))/(34-20) + 17;
-
+		if (current_panel == 5) // Hitachi(17mA)
+			if (current_intensity > 26)
+				current_intensity = current_intensity - current_intensity/6 + 3;
 #if LCD_DEBUG
 		printk(KERN_DEBUG " HITACHI PANEL(%d)! orig_intensity=%d, current_intensity=%d\n", current_panel, orig_intensity, current_intensity);
 #endif
