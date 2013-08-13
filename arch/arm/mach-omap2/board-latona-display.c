@@ -41,7 +41,7 @@ static void dss_clks_disable(void)
 
 static void latona_panel_disable_lcd(struct omap_dss_device *dssdev)
 {
-	omap_pm_set_min_bus_tput(&(dssdev->dev), OCP_INITIATOR_AGENT ,0);
+	omap_pm_set_min_bus_tput(&(dssdev->dev), OCP_INITIATOR_AGENT, -1);
 
 	if (init_clk_disable) {
 		dss_clks_disable();
