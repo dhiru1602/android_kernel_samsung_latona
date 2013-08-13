@@ -82,10 +82,10 @@ struct omap_vdd_dep_info omap34xx_vddmpu_dep_info[] = {
 
 /* VDD1 */
 
-#define OMAP3630_VDD_MPU_OPP50_UV		1025000
+#define OMAP3630_VDD_MPU_OPP50_UV		1012500
 #define OMAP3630_VDD_MPU_OPP100_UV		1200000
-#define OMAP3630_VDD_MPU_OPP120_UV		1330000
-#define OMAP3630_VDD_MPU_OPP1G_UV		1387500
+#define OMAP3630_VDD_MPU_OPP120_UV		1325000
+#define OMAP3630_VDD_MPU_OPP1G_UV		1375000
 
 /* Amount in uV to add to SmartReflex-calculated voltages as a safety margin */
 #define OMAP3630_SR_MPU_DEFAULT_MARGIN		37500
