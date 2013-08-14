@@ -631,18 +631,20 @@ static int mass_storage_function_init(struct android_usb_function *f,
 	struct mass_storage_function_config *config;
 	struct fsg_common *common;
 	int err;
-	int i;
 
 	config = kzalloc(sizeof(struct mass_storage_function_config),
 								GFP_KERNEL);
 	if (!config)
 		return -ENOMEM;
 
+#ifdef CONFIG_MACH_OMAP_LATONA
 	config->fsg.nluns = 2;
-    for (i = 0; i < config->fsg.nluns; i++) {
-        config->fsg.luns[i].removable = 1;
-        config->fsg.luns[i].nofua = 1;
-    }
+	config->fsg.luns[0].removable = 1;
+	config->fsg.luns[1].removable = 1;
+#else
+	config->fsg.nluns = 1;
+	config->fsg.luns[0].removable = 1;
+#endif
 
 	common = fsg_common_init(NULL, cdev, &config->fsg);
 	if (IS_ERR(common)) {
@@ -650,20 +652,12 @@ static int mass_storage_function_init(struct android_usb_function *f,
 		return PTR_ERR(common);
 	}
 
-	for (i = 0; i < config->fsg.nluns; i++) {
-        char luns[5];
-        err = snprintf(luns, 5, "lun%d", i);
-        if (err == 0) {
-            printk(KERN_ERR "usb: %s snprintf error\n", __func__);
-            return err;
-        }
-        err = sysfs_create_link(&f->dev->kobj,
-                    &common->luns[i].dev.kobj,
-                    luns);
-        if (err) {
-            kfree(config);
-            return err;
-        }
+	err = sysfs_create_link(&f->dev->kobj,
+				&common->luns[0].dev.kobj,
+				"lun");
+	if (err) {
+		kfree(config);
+		return err;
 	}
 
 	config->common = common;
