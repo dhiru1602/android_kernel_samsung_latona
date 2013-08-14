@@ -115,7 +115,9 @@ static int max97000_set_reg_from_file(char* filename, int mode)
 	char* arTemp;
 	bool	bRunning	= true;
 
+#if SEC_MAX97000_DEBUG
 	printk("max97000 gain setting %s\n", filename);
+#endif
 
 	fp = filp_open( filename, O_RDONLY, 0 ) ;
 	if ( fp && ( fp!= 0xfffffffe ) && ( fp != 0xfffffff3 ) )
@@ -193,10 +195,14 @@ static int max97000_set_reg_from_file(char* filename, int mode)
 			if(mode == GAIN_INIT_MUSIC_SPK)
 			{
 				music_spk_amp_gain[i] = regFromFileAmp[i].val;
+#if SEC_MAX97000_DEBUG
 				printk("music_spk_amp_gain %d, 0x%x\n",i, music_spk_amp_gain[i]);
+#endif
 			}else if(mode == GAIN_INIT_MUSIC_EAR){
 				music_ear_amp_gain[i]= regFromFileAmp[i].val;
+#if SEC_MAX97000_DEBUG
 				printk("music_ear_amp_gain %d, 0x%x\n",i, music_ear_amp_gain[i]);
+#endif
 			}
 		//		twl4030_write(codec, regFromFileAmp[i].reg, regFromFileAmp[i].val);
 		}
@@ -272,7 +278,9 @@ void max97000_apply_case(int spkORear, int musicORvoice)
 				max97000_regs[4] = 0x18;
 				max97000_regs[5] = 0x1e;
 				max97000_regs[8] = 0x86;
+#if SEC_MAX97000_DEBUG
 				printk("[max97000]force fm radio gain setting\n");
+#endif
 		}
 		else
 		{
@@ -309,7 +317,9 @@ void max97000_write_regs(void)
 		#if SEC_MAX97000_DEBUG
 		if(max97000_regs_backup[i] != max97000_regs[i])
 		{
+#if SEC_MAX97000_DEBUG
 			printk("Max97000 Register [ 0x%x : 0x%x] \n", i, max97000_regs[i]);
+#endif
 			max97000_regs_backup[i] = max97000_regs[i];
 		}
 		#endif
@@ -335,7 +345,9 @@ void max97000_write_single(const unsigned int reg, const unsigned int value)
 		printk("max97000 max97000_i2c_client error !!!!\n");
 	}
 
+#if SEC_MAX97000_DEBUG
 	printk("max97000 write 0x%x, 0x%x", reg, value);
+#endif
 }
 static int max97000_get_reg(struct snd_kcontrol *kcontrol,
                 struct snd_ctl_elem_value *ucontrol)
@@ -475,7 +487,9 @@ EXPORT_SYMBOL_GPL(max97000_power_down_mode);
 static int max97000_set_power_control(struct snd_kcontrol *kcontrol,
                 struct snd_ctl_elem_value *ucontrol)
 {
+#if SEC_MAX97000_DEBUG
 	printk("[max97000] max97000_power_control value = %d \n", (int)ucontrol->value.integer.value[0]);
+#endif
 
 	curr_output_mode = OUTPUT_OFF;
 	if(ucontrol->value.integer.value[0])  //off case
@@ -528,7 +542,9 @@ static int max97000_set_output_volume(void)
 
 static void amp_control_work_handler(struct work_struct *work )
 {
+#if SEC_MAX97000_DEBUG
 	    printk("amp_control_work_handler() in\n");
+#endif
 
 	    if(curr_output_mode==3)
 	    {
@@ -554,13 +570,17 @@ static int max97000_set_out_mode(struct snd_kcontrol *kcontrol,
 	u8 powerManage = 0x00;
 
 	if(curr_output_mode == ucontrol->value.integer.value[0]){
+#if SEC_MAX97000_DEBUG
 		printk(" max97000_set_out_mode() output is same!!!! %ld\n", ucontrol->value.integer.value[0]);
+#endif
 		return 0;
 	}
 
 	curr_output_mode = ucontrol->value.integer.value[0];
 
+#if SEC_MAX97000_DEBUG
 	printk(" max97000_set_out_mode() in %ld**\n", ucontrol->value.integer.value[0]);
+#endif
 
 	wake_unlock( &max97000_wakelock);
 //	cancel_delayed_work_sync(&max97000_power_down_work_queue);
@@ -675,7 +695,9 @@ static int max97000_set_out_mode(struct snd_kcontrol *kcontrol,
 }
 void max97000_set_force_out_mode(int mode, int output)
 {
+#if SEC_MAX97000_DEBUG
 	printk("max97000_set_force_out_mode %d, output %d\n", mode, output);
+#endif
 	switch(mode)
 	{
 		case FM_RADIO:

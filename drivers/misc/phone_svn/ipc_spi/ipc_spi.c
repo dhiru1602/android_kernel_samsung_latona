@@ -3012,7 +3012,7 @@ RETRY_WAIT_SEM :
 			stop_spi_sync_count = 0;
 			while (stop_spi_sync) {
 				if (!(stop_spi_sync_count % 100))
-					printk("[SPI STOP], stop_spi_sync : %d\n", stop_spi_sync);
+					dev_dbg(&p_ipc_spi->dev, "[SPI STOP], stop_spi_sync : %d\n", stop_spi_sync);
 				stop_spi_sync_count++;
 				
 				if (stop_spi_sync_count > 5000)
@@ -3675,14 +3675,14 @@ static int ipc_spi_remove( struct spi_device *spi )
 
 static int ipc_spi_suspend(struct spi_device *spi, pm_message_t mesg)
 {
-	printk("IPC_SPI SUSPEND\n");
+	dev_dbg(&spi->dev, "IPC_SPI SUSPEND\n");
 	stop_spi_sync = 1;
 	return 0;
 }
 
 static int ipc_spi_resume(struct spi_device *spi)
 {
-	printk("IPC_SPI RESUME\n");
+	dev_dbg(&spi->dev, "IPC_SPI RESUME\n");
 	stop_spi_sync = 0;
 	return 0;
 }

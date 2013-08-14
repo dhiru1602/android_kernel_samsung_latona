@@ -346,8 +346,6 @@ static int __init sdp3430_soc_init(void)
 {
 	int ret;
 
-    printk(KERN_EMERG " %s : %s : %i \n", __FILE__, __FUNCTION__, __LINE__);
-
 	#if 0
 	if (!machine_is_omap_3430sdp()) {
 		pr_debug("Not SDP3430!\n");

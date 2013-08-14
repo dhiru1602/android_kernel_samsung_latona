@@ -41,6 +41,8 @@
  /* Register descriptions are here */
 #include <linux/mfd/twl4030-codec.h>
 
+#define TWL4030_DEBUG 0
+
 #define SAMSUNG_CUSTOMISATION
 
 #ifdef SAMSUNG_CUSTOMISATION
@@ -904,7 +906,9 @@ EXPORT_SYMBOL_GPL(twl4030_get_voicecall_state);
 static void twl4030_set_remap(void)
 {
 	u8 data = 0x00;
+#if TWL4030_DEBUG
 	printk("IDLE mode - Power resources has to be set \n");
+#endif
 
 	twl_i2c_write_u8( TWL4030_MODULE_PM_RECEIVER, REMAP_ACTIVE , 0x41 ); // VINTANA1
 	twl_i2c_read_u8(TWL4030_MODULE_PM_RECEIVER, &data, 0x41 );
@@ -1085,7 +1089,9 @@ int twl4030_modify_direct(unsigned int reg, unsigned int value, unsigned int mas
 
 static void codec_control_work_handler(struct work_struct *work )
 {
+#if TWL4030_DEBUG
 	printk(" twl4030_audio work_handler %d\n", twl4030_call_device);
+#endif
 	switch(twl4030_call_device)
 	{
 		case OFF:
@@ -1133,7 +1139,9 @@ static void codec_down_work_handler(struct work_struct *work )
 	mode &= ~TWL4030_CODECPDZ;
 
 	twl_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE, mode, TWL4030_REG_CODEC_MODE);
+#if TWL4030_DEBUG
 	printk("!!!! codec bias off !!!\n");
+#endif
 }
 
 /*
@@ -1229,13 +1237,17 @@ static void twl4030_vintana1_power_enable(int enable)
 {
 	if(enable)
 	{
+#if TWL4030_DEBUG
 		printk("[light] power up VINTIANA2....\n");
+#endif
 		twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x41, TWL4030_VINTANA2_DEDICATED);
 		twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, DEV_GRP_BELONG_P1, TWL4030_VINTANA2_DEV_GRP) ;
 	}
 	else
 	{
+#if TWL4030_DEBUG
 		printk("[light] power down VINTIANA2....\n");
+#endif
 		twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x41, TWL4030_VINTANA2_DEDICATED);
 		twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, DEV_GRP_BELONG_NONE, TWL4030_VINTANA2_DEV_GRP) ;
 	}
@@ -1750,7 +1762,9 @@ static int apll_event(struct snd_soc_dapm_widget *w,
 		struct snd_kcontrol *kcontrol, int event)
 {
 #ifndef SAMSUNG_CUSTOMISATION
+#if TWL4030_DEBUG
 	printk("apll_event %d\n", event);
+#endif
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
 		twl4030_apll_enable(w->codec, 1);
@@ -1768,7 +1782,9 @@ static int aif_event(struct snd_soc_dapm_widget *w,
 {
 #ifndef SAMSUNG_CUSTOMISATION
 	u8 audio_if;
+#if TWL4030_DEBUG
 	printk("aif_event %d\n", event);
+#endif
 
 	audio_if = twl4030_read_reg_cache(w->codec, TWL4030_REG_AUDIO_IF);
 	switch (event) {
@@ -2206,11 +2222,15 @@ static const struct soc_enum twl4030_vibradir_enum =
 #ifdef SAMSUNG_CUSTOMISATION
 static int mic_enable(struct snd_soc_codec *codec, int mode, int enable)
 {
+#if TWL4030_DEBUG
 	printk("mic_enable mode : %d, enable : %d\n", mode, enable);
+#endif
 
 	if(twl4030_mic_mute_enable)
 	{
+#if TWL4030_DEBUG
 		printk("twl4030.c mic_enable() : mic muted, do not power on");
+#endif
 		return 0;
 	}
 
@@ -2263,12 +2283,16 @@ static int twl4030_set_playback_path(struct snd_kcontrol *kcontrol, struct snd_c
 {
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 
+#if TWL4030_DEBUG
 	printk("twl4030_set_playback_path value = %ld device= %d mode = %d codec_mode = %d \n",ucontrol->value.integer.value[0], twl4030_playback_device, twl4030_mode, codec_mode);
+#endif
 
 
 	if((twl4030_playback_device == ucontrol->value.integer.value[0])) //DB24 sec_lilkan
 	{
+#if TWL4030_DEBUG
 		printk("twl4030_set_playback_device same device d=%d  \n",twl4030_playback_device);
+#endif
 		return TWL4030_SAME_DEVICE;
 	}
 
@@ -2303,7 +2327,9 @@ static int twl4030_set_playback_path(struct snd_kcontrol *kcontrol, struct snd_c
 		}
 
 		#else
+#if TWL4030_DEBUG
 		printk("set rcv playback path\n");
+#endif
 		twl4030_write(codec, 0x01, 0x93); //TWL4030_REG_CODEC_MODE
 		twl4030_write(codec, 0x17, 0x0c); //TWL4030_REG_AVDAC_CTL
 		twl4030_modify(codec, 0x1b, 0x33, ~ARX_APGA_GAIN_MASK); //TWL4030_REG_ARXL2_APGA_CTL
@@ -2414,12 +2440,16 @@ static int twl4030_set_voicecall_path(struct snd_kcontrol *kcontrol, struct snd_
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 	unsigned int i=0;
 
+#if TWL4030_DEBUG
 	printk("twl4030_set_voicecall_path value = %ld call_device = %d, mode = %d \n",ucontrol->value.integer.value[0], twl4030_call_device, codec_mode);
+#endif
 
 	if((twl4030_call_device == ucontrol->value.integer.value[0])) //DB24 sec_lilkan
 	{
 		twl4030_set_remap();
+#if TWL4030_DEBUG
 		printk("twl4030_set_voicecall_path same device d=%d  \n",twl4030_call_device);
+#endif
 		return TWL4030_SAME_DEVICE;
 	}
 	cancel_delayed_work(&codec_control_work);
@@ -2456,7 +2486,9 @@ static int twl4030_set_voicecall_path(struct snd_kcontrol *kcontrol, struct snd_
 		#else
 		#ifdef VOICE_IF_AP_MASTER
 		twl4030_write(codec, 0x0f, 0x61);  //TWL4030_REG_VOICE_IF
+#if TWL4030_DEBUG
 		printk("enable ap master mode\n");
+#endif
 		#else
 		twl4030_write(codec, 0x0f, 0xe1);  //TWL4030_REG_VOICE_IF
 		#endif
@@ -2677,11 +2709,15 @@ static int twl4030_set_voicememo_path(struct snd_kcontrol *kcontrol, struct snd_
 	twl4030_fm_device = 0;
 
 	if(twl4030_recording_device == ucontrol->value.integer.value[0]){		
+#if TWL4030_DEBUG
 		printk("voice memo device is same force return\n");
+#endif
 		return 0;
 	}
 	twl4030_recording_device =ucontrol->value.integer.value[0] ;
+#if TWL4030_DEBUG
 	printk("twl4030_set_voicememo_path value = %ld \n",ucontrol->value.integer.value[0]);
+#endif
 
 	twl4030_write(codec, 0x0e, 0x01); 
 	twl4030_write(codec, 0x3a, 0x16); 
@@ -2803,7 +2839,9 @@ static int twl4030_set_voipcall_path(struct snd_kcontrol *kcontrol, struct snd_c
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 	unsigned int i=0;
 
+#if TWL4030_DEBUG
     printk("twl4030_set_voipcall_path value = %ld call_device = %d \n",ucontrol->value.integer.value[0], twl4030_voip_device);
+#endif
 
 	twl4030_voip_device = ucontrol->value.integer.value[0];
 	twl4030_call_device = 0;
@@ -2870,12 +2908,16 @@ static int twl4030_set_fmradio_path(struct snd_kcontrol *kcontrol, struct snd_ct
 
 	if((twl4030_fm_device == ucontrol->value.integer.value[0])) //DB24 sec_lilkan
 	{
+#if TWL4030_DEBUG
 		printk("twl4030_set_fmradio_path same device d=%d mute = %d \n",twl4030_fm_device, twl4030_fm_radio_mute_enable);
+#endif
 		return TWL4030_SAME_DEVICE;
 	}
 
+#if TWL4030_DEBUG
     printk("twl4030_set_fmradio_path value = %ld output_device = %d, mute = %d \n",
 		ucontrol->value.integer.value[0], twl4030_fm_device, twl4030_fm_radio_mute_enable);
+#endif
 
     twl4030_fm_device = ucontrol->value.integer.value[0];
 	twl4030_playback_device = 0;
@@ -2931,7 +2973,9 @@ static int twl4030_set_loopback_path(struct snd_kcontrol *kcontrol, struct snd_c
     struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 	unsigned int i=0;
 
+#if TWL4030_DEBUG
 	printk("twl4030_set_loopback_path value = %ld output_device = %d \n",ucontrol->value.integer.value[0], twl4030_fm_device);
+#endif
 
 	twl4030_fm_device = ucontrol->value.integer.value[0];
 
@@ -3013,7 +3057,9 @@ static int twl4030_set_mic_mute(struct snd_kcontrol *kcontrol, struct snd_ctl_el
 {
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 
+#if TWL4030_DEBUG
 	printk("twl4030_set_mic_mute value = %ld \n",ucontrol->value.integer.value[0]);
+#endif
 
 	if(ucontrol->value.integer.value[0])    // on, mute
 	{
@@ -3045,7 +3091,9 @@ static int twl4030_set_vr_mode(struct snd_kcontrol *kcontrol, struct snd_ctl_ele
 {
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 
+#if TWL4030_DEBUG
 	printk("twl4030_set_vr_mode value = %ld \n",ucontrol->value.integer.value[0]);
+#endif
 
 	if(ucontrol->value.integer.value[0])    // on, mute
 	{
@@ -3119,7 +3167,9 @@ static int twl4030_set_path(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	int i =0;
 	int state = 0;
 
+#if TWL4030_DEBUG
 	printk("twl4030_set name=%s \n", kcontrol->id.name);
+#endif
 
 
 	#if defined(APPLY_AUDIOTEST_APP) && defined(APPLY_GAIN_INIT_FROM_INI)
@@ -3247,7 +3297,9 @@ static int twl4030_set_dtmf_volume(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
 
+#if TWL4030_DEBUG
 	printk("twl4030_set_dtmf_volume %ld ", ucontrol->value.integer.value[0]);
+#endif
 
 	if(!twl4030_remap)
 	{
@@ -3255,7 +3307,9 @@ static int twl4030_set_dtmf_volume(struct snd_kcontrol *kcontrol,
 		return 0;
 	}
 	else
+#if TWL4030_DEBUG
 		printk("\n");
+#endif
 
     switch((int)ucontrol->value.integer.value[0])
     {
@@ -3292,7 +3346,9 @@ static int twl4030_set_dtmf_generator(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+#if TWL4030_DEBUG
 	printk("twl4030_set_dtmf_generator %ld ", ucontrol->value.integer.value[0]);
+#endif
 
 	if(!twl4030_remap)
 	{
@@ -3300,7 +3356,9 @@ static int twl4030_set_dtmf_generator(struct snd_kcontrol *kcontrol,
 		return 0;
 	}
 	else
+#if TWL4030_DEBUG
 	printk("\n");
+#endif
 
 
 	twl4030_write(codec,TWL4030_REG_DTMF_CTL,0x00);        //tone generator stop
@@ -3325,7 +3383,9 @@ static int twl4030_set_dtmf_generator(struct snd_kcontrol *kcontrol,
 
 int twl4030_is_rec_8k_enable(void)
 {
+#if TWL4030_DEBUG
 	printk("twl4030_get_8k_enable %d\n", twl4030_rec_8k_enable);
+#endif
 	return twl4030_rec_8k_enable;
 }
 EXPORT_SYMBOL(twl4030_is_rec_8k_enable);
@@ -3337,7 +3397,9 @@ static int twl4030_get_rec_8k_enable(struct snd_kcontrol *kcontrol,
 static int twl4030_set_rec_8k_enable(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
+#if TWL4030_DEBUG
 	printk("twl4030_set_8k_enable %ld\n", ucontrol->value.integer.value[0]);
+#endif
 	twl4030_rec_8k_enable = ucontrol->value.integer.value[0];
 
 	return 0;
@@ -3353,7 +3415,9 @@ static int twl4030_set_fm_radio_mute_enable(struct snd_kcontrol *kcontrol,
 {
 
 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+#if TWL4030_DEBUG
 	printk("twl4030_set_fm_radio_mute_enable %ld\n", ucontrol->value.integer.value[0]);
+#endif
 
 	if(twl4030_fm_radio_mute_enable == ucontrol->value.integer.value[0])
 	{
@@ -3977,7 +4041,9 @@ static int twl4030_set_bias_level(struct snd_soc_codec *codec,
 				  enum snd_soc_bias_level level)
 {
 
+#if TWL4030_DEBUG
 	printk("twl4030_set_bias_level %d\n", level);
+#endif
 	switch (level) {
 	case SND_SOC_BIAS_ON:
 		break;
@@ -4576,7 +4642,9 @@ static int twl4030_soc_suspend(struct snd_soc_codec *codec, pm_message_t state)
 	if((twl4030_mode !=VOICE_CALL)&&(twl4030_mode !=VOICE_MEMO)
 		&&(twl4030_mode !=VOIP_CALL)&&(twl4030_mode !=FM_RADIO)&&(twl4030_mode !=VT_CALL))
 	{
+#if TWL4030_DEBUG
 		printk("twl4030_suspend testmode is %d\n", twl4030_mode);
+#endif
 	        twl4030_playback_device = 0; //device off
 	        twl4030_call_device = 0;
 	        twl4030_voip_device = 0;	// hskwon-ss-cl31, added for FMC(VoIP) call path

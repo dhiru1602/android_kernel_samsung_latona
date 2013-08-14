@@ -119,7 +119,7 @@ static int readPortFromFile(const char* path,unsigned short* portList)
 				if ( port != 0  && ip != 0x00000000)
 				{
 					portList[port_index++] = (unsigned short)port;
-					printk("WHITELIST : add port %4x\n", port);
+					dprintk("WHITELIST : add port %4x\n", port);
 				}
 			}
 
@@ -177,7 +177,7 @@ static int readPortFromFile(const char* path,unsigned short* portList)
 			if ( port != 0  && ip != 0x00000000)
 			{
 				portList[port_index++] = (unsigned short)port;
-				printk("WHITELIST : add port %4x\n", port);
+				dprintk("WHITELIST : add port %4x\n", port);
 			}
 
 			//clear line buffer
@@ -312,7 +312,7 @@ int writePacketToFile(char *abuf, int length)
 
 	 ret = fp->f_op->write(fp, abuf, length, &fp->f_pos);
 
-	 printk("request byte length = %d,  return byte = %d\n",length, ret);
+	 dprintk("request byte length = %d,  return byte = %d\n",length, ret);
 
 	if( fp != NULL ) {
 		filp_close(fp, NULL);
