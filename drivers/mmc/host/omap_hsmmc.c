@@ -129,6 +129,10 @@
 #define ADMA_TABLE_NUM_ENTRIES \
 	(ADMA_TABLE_SZ / sizeof(struct adma_desc_table))
 
+#ifdef CONFIG_MACH_OMAP_LATONA
+#define OMAP_GPIO_MASSMEMORY 159
+#endif
+
 #define SDMA_XFER	1
 #define ADMA_XFER	2
 /*
@@ -333,6 +337,54 @@ static int omap_hsmmc_1_set_power(struct device *dev, int slot, int power_on,
 	return ret;
 }
 
+#ifdef CONFIG_MACH_OMAP_LATONA
+static int twl_iNand_set_power(struct device *dev, int slot, int power_on, int vdd)
+{
+	int ret = 0;
+	struct omap_hsmmc_host * host = platform_get_drvdata(to_platform_device(dev));
+
+	if (mmc_slot(host).before_set_reg)
+		mmc_slot(host).before_set_reg(dev, slot, power_on, vdd);
+
+	if (power_on) {
+		omap_writew(0x1718, 0x48002158); //! CLK
+		omap_writew(0x1718, 0x4800215a); //! CMD
+		omap_writew(0x1718, 0x4800215c); //! DAT0
+		omap_writew(0x1718, 0x4800215e); //! DAT1
+		omap_writew(0x1718, 0x48002160); //! DAT2
+		omap_writew(0x1718, 0x48002162); //! DAT3
+		omap_writew(0x1718, 0x48002164); //! DAT4
+		omap_writew(0x1718, 0x48002166); //! DAT5
+		omap_writew(0x1718, 0x48002168); //! DAT6
+		omap_writew(0x1718, 0x4800216a); //! DAT7
+
+		pr_debug("Turn ON External LDO\n");
+		gpio_set_value(OMAP_GPIO_MASSMEMORY, 1);
+	} else {
+		omap_writew(0x1708, 0x48002158); //! CLK
+		omap_writew(0x1708, 0x4800215a); //! CMD
+		omap_writew(0x1708, 0x4800215c); //! DAT0
+		omap_writew(0x1708, 0x4800215e); //! DAT1
+		omap_writew(0x1708, 0x48002160); //! DAT2
+		omap_writew(0x1708, 0x48002162); //! DAT3
+		omap_writew(0x1708, 0x48002164); //! DAT4
+		omap_writew(0x1708, 0x48002166); //! DAT5
+		omap_writew(0x1708, 0x48002168); //! DAT6
+		omap_writew(0x1708, 0x4800216a); //! DAT7
+
+		pr_debug("Turn OFF External LDO\n");
+		gpio_set_value(OMAP_GPIO_MASSMEMORY, 0);
+
+		/*add 150ms to stabilize VDDF power*/
+		mdelay(50);
+		mdelay(50);
+		mdelay(50);
+	}
+
+	return ret;
+}
+#endif
+
 static int omap_hsmmc_235_set_power(struct device *dev, int slot, int power_on,
 				   int vdd)
 {
@@ -463,6 +515,13 @@ static int omap_hsmmc_reg_get(struct omap_hsmmc_host *host)
 		mmc_slot(host).set_sleep = omap_hsmmc_1_set_sleep;
 		break;
 	case OMAP_MMC2_DEVID:
+#ifdef CONFIG_MACH_OMAP_LATONA
+		printk("%s with id %d is registered with twl_iNand_set_power\n", 
+			mmc_hostname(host->mmc), host->id);
+		mmc_slot(host).set_power = twl_iNand_set_power;
+		gpio_direction_output(OMAP_GPIO_MASSMEMORY, 1);
+		break;
+#endif
 	case OMAP_MMC3_DEVID:
 	case OMAP_MMC5_DEVID:
 		/* Off-chip level shifting, or none */
@@ -955,6 +1014,23 @@ static void omap_hsmmc_request_done(struct omap_hsmmc_host *host, struct mmc_req
 		return;
 	host->mrq = NULL;
 	mmc_request_done(host->mmc, mrq);
+
+#ifdef CONFIG_MACH_OMAP_LATONA
+	u32 mmc_auto_idle = 0;
+	u32 value;
+	if ((host->id == OMAP_MMC1_DEVID) || (host->id == OMAP_MMC2_DEVID) ||
+	    (host->id == OMAP_MMC3_DEVID)) {
+		mmc_auto_idle = omap_readl(0x48004A30);   //Reenable all auto enable
+		mmc_auto_idle = ((mmc_auto_idle) | (1<<24) | (1<<25) | (1<<30));
+		omap_writel(mmc_auto_idle,0x48004A30);
+
+		value = 0;
+	
+		/* Set the controller back  to AUTO IDLE mode */
+		value = OMAP_HSMMC_READ(host, SYSCONFIG);
+		OMAP_HSMMC_WRITE(host, SYSCONFIG, value | AUTOIDLE);
+	}
+#endif
 }
 
 /*
@@ -1731,6 +1807,139 @@ static void omap_hsmmc_request(struct mmc_host *mmc, struct mmc_request *req)
 		return;
 	}
 
+#ifdef CONFIG_MACH_OMAP_LATONA
+	if ((host->id == OMAP_MMC1_DEVID) || (host->id == OMAP_MMC2_DEVID) ||
+	    (host->id == OMAP_MMC3_DEVID)) {
+		u32 core_iclk, core_clk_mmc1, core_clk_mmc2, core_fclk;
+		u32 mmc1_autoidle, mmc2_autoidle, mmc3_autoidle = 0;
+
+		core_iclk = omap_readl(0x48004A10);   // CM_ICLKEN1_CORE
+		core_fclk = omap_readl(0x48004A00);   // CM_FCLKEN1_CORE
+		switch (host->id) {
+		case OMAP_MMC1_DEVID:
+			// mmc 1 Disabling Autoidle.
+			// This is reenabled after the current request is complete
+			mmc1_autoidle = omap_readl(0x48004A30);
+			mmc1_autoidle = mmc1_autoidle & ~(1<<24);
+			omap_writel(mmc1_autoidle, 0x48004A30);
+
+			core_clk_mmc1 = (core_iclk & (1<<24));  // MMC1
+			if (!core_clk_mmc1) {                   // MMC1
+				core_iclk = (core_iclk | (1<<24));
+				omap_writel(core_iclk, 0x48004A10);
+				printk("***REPORT TO TI on OMAPS00240323***\n");
+				printk("host->dpm_state = %d\npower_saving = %d\n ",
+					host->dpm_state, (mmc_slot(host).power_saving));
+				printk("MMC1 interface clk corrected %x and fclk %x\n",
+					core_iclk,core_fclk);
+				printk("dmp %d, enabled %d, claimed %d, claim_cnt %d, "
+					"nesting_cnt %d, en_dis_recurs %d\n",
+					host->dpm_state, mmc->enabled, mmc->claimed,
+					mmc->claim_cnt,	mmc->nesting_cnt,
+					mmc->en_dis_recurs);
+			}
+			core_clk_mmc1 = 0 ;
+			core_clk_mmc1 = (core_fclk & (1<<24));   // MMC1
+			if (!core_clk_mmc1) {
+				core_fclk = (core_fclk | (1<<24));
+				omap_writel(core_fclk, 0x48004A00);
+				printk("***REPORT TO TI on OMAPS00240323***\n");
+				printk("host->dpm_state = %d\n power_saving = %d\n",
+					host->dpm_state, (mmc_slot(host).power_saving));
+				printk("MMC1 interface clk fclk corrected %x, iclk %x\n",
+					core_fclk,core_iclk);
+				printk("dmp %d, enabled %d, claimed %d, claim_cnt %d, "
+					"nesting_cnt %d, en_dis_recurs %d\n",
+					host->dpm_state, mmc->enabled, mmc->claimed,
+					mmc->claim_cnt, mmc->nesting_cnt,
+					mmc->en_dis_recurs);
+			}
+			break;
+
+		case OMAP_MMC2_DEVID:
+			// mmc2 Disabling Autoidle.
+			// This is reenabled after the current request is complete
+			mmc2_autoidle = omap_readl(0x48004A30);
+			mmc2_autoidle = mmc2_autoidle & ~(1<<25);
+			omap_writel(mmc2_autoidle, 0x48004A30);
+
+			core_clk_mmc2 = (core_iclk & (1<<25));  // MMC2
+			if (!core_clk_mmc2) {                   // MMC2
+				core_iclk = (core_iclk | (1<<25));
+				omap_writel(core_iclk, 0x48004A10);
+				printk("***REPORT TO TI on OMAPS00240323***\n");
+				printk("host->dpm_state = %d\npower_saving = %d\n",
+					host->dpm_state, (mmc_slot(host).power_saving));
+				printk("MMC2 interface clk corrected %x and fclk %x\n",
+					core_iclk,core_fclk);
+				printk("dmp %d, enabled %d, claimed %d, claim_cnt %d, "
+					"nesting_cnt %d, en_dis_recurs %d\n",
+					host->dpm_state, mmc->enabled, mmc->claimed,
+					mmc->claim_cnt, mmc->nesting_cnt,
+					mmc->en_dis_recurs);
+			}
+			core_clk_mmc2 = 0;
+			core_clk_mmc2 = (core_fclk & (1<<25));  // MMC2
+			if (!core_clk_mmc2) {                   // MMC2
+				core_fclk = (core_fclk | (1<<25));
+				omap_writel(core_fclk, 0x48004A00);
+				printk("***REPORT TO TI on OMAPS00240323***\n");
+				printk("host->dpm_state = %d\npower_saving = %d\n",
+					host->dpm_state, (mmc_slot(host).power_saving));
+				printk("MMC2 interface clk corrected %x, iclk %x\n",
+					core_fclk, core_iclk);
+				printk("dmp %d, enabled %d, claimed %d, claim_cnt %d, "
+					"nesting_cnt %d, en_dis_recurs %d\n",
+					host->dpm_state, mmc->enabled, mmc->claimed,
+					mmc->claim_cnt, mmc->nesting_cnt,
+					mmc->en_dis_recurs);
+			}
+			break;
+		
+		case OMAP_MMC3_DEVID:
+			// mmc3 Disabling Autoidle.
+			// This is reenabled after the current request is complete
+			mmc3_autoidle = omap_readl(0x48004A30);
+			mmc3_autoidle = mmc3_autoidle & ~(1<<30);
+			omap_writel(mmc3_autoidle, 0x48004A30);
+
+			core_clk_mmc2 = 0;
+			core_clk_mmc2 = (core_iclk & (1<<30));  // MMC3
+			if (!core_clk_mmc2) {                   // MMC3
+				core_iclk = (core_iclk | (1<<30));
+				omap_writel(core_iclk, 0x48004A10);
+				printk("***REPORT TO TI on OMAPS00240323***\n");
+				printk("host->dpm_state = %d\npower_saving = %d\n",
+					host->dpm_state, (mmc_slot(host).power_saving));
+				printk("MMC3 interface clk corrected %x and fclk %x\n",
+					core_iclk, core_fclk);
+				printk("dmp %d, enabled %d, claimed %d, claim_cnt %d, "
+					"nesting_cnt %d, en_dis_recurs %d\n",
+					host->dpm_state, mmc->enabled, mmc->claimed,
+					mmc->claim_cnt, mmc->nesting_cnt,
+					mmc->en_dis_recurs);
+			}
+			core_clk_mmc2 = 0;
+			core_clk_mmc2 = (core_fclk & (1<<30));  // MMC3
+			if (!core_clk_mmc2) {                   // MMC3
+				core_fclk = (core_fclk | (1<<30));
+				omap_writel(core_fclk, 0x48004A00);
+				printk("***REPORT TO TI on OMAPS00240323***\n");
+				printk("host->dpm_state = %d\npower_saving = %d\n",
+					host->dpm_state, (mmc_slot(host).power_saving));
+				printk("MMC3 interface clk corrected %x, iclk %x\n",
+					core_fclk, core_iclk);
+				printk("dmp %d, enabled %d, claimed %d, claim_cnt %d, "
+					"nesting_cnt %d, en_dis_recurs %d\n",
+					host->dpm_state, mmc->enabled, mmc->claimed,
+					mmc->claim_cnt, mmc->nesting_cnt,
+					mmc->en_dis_recurs);
+			}
+			break;
+		}
+	}
+#endif
+
 	err = omap_hsmmc_prepare_data(host, req);
 	if (err) {
 		req->cmd->error = err;
@@ -1961,6 +2170,11 @@ static int omap_hsmmc_disabled_to_sleep(struct omap_hsmmc_host *host)
 
 	pm_runtime_get_sync(host->dev);
 
+#ifdef CONFIG_MACH_OMAP_LATONA
+	if (host->id == OMAP_MMC2_DEVID)
+		new_state = REGSLEEP;
+	else
+#endif
 	if (mmc_card_can_sleep(host->mmc)) {
 		err = mmc_card_sleep(host->mmc);
 		if (err < 0) {
@@ -2050,6 +2264,9 @@ static int omap_hsmmc_sleep_to_enabled(struct omap_hsmmc_host *host)
 	if (mmc_slot(host).set_sleep)
 		mmc_slot(host).set_sleep(host->dev, host->slot_id, 0,
 			 host->vdd, host->dpm_state == CARDSLEEP);
+#ifdef CONFIG_MACH_OMAP_LATONA
+	if (host->id != OMAP_MMC2_DEVID)
+#endif
 	if (mmc_card_can_sleep(host->mmc))
 		mmc_card_awake(host->mmc);
 
@@ -2549,7 +2766,11 @@ static int omap_hsmmc_remove(struct platform_device *pdev)
 				host->adma_table, host->phy_adma_table);
 
 		mmc_host_disable(host->mmc);
+#ifdef CONFIG_MACH_OMAP_LATONA
+		pm_runtime_disable(host->dev);
+#else
 		pm_runtime_suspend(host->dev);
+#endif
 
 		clk_put(host->fclk);
 		clk_put(host->iclk);

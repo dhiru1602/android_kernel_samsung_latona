@@ -90,10 +90,15 @@ static void omap_hsmmc1_after_set_reg(struct device *dev, int slot,
 {
 	u32 reg;
 
+#ifndef CONFIG_MACH_OMAP_LATONA
 	/* 100ms delay required for PBIAS configuration */
 	msleep(100);
+#endif
 
 	if (power_on) {
+#ifdef CONFIG_MACH_OMAP_LATONA
+		msleep(10);
+#endif
 		reg = omap_ctrl_readl(control_pbias_offset);
 		reg |= (OMAP2_PBIASLITEPWRDNZ0 | OMAP2_PBIASSPEEDCTRL0);
 		if ((1 << vdd) <= MMC_VDD_165_195)
@@ -102,6 +107,9 @@ static void omap_hsmmc1_after_set_reg(struct device *dev, int slot,
 			reg |= OMAP2_PBIASLITEVMODE0;
 		omap_ctrl_writel(reg, control_pbias_offset);
 	} else {
+#ifdef CONFIG_MACH_OMAP_LATONA
+		msleep(10);
+#endif
 		reg = omap_ctrl_readl(control_pbias_offset);
 		reg |= (OMAP2_PBIASSPEEDCTRL0 | OMAP2_PBIASLITEPWRDNZ0 |
 			OMAP2_PBIASLITEVMODE0);
@@ -201,6 +209,29 @@ static inline void omap_hsmmc_mux(struct omap_mmc_platform_data *mmc_controller,
 		(mmc_controller->slots[0].gpio_wp < OMAP_MAX_GPIO_LINES))
 		omap_mux_init_gpio(mmc_controller->slots[0].gpio_wp,
 					OMAP_PIN_INPUT_PULLUP);
+
+#ifdef CONFIG_MACH_OMAP_LATONA
+	u32 dev_conf = 0, v_shift = 0;
+	if (cpu_is_omap34xx()) {
+		if (controller_nr == 0) {
+			dev_conf = OMAP2_CONTROL_DEVCONF0;
+			v_shift = OMAP2_MMCSDIO1ADPCLKISEL;
+		}
+		if (controller_nr == 1) {
+			dev_conf = OMAP343X_CONTROL_DEVCONF1;
+			v_shift = OMAP2_MMCSDIO2ADPCLKISEL;
+		}
+		/*
+		 * Use internal loop-back in MMC/SDIO Module Input Clock
+		 * selection
+		 */
+		if (mmc_controller->slots[0].internal_clock && dev_conf) {
+			u32 v = omap_ctrl_readl(dev_conf);
+			v |= (1 << v_shift);
+			omap_ctrl_writel(v, dev_conf);
+		}
+	}
+#else
 	if (cpu_is_omap34xx()) {
 		if (controller_nr == 0) {
 			omap_mux_init_signal("sdmmc1_clk",
@@ -269,6 +300,7 @@ static inline void omap_hsmmc_mux(struct omap_mmc_platform_data *mmc_controller,
 		 * For MMC3 the pins need to be muxed in the board-*.c files
 		 */
 	}
+#endif
 }
 
 static int __init omap_hsmmc_pdata_init(struct omap2_hsmmc_info *c,
@@ -381,6 +413,9 @@ static int __init omap_hsmmc_pdata_init(struct omap2_hsmmc_info *c,
 	case 2:
 		if (c->ext_clock)
 			c->transceiver = 1;
+#ifdef CONFIG_MACH_OMAP_LATONA
+		mmc->slots[0].before_set_reg = hsmmc23_before_set_reg;
+#endif
 		if (c->transceiver && (c->caps & MMC_CAP_8_BIT_DATA)) {
 			c->caps &= ~MMC_CAP_8_BIT_DATA;
 			c->caps |= MMC_CAP_4_BIT_DATA;
