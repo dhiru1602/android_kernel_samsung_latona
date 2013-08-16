@@ -77,6 +77,9 @@ struct mmc_ext_csd {
 	u8			raw_sec_feature_support;/* 231 */
 	u8			raw_trim_mult;		/* 232 */
 	u8			raw_sectors[4];		/* 212 - 4 bytes */
+#ifdef CONFIG_MACH_OMAP_LATONA
+	u8			hpi;
+#endif
 };
 
 struct sd_scr {

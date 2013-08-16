@@ -411,6 +411,10 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
 	else
 		card->erased_byte = 0x0;
 
+#ifdef CONFIG_MACH_OMAP_LATONA
+	card->ext_csd.hpi = ext_csd[EXT_CSD_HPI];
+#endif
+
 out:
 	return err;
 }
@@ -1109,6 +1113,30 @@ int mmc_attach_mmc(struct mmc_host *host)
 	err = mmc_init_card(host, host->ocr, NULL);
 	if (err)
 		goto err;
+
+#ifdef CONFIG_MACH_OMAP_LATONA
+	int i = 0;
+	/* WA : Lock/Unlock CMD in case of 32nm iNAND */
+	/*check iNAND*/
+	if (host->card->cid.manfid == 0x45 || host->card->cid.manfid == 0x02) {
+		/*check 32nm*/
+		if (!(host->card->ext_csd.hpi & 0x1)) {
+			printk(KERN_DEBUG "%s: Lock-unlock started, MID=0x%x, HPI=0x%x\n",
+				__func__, host->card->cid.manfid, host->card->ext_csd.hpi);
+			for (i = 0 ; i < 50 ; i++) {
+				if (mmc_send_lock_cmd(host, 1)) {
+					printk(KERN_ERR "%s: eMMC lock CMD is failed.\n", mmc_hostname(host));
+					goto remove_card;
+				}
+				if (mmc_send_lock_cmd(host, 0)) {
+					printk(KERN_ERR "%s: eMMC unlock CMD is failed.\n", mmc_hostname(host));
+					goto remove_card;
+				}
+			}
+			printk(KERN_DEBUG "%s:COMPLETED\n",__func__);
+		}
+	}
+#endif
 
 	mmc_release_host(host);
 	err = mmc_add_card(host->card);

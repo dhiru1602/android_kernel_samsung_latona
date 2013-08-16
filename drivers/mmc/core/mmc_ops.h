@@ -27,5 +27,9 @@ int mmc_spi_set_crc(struct mmc_host *host, int use_crc);
 int mmc_card_sleepawake(struct mmc_host *host, int sleep);
 int mmc_bus_test(struct mmc_card *card, u8 bus_width);
 
+#ifdef CONFIG_MACH_OMAP_LATONA
+int mmc_send_lock_cmd(struct mmc_host *host, int lock);
+#endif
+
 #endif
 
