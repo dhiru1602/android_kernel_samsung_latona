@@ -2941,7 +2941,6 @@ geomagnetic_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	input_set_capability(input_data, EV_REL, REL_Z);
 	input_set_capability(input_data, EV_REL, REL_STATUS);
 	input_set_capability(input_data, EV_REL, REL_WAKE);
-	input_data->dev.parent = &client->dev;
 
 	rt = input_register_device(input_data);
 	if (rt) {
@@ -2977,7 +2976,6 @@ geomagnetic_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	input_set_capability(input_raw, EV_REL, REL_RAW_THRESHOLD);
 	input_set_capability(input_raw, EV_REL, REL_RAW_SHAPE);
 	input_set_capability(input_raw, EV_REL, REL_RAW_REPORT);
-	input_raw->dev.parent = &client->dev;
 
 	rt = input_register_device(input_raw);
 	if (rt) {
