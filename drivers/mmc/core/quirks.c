@@ -164,7 +164,6 @@ static int mmc_movi_erase_cmd(struct mmc_card *card,
 
 #define TEST_MMC_FW_PATCHING
 
-#ifdef TEST_MMC_FW_PATCHING
 static struct mmc_command wcmd;
 static struct mmc_data wdata;
 
@@ -193,7 +192,6 @@ static void mmc_movi_read_cmd(struct mmc_card *card, u8 *buffer)
 
 	mmc_wait_for_req(card->host, &brq);
 }
-#endif /* TEST_MMC_FW_PATCHING */
 
 /*
  * Copy entire page when wear leveling is happened
@@ -295,7 +293,7 @@ err_check_wl:
 	return err;
 }
 
-void mmc_fixup_samsung_fw(struct mmc_card *card)
+void mmc_fixup_samsung_fw_wl(struct mmc_card *card)
 {
 	int err;
 
@@ -304,5 +302,143 @@ void mmc_fixup_samsung_fw(struct mmc_card *card)
 	mmc_release_host(card->host);
 	if (err)
 		pr_err("%s : Failed to fixup Samsung emmc firmware(%d)\n",
+			mmc_hostname(card->host), err);
+}
+
+/*
+ * Verify whether the Samsung P17 corruption patch is already applied to
+ * the eMMC chip's firmware.
+ *
+ * @return 1 if applied, 0 if not; a negative value indicates an error.
+ */
+static int mmc_verify_samsung_p17_patch(struct mmc_card *card)
+{
+	int err;
+	void *buffer;
+
+	buffer = kmalloc(512, GFP_KERNEL);
+	if (!buffer) {
+		pr_err("Fail to alloc memory to check Samsung P17 patch\n");
+		return -ENOMEM;
+	}
+
+	/* read and verify vendor cmd */
+	/* enter vendor cmd */
+	err = mmc_movi_vendor_cmd(card, 0xEFAC62EC);
+	if (err)
+		goto out;
+
+	err = mmc_movi_vendor_cmd(card, 0x10210002);
+	if (err)
+		goto out;
+
+	err = mmc_movi_erase_cmd(card, 0x00037994, 0x00000004);
+	if (err) {
+		pr_err("Fail to check Samsung P17 code\n");
+		goto err_check_p17;
+	}
+
+	mmc_movi_read_cmd(card, (u8 *)buffer);
+	pr_debug("buffer[2] is 0x%x\n", ((u8 *)buffer)[2]);
+
+err_check_p17:
+	/* exit vendor cmd mode */
+	err = mmc_movi_vendor_cmd(card, 0xEFAC62EC);
+	if (err)
+		goto out;
+
+	err = mmc_movi_vendor_cmd(card, 0x00DECCEE);
+	if (err)
+		goto out;
+
+out:
+	if (err)
+		err = -err;
+	else
+		err = (((u8 *)buffer)[2] == 0xFF);
+
+	kfree(buffer);
+	return err;
+}
+
+/*
+ * Patch the firmware of some Samsung eMMC chips to fix what is described
+ * as a "P17 corruption" bug.  Based on a patch applied in the Barnes and Noble
+ * Nook Color 1.4.3 kernel.
+ */
+static int mmc_patch_samsung_p17_bug(struct mmc_card *card)
+{
+	int err;
+
+	/* Check whether the patch is already applied */
+	err = mmc_verify_samsung_p17_patch(card);
+	if (err < 0) {
+		pr_err("Couldn't verify Samsung P17 patch state on eMMC\n");
+		goto out;
+	} else if (err) {
+		/* Patch already applied, nothing to do */
+		pr_info("Samsung P17 patch already applied to eMMC\n");
+		err = 0;
+		goto out;
+	}
+
+	pr_info("Applying Samsung P17 corruption fix to eMMC\n");
+
+	/* modification vendor cmd */
+	/* enter vendor command mode */
+	err = mmc_movi_vendor_cmd(card, 0xEFAC62EC);
+	if (err)
+		goto out;
+
+	err = mmc_movi_vendor_cmd(card, 0x10210000);
+	if (err)
+		goto out;
+
+	/*
+	 * Set value 0x28FF5C08 at address 0x37994.
+	 *
+	 * This appears to be two ARM Thumb instructions
+	 *    LDRB r0, [r1, r0]
+	 *    CMP r0, #0xff
+	 * The BN source suggests the value in the buggy firmware is
+	 * 0x28205C08 -- in other words, the compare is against 0x20 in the
+	 * buggy code, as opposed to 0xff in the patched code.
+	 *
+	 * Of course, what these instructions do is unknown without context.
+	 *
+	 * When in vendor command mode, the erase command is used to
+	 * patch the firmware in the internal sram.
+	 */
+	err = mmc_movi_erase_cmd(card, 0x00037994, 0x28FF5C08);
+	if (err) {
+		pr_err("Fail to modify Samsung P17 code\n");
+		goto err_set_p17_code;
+	}
+
+	pr_info("Samsung P17 corruption fix successfully applied\n");
+
+err_set_p17_code:
+	/* exit vendor command mode */
+	err = mmc_movi_vendor_cmd(card, 0xEFAC62EC);
+	if (err)
+		goto out;
+
+	err = mmc_movi_vendor_cmd(card, 0x00DECCEE);
+	if (err)
+		goto out;
+
+out:
+	return err;
+}
+
+void mmc_fixup_samsung_fw_p17(struct mmc_card *card)
+{
+	int err;
+
+	mmc_claim_host(card->host);
+	err = mmc_patch_samsung_p17_bug(card);
+	mmc_release_host(card->host);
+	if (err)
+		pr_err("%s : Failed to fixup Samsung emmc firmware for P17 corruption(%d)\n",
 			mmc_hostname(card->host), err);
 }

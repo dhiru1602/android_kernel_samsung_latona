@@ -191,6 +191,7 @@ struct mmc_card {
 #define MMC_QUIRK_BLK_NO_CMD23	(1<<7)		/* Avoid CMD23 for regular multiblock */
 #define MMC_QUIRK_SAMSUNG_WL_PATCH	(1<<8)	/* Patch Samsung FW to fix wear leveling bug */
 #define MMC_QUIRK_SEC_ERASE_TRIM_BROKEN (1<<10)	/* Skip secure for erase/trim */
+#define MMC_QUIRK_SAMSUNG_P17_PATCH	(1<<11)	/* Patch Samsung FW to fix "P17 corruption" bug */
 
 	unsigned int		erase_size;	/* erase size in sectors */
  	unsigned int		erase_shift;	/* if erase unit is power 2 */
@@ -407,6 +408,7 @@ extern void mmc_unregister_driver(struct mmc_driver *);
 
 extern void mmc_fixup_device(struct mmc_card *card,
 			     const struct mmc_fixup *table);
-extern void mmc_fixup_samsung_fw(struct mmc_card *card);
+extern void mmc_fixup_samsung_fw_wl(struct mmc_card *card);
+extern void mmc_fixup_samsung_fw_p17(struct mmc_card *card);
 
 #endif

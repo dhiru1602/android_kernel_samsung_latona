@@ -548,6 +548,15 @@ static const struct mmc_fixup mmc_fixups[] = {
 	MMC_FIXUP_REV("MAG4FA", 0x15, CID_OEMID_ANY,
 		      cid_rev(0, 0x25, 1997, 1), cid_rev(0, 0x25, 2012, 12),
 		      add_quirk_mmc, MMC_QUIRK_SAMSUNG_WL_PATCH),
+
+	/*
+	 * Samsung "M8G2FA" chips with firmware revision 0x11 have a
+	 * "P17 corruption" bug which is addressed by a firmware patch found
+	 * in Barnes and Noble's Nook Color 1.4.3 kernel source.
+	 */
+	MMC_FIXUP_REV("M8G2FA", 0x15, CID_OEMID_ANY,
+		      cid_rev(0, 0x11, 1997, 1), cid_rev(0, 0x11, 2012, 12),
+		      add_quirk_mmc, MMC_QUIRK_SAMSUNG_P17_PATCH),
 	END_FIXUP
 };
 
@@ -874,7 +883,11 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	 * wear leveling bug.
 	 */
 	if (card->quirks & MMC_QUIRK_SAMSUNG_WL_PATCH)
-		mmc_fixup_samsung_fw(card);
+		mmc_fixup_samsung_fw_wl(card);
+
+	/* Patch a "P17 corruption" bug in Samsung M8G2FA eMMC devices. */
+	if (card->quirks & MMC_QUIRK_SAMSUNG_P17_PATCH)
+		mmc_fixup_samsung_fw_p17(card);
 
 	return 0;
 
