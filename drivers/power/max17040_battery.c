@@ -315,7 +315,9 @@ static void max17040_charger_update(struct max17040_chip *chip)
 		break;
 
 	case STATUS_CHARGE_FULL:
-		if (chip->vcell <= chip->pdata->recharge_vol) {
+		if (chip->vcell <= chip->pdata->recharge_vol &&
+			cur_time.tv_sec >=
+				chip->chg_limit_time) {
 			chip->charger_status = STATUS_CHARGABLE;
 			chip->pdata->allow_charging(1);
 		}
@@ -342,8 +344,7 @@ static void max17040_charger_update(struct max17040_chip *chip)
 			__func__, chip->charger_status);
 	}
 
-	if (!chip->chg_limit_time &&
-			chip->charger_status == STATUS_CHARGABLE) {
+	if (!chip->chg_limit_time) {
 		chip->chg_limit_time =
 			chip->is_timer_flag ?
 			cur_time.tv_sec + chip->pdata->limit_recharging_time :

@@ -159,8 +159,13 @@ static int temp_adc_value(void)
 
 static bool check_charge_full(void)
 {
+	/*
+	 * The GPIO is high when the battery is fully charged, but
+	 * we want to stop before that happens.
+	 */
 	// HIGH : BATT_FULL || LOW : CHARGING / DISCHARGING
-	return gpio_get_value(charger_gpios[GPIO_CHG_ING_N].gpio);
+	//return gpio_get_value(charger_gpios[GPIO_CHG_ING_N].gpio);
+	return true;
 }
 
 static int get_bat_temp_by_adc(int *batt_temp)
@@ -278,8 +283,8 @@ static struct max17040_platform_data max17040_pdata = {
 	.high_recover_temp = HIGH_RECOVER_TEMP_LATONA,
 	.low_block_temp = LOW_BLOCK_TEMP_LATONA,
 	.low_recover_temp = LOW_RECOVER_TEMP_LATONA,
-	.fully_charged_vol = 4180000,
-	.recharge_vol = 4100000,
+	.fully_charged_vol = 4150000,
+	.recharge_vol = 4140000,
 	.limit_charging_time = 21600,  /* 6 hours */
 	.limit_recharging_time = 5400, /* 90 min */
 };
