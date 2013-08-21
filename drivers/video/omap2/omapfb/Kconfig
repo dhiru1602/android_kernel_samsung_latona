@@ -35,3 +35,10 @@ config FB_OMAP2_VSYNC_SYSFS
 	---help---
 	  Saying 'Y' here will use sysfs_notify instead of the default uevent for
 	  notification of vsync events to userspace
+
+config FB_OMAP2_PROGRESS_BAR
+	depends on FB_OMAP2
+	bool "Use sysfs_notify for vsync notification"
+	default n
+	---help---
+	  Saying 'Y' if you want to show a progress-bar while the kernel is loading.

@@ -37,6 +37,10 @@
 
 #include "omapfb.h"
 
+#ifdef CONFIG_FB_OMAP2_PROGRESS_BAR
+#include "omapfb-progressbar.h"
+#endif
+
 #define MODULE_NAME     "omapfb"
 
 #define OMAPFB_PLANE_XRES_MIN		8
@@ -1489,6 +1493,12 @@ static int omapfb_alloc_fbmem(struct fb_info *fbi, unsigned long size,
 
 		vaddr = NULL;
 	}
+
+#ifdef CONFIG_FB_OMAP2_PROGRESS_BAR
+        if (vaddr) {
+		omapfb_start_progress(fbi);
+        }
+#endif
 
 	rg->paddr = paddr;
 	rg->vaddr = vaddr;
