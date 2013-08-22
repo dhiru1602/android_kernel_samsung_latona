@@ -38,7 +38,7 @@
 #define MAX17040_CMD_MSB	0xFE
 #define MAX17040_CMD_LSB	0xFF
 
-#define MAX17040_BATTERY_FULL	100
+#define MAX17040_BATTERY_FULL	96
 
 #define HAS_ALERT_INTERRUPT(ver)	(ver >= 3)
 
@@ -106,7 +106,10 @@ static int max17040_get_property(struct power_supply *psy,
 		val->intval = chip->vcell;
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
-		val->intval = chip->soc;
+		if (chip->pdata->adjust_soc)
+			val->intval = chip->pdata->adjust_soc(chip->soc);
+		else
+			val->intval = chip->soc;
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
 		if (!chip->pdata->get_bat_temp)
@@ -197,10 +200,6 @@ static void max17040_get_soc(struct i2c_client *client)
 	val = FIXED_MULT(TO_FIXED(100, 0), val - fmin_cap);
 	val = FIXED_DIV(val, TO_FIXED(100, 0) - fmin_cap);
 	chip->soc = clamp(FIXED_TO_INT(val), 0, 100);
-
-	/* Board Specific soc calibration */
-	if (chip->pdata->adjust_soc)
-		chip->pdata->adjust_soc(&chip->soc);
 }
 
 static void max17040_get_version(struct i2c_client *client)
