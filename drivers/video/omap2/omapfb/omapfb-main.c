@@ -1494,12 +1494,6 @@ static int omapfb_alloc_fbmem(struct fb_info *fbi, unsigned long size,
 		vaddr = NULL;
 	}
 
-#ifdef CONFIG_FB_OMAP2_PROGRESS_BAR
-        if (vaddr) {
-		omapfb_start_progress(fbi);
-        }
-#endif
-
 	rg->paddr = paddr;
 	rg->vaddr = vaddr;
 	rg->size = size;
@@ -2309,6 +2303,11 @@ static int omapfb_init_display(struct omapfb2_device *fbdev,
 			}
 		}
 	}
+
+#ifdef CONFIG_FB_OMAP2_PROGRESS_BAR
+	if (fbdev)
+		omapfb_start_progress(fbdev->fbs[0]);
+#endif
 
 	return 0;
 }
