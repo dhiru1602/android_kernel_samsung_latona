@@ -108,6 +108,7 @@ static int pwm_set(unsigned long force)
 	omap_dm_timer_enable(vibdata.gptimer);
 	omap_dm_timer_write_counter(vibdata.gptimer, -2);
 	omap_dm_timer_save_context(vibdata.gptimer);
+	omap_dm_timer_disable(vibdata.gptimer);
 
 	return 0;
 }
