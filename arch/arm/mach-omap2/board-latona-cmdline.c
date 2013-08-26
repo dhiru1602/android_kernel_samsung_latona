@@ -27,6 +27,35 @@
 
 #define isspace(c)      (c == ' ' || c == '\t' || c == 10 || c == 13 || c == 0)
 
+/*
+ * Android expects the bootloader to pass the device serial number as a
+ * parameter on the kernel command line.
+ * Use the last 16 bytes of the DIE id as device serial number.
+ */
+#define L4_WK_34XX_PHYS		L4_WK_34XX_BASE	/* 0x48300000 --> 0xfa300000 */
+#define DIE_ID_REG_BASE		(L4_WK_34XX_PHYS + 0xA000)
+#define DIE_ID_REG_OFFSET	0x218
+
+#define SERIALNO_PARAM		"androidboot.serialno"
+void __init latona_cmdline_set_serialno(void)
+{
+	/*
+	 * The final cmdline will have 16 digits, a space, an =, and a trailing
+	 * \0 as well as the contents of saved_command_line and SERIALNO_PARAM
+	*/
+	size_t len = strlen(saved_command_line) + strlen(SERIALNO_PARAM) + 19;
+	char *buf = kmalloc(len, GFP_ATOMIC);
+	if (buf) {
+		snprintf(buf, len, "%s %s=%08X%08X",
+			saved_command_line,
+			SERIALNO_PARAM,
+			omap_readl(DIE_ID_REG_BASE + DIE_ID_REG_OFFSET),
+			omap_readl(DIE_ID_REG_BASE + DIE_ID_REG_OFFSET + 0x4));
+		saved_command_line = buf;
+	}
+}
+
+#if !(defined(CONFIG_CMDLINE_EXTEND) || defined(CONFIG_CMDLINE_FORCE))
 struct cmdline_parameter {
         char *key;
         char *value; /* If you want to remove key, set as "" */
@@ -126,37 +155,10 @@ void __init latona_manipulate_cmdline(char *default_command_line)
 
 }
 
-/*
- * Android expects the bootloader to pass the device serial number as a
- * parameter on the kernel command line.
- * Use the last 16 bytes of the DIE id as device serial number.
- */
-#define L4_WK_34XX_PHYS		L4_WK_34XX_BASE	/* 0x48300000 --> 0xfa300000 */
-#define DIE_ID_REG_BASE		(L4_WK_34XX_PHYS + 0xA000)
-#define DIE_ID_REG_OFFSET	0x218
-
-#define SERIALNO_PARAM		"androidboot.serialno"
-void __init latona_cmdline_set_serialno(void)
-{
-	/*
-	 * The final cmdline will have 16 digits, a space, an =, and a trailing
-	 * \0 as well as the contents of saved_command_line and SERIALNO_PARAM
-	*/
-	size_t len = strlen(saved_command_line) + strlen(SERIALNO_PARAM) + 19;
-	char *buf = kmalloc(len, GFP_ATOMIC);
-	if (buf) {
-		snprintf(buf, len, "%s %s=%08X%08X",
-			saved_command_line,
-			SERIALNO_PARAM,
-			omap_readl(DIE_ID_REG_BASE + DIE_ID_REG_OFFSET),
-			omap_readl(DIE_ID_REG_BASE + DIE_ID_REG_OFFSET + 0x4));
-		saved_command_line = buf;
-	}
-}
-
 void __init manipulate_cmdline(char *default_command_line,
 		const char *tag_command_line, size_t size)
 {
 	strlcpy(default_command_line, tag_command_line, size);
 	latona_manipulate_cmdline(default_command_line);
 }
+#endif

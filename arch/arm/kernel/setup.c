@@ -661,8 +661,10 @@ static int __init parse_tag_revision(const struct tag *tag)
 __tagtable(ATAG_REVISION, parse_tag_revision);
 
 
+#if !(defined(CONFIG_CMDLINE_EXTEND) || defined(CONFIG_CMDLINE_FORCE))
 extern void manipulate_cmdline(char *default_command_line,
                                 const char *tag_command_line, size_t size);
+#endif
 
 static int __init parse_tag_cmdline(const struct tag *tag)
 {
