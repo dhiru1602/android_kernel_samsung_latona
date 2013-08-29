@@ -984,7 +984,10 @@ EXPORT_SYMBOL_GPL(omap_dm_timers_active);
 
 void omap_dm_timer_save_context(struct omap_dm_timer *timer)
 {
-	omap_timer_save_context(timer);
+	if (timer->loses_context) {
+		omap_timer_save_context(timer);
+		timer->context_saved = true;
+	}
 }
 EXPORT_SYMBOL_GPL(omap_dm_timer_save_context);
 
