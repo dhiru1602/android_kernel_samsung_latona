@@ -121,28 +121,10 @@ static inline void __init board_init_zeus_key(void)
 /* End: ZEUS Key and Headset Switch */
 
 /* Latona LEDs support */
-
-static struct led_info latona_keyled_list[] = {
-	{
-	 .name = "button-backlight",
-	 },
-};
-
-static struct led_platform_data latona_keyled_data = {
-	.num_leds = ARRAY_SIZE(latona_keyled_list),
-	.leds = latona_keyled_list,
-};
-
 static struct platform_device latona_led_device = {
 	.name = "LatonaLedDriver",
 	.id = -1,
-	.num_resources = 0,
-	.dev = {
-		.platform_data = &latona_keyled_data,
-		},
 };
-
-/* End: Latona LED's support */ 
 
 /* LATONA has only Volume UP/DOWN */
 static uint32_t board_keymap[] = {
