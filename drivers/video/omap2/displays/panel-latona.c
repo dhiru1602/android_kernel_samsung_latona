@@ -49,6 +49,7 @@
 #define LCD_XRES			480
 #define LCD_YRES			800
 #define LCD_PIXCLOCK_MAX		24000 // 26000
+#define LCD_PIXCLOCK_MAX_SONY		20571
 
 static int current_panel = -1;	// 0:sony, 1:Hitachi(20mA) , 2:Hydis, 3:SMD, 4:Sony(a-Si), 5:Hitachi(17mA)
 static int is_nt35510_spi_shutdown = 0;
@@ -86,7 +87,7 @@ static struct omap_video_timings nt35510_default_panel_timings = {
 
 	.x_res          = 480,
 	.y_res          = 800,
-	.pixel_clock    = LCD_PIXCLOCK_MAX,
+	.pixel_clock    = LCD_PIXCLOCK_MAX_SONY,
 	.hfp            = 10,
 	.hsw            = 10,
 	.hbp            = 10,
@@ -131,7 +132,7 @@ static struct omap_video_timings nt35510_sonyasi_panel_timings = {
 
 	.x_res          = 480,
 	.y_res          = 800,
-	.pixel_clock    = LCD_PIXCLOCK_MAX,
+	.pixel_clock    = LCD_PIXCLOCK_MAX_SONY,
 	.hfp            = 14,
 	.hsw            = 10,
 	.hbp            = 14,
