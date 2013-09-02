@@ -82,6 +82,10 @@ extern void led_classdev_unregister(struct led_classdev *led_cdev);
 extern void led_classdev_suspend(struct led_classdev *led_cdev);
 extern void led_classdev_resume(struct led_classdev *led_cdev);
 
+#ifdef CONFIG_LEDS_LATONA
+extern void latona_leds_report_event(int key_code, int value);
+#endif
+
 /**
  * led_blink_set - set blinking with software fallback
  * @led_cdev: the LED to start blinking

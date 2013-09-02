@@ -18,20 +18,139 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/gpio.h>
+#include <linux/input.h>
+#include <linux/timer.h>
 
 #include <plat/mux.h>
 
 #define DRIVER_NAME "LatonaLedDriver"
 
+//Touch Keys State
+#define TOUCHKEY_ALL 0
+#define TOUCHKEY_MENU 1
+#define TOUCHKEY_BACK 2
+#define TOUCHKEY_NONE 3
+
+static int notification = 0;
+static int bl_timeout = 1600;
+static struct timer_list bl_timer;
+static void bl_off(struct work_struct *bl_off_work);
+static DECLARE_WORK(bl_off_work, bl_off);
+
+static void bl_timer_callback(unsigned long data)
+{
+	schedule_work(&bl_off_work);
+}
+
+static void bl_off(struct work_struct *bl_off_work)
+{
+	gpio_set_value(OMAP_GPIO_LED_EN1, 0);
+	gpio_set_value(OMAP_GPIO_LED_EN2, 0);
+}
+
+static void bl_set_timeout(void)
+{
+	if (bl_timeout > 0)
+		mod_timer(&bl_timer, jiffies + msecs_to_jiffies(bl_timeout));
+} 
+
+static void trigger_touchkey_led(int event)
+{
+	if (bl_timeout != 0) {
+		switch (event) {
+		case TOUCHKEY_ALL:
+			gpio_set_value(OMAP_GPIO_LED_EN1, 1);
+			gpio_set_value(OMAP_GPIO_LED_EN2, 1);
+			bl_set_timeout();
+			break;
+		case TOUCHKEY_MENU:
+		case TOUCHKEY_BACK:
+			// Keep LEDs on while pressing
+			del_timer(&bl_timer);
+			gpio_set_value(OMAP_GPIO_LED_EN1, 1);
+			gpio_set_value(OMAP_GPIO_LED_EN2, 1);
+			break;
+		case TOUCHKEY_NONE:
+			bl_set_timeout();
+			break;
+		default:
+			pr_err("%s: unknown event: %d\n", __func__, event);
+			break;
+		}
+	}
+}
+
+static void suspend_touchkey_led(void)
+{
+	// Make sure that bl_off() isn't be executed after this
+	del_timer(&bl_timer);
+	if (notification) {
+		gpio_set_value(OMAP_GPIO_LED_EN1, 1);
+		gpio_set_value(OMAP_GPIO_LED_EN2, 1);
+	} else {
+		gpio_set_value(OMAP_GPIO_LED_EN1, 0);
+		gpio_set_value(OMAP_GPIO_LED_EN2, 0);
+	}
+}
+
+void latona_leds_report_event(int key_code, int value)
+{
+	if (key_code == KEY_POWER) {
+		if (value)
+			trigger_touchkey_led(TOUCHKEY_ALL);
+		else
+			suspend_touchkey_led();
+	} else if (key_code == KEY_MENU) {
+		if (value)
+			trigger_touchkey_led(TOUCHKEY_MENU);
+		else
+			trigger_touchkey_led(TOUCHKEY_NONE);
+	} else if (key_code == KEY_BACK) {
+		if (value)
+			trigger_touchkey_led(TOUCHKEY_BACK);
+		else
+			trigger_touchkey_led(TOUCHKEY_NONE);
+	}
+	return;
+}
+
+static ssize_t bl_timeout_read(struct device *dev,
+			       struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf,"%d\n", bl_timeout);
+}
+
+static ssize_t bl_timeout_write(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t size)
+{
+	sscanf(buf, "%d\n", &bl_timeout);
+	if (bl_timeout == 0) {
+		gpio_set_value(OMAP_GPIO_LED_EN1, 0);
+		gpio_set_value(OMAP_GPIO_LED_EN2, 0);
+	}
+	return size;
+}
+
+static DEVICE_ATTR(bl_timeout, S_IRUGO | S_IWUSR | S_IWGRP,
+		   bl_timeout_read, bl_timeout_write);
+
 static void latona_led_set(struct led_classdev *led_cdev,
 			   enum led_brightness value)
 {
+	/* 
+	 * This will be used only for LED notifications.
+	 * Set a flag to keep LEDs on even when the screen
+	 * is turned off.
+	 */
 	if (value == LED_OFF) {
 		gpio_set_value(OMAP_GPIO_LED_EN1, 0);
 		gpio_set_value(OMAP_GPIO_LED_EN2, 0);
+		notification = 0;
 	} else {
 		gpio_set_value(OMAP_GPIO_LED_EN1, 1);
 		gpio_set_value(OMAP_GPIO_LED_EN2, 1);
+		notification = 1;
 	}
 }
 
@@ -43,11 +162,29 @@ static struct led_classdev latona_led = {
 
 static int latona_led_probe(struct platform_device *pdev)
 {
-	return led_classdev_register(&pdev->dev, &latona_led);
+	int ret;
+
+	ret = led_classdev_register(&pdev->dev, &latona_led);
+	if (ret < 0) {
+		pr_err("%s: Failed to register LED\n", __func__);
+		return ret;
+	}
+
+	ret = device_create_file(latona_led.dev, &dev_attr_bl_timeout);
+	if (ret < 0) {
+		pr_err("%s: Failed to create device file %s\n",
+				__func__, dev_attr_bl_timeout.attr.name);
+		led_classdev_unregister(&latona_led);
+		return ret;
+	}
+	setup_timer(&bl_timer, bl_timer_callback, 0);
+
+	return ret;
 }
 
 static int __devexit latona_led_remove(struct platform_device *pdev)
 {
+	del_timer(&bl_timer);
 	led_classdev_unregister(&latona_led);
 	return 0;
 }

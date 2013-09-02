@@ -20,6 +20,9 @@
 #include <linux/input/mt.h>
 #include <linux/interrupt.h>
 #include <linux/slab.h>
+#ifdef CONFIG_LEDS_LATONA
+#include <linux/leds.h>
+#endif
 #include <mach/gpio.h>
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 #include <linux/earlysuspend.h>
@@ -665,6 +668,10 @@ static void mxt_handle_key_array(struct mxt_data *data,
 		input_report_key(data->input_dev, data->pdata->key_codes[i],
 					(data->keyarray_new & (1 << i)));
 		input_sync(data->input_dev);
+#ifdef CONFIG_LEDS_LATONA
+		latona_leds_report_event(data->pdata->key_codes[i], 
+					(data->keyarray_new & (1 << i)));
+#endif
 	}
 
 	data->keyarray_old = data->keyarray_new;
@@ -1253,6 +1260,10 @@ static int mxt_suspend(struct device *dev)
 
 	gpio_direction_output(data->pdata->tsp_en_gpio, 0);
 
+#ifdef CONFIG_LEDS_LATONA
+	latona_leds_report_event(KEY_POWER, 0);
+#endif
+
 	return 0;
 }
 
@@ -1275,6 +1286,10 @@ static int mxt_resume(struct device *dev)
 		mxt_start(data);
 
 	mutex_unlock(&input_dev->mutex);
+
+#ifdef CONFIG_LEDS_LATONA
+	latona_leds_report_event(KEY_POWER, 1);
+#endif
 
 	return 0;
 }
