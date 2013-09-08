@@ -309,6 +309,7 @@ static void max17040_charger_update(struct max17040_chip *chip)
 		} else if (chip->bat_health == POWER_SUPPLY_HEALTH_OVERHEAT ||
 			   chip->bat_health == POWER_SUPPLY_HEALTH_COLD) {
 			chip->charger_status = STATUS_ABNORMAL_TEMP;
+			chip->is_timer_flag = false;
 			chip->chg_limit_time = 0;
 			chip->pdata->allow_charging(0);
 		}
@@ -319,6 +320,8 @@ static void max17040_charger_update(struct max17040_chip *chip)
 			cur_time.tv_sec >=
 				chip->chg_limit_time) {
 			chip->charger_status = STATUS_CHARGABLE;
+			chip->is_timer_flag = false;
+			chip->chg_limit_time = 0;
 			chip->pdata->allow_charging(1);
 		}
 		break;
@@ -328,6 +331,8 @@ static void max17040_charger_update(struct max17040_chip *chip)
 			chip->bat_temp >=
 				chip->pdata->low_recover_temp) {
 			chip->charger_status = STATUS_CHARGABLE;
+			chip->is_timer_flag = false;
+			chip->chg_limit_time = 0;
 			chip->pdata->allow_charging(1);
 		}
 		break;
@@ -335,6 +340,8 @@ static void max17040_charger_update(struct max17040_chip *chip)
 	case STATUS_CHARGE_TIMEOVER:
 		if (chip->vcell <= chip->pdata->fully_charged_vol) {
 			chip->charger_status = STATUS_CHARGABLE;
+			chip->is_timer_flag = false;
+			chip->chg_limit_time = 0;
 			chip->pdata->allow_charging(1);
 		}
 		break;
