@@ -338,7 +338,9 @@ static void max17040_charger_update(struct max17040_chip *chip)
 		break;
 
 	case STATUS_CHARGE_TIMEOVER:
-		if (chip->vcell <= chip->pdata->fully_charged_vol) {
+		if (chip->vcell <= chip->pdata->fully_charged_vol &&
+			cur_time.tv_sec >=
+				chip->chg_limit_time) {
 			chip->charger_status = STATUS_CHARGABLE;
 			chip->is_timer_flag = false;
 			chip->chg_limit_time = 0;
