@@ -18,6 +18,39 @@
 
 /* Qimonda HYB18M512160AF-6 */
 static struct omap_sdrc_params hyb18m512160af6_sdrc_params[] = {
+#ifdef CONFIG_MACH_OMAP_LATONA
+	[0] = {
+		.rate	     = 200000000,
+		.actim_ctrla = 0xE369B507,
+		.actim_ctrlb = 0x0002251A,
+		.rfr_ctrl    = 0x0005AA01,
+		.mr	     = 0x00000032,
+	},
+	[1] = {
+		.rate	     = 165941176,
+		.actim_ctrla = 0x629db4c6,
+		.actim_ctrlb = 0x00012214,
+		.rfr_ctrl    = 0x0004dc01,
+		.mr	     = 0x00000032,
+	},
+	[2] = {
+		.rate	     = 100000000,
+		.actim_ctrla = 0x821922C4,
+		.actim_ctrlb = 0x00022510,
+		.rfr_ctrl    = 0x0002DA01,
+		.mr	     = 0x00000022,
+	},
+	[3] = {
+		.rate	     = 82970588,
+		.actim_ctrla = 0x31512283,
+		.actim_ctrlb = 0x0001220a,
+		.rfr_ctrl    = 0x00025501,
+		.mr	     = 0x00000022,
+	},
+	[4] = {
+		.rate	     = 0
+	},
+#else
 	[0] = {
 		.rate	     = 166000000,
 		.actim_ctrla = 0x629db4c6,
@@ -49,6 +82,7 @@ static struct omap_sdrc_params hyb18m512160af6_sdrc_params[] = {
 	[4] = {
 		.rate	     = 0
 	},
+#endif
 };
 
 #endif
