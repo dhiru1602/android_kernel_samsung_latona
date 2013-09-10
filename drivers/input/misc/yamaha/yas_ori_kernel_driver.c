@@ -25,405 +25,270 @@
 #include <linux/platform_device.h>
 
 #define SENSOR_NAME "orientation_sensor"
-#define SENSOR_DEFAULT_DELAY            (200)   /* 200 ms */
-#define SENSOR_MAX_DELAY                (2000)  /* 2000 ms */
-#define ABS_STATUS                      (ABS_BRAKE)
-#define ABS_WAKE                        (ABS_MISC)
-#define ABS_CONTROL_REPORT              (ABS_THROTTLE)
+#define SENSOR_DEFAULT_DELAY            (200)
+#define REL_STATUS                      (REL_RX)
+#define REL_WAKE                        (REL_RY)
+#define REL_CONTROL_REPORT              (REL_RZ)
 
-struct sensor_data {
-    struct mutex mutex;
-    int enabled;
-    int delay;
-#if DEBUG
-    int suspend;
-#endif
+struct orientation_data {
+	struct mutex mutex;
+	int enabled;
+	int delay;
 };
 
-static struct platform_device *sensor_pdev = NULL;
-static struct input_dev *this_data = NULL;
-
+static struct platform_device *orientation_pdev;
+static struct input_dev *this_data;
 
 /* Sysfs interface */
 static ssize_t
-sensor_delay_show(struct device *dev,
-        struct device_attribute *attr,
-        char *buf)
+orientation_delay_show(struct device *dev,
+			struct device_attribute *attr, char *buf)
 {
-    struct input_dev *input_data = to_input_dev(dev);
-    struct sensor_data *data = input_get_drvdata(input_data);
-    int delay;
+	struct input_dev *input_data = to_input_dev(dev);
+	struct orientation_data *data = input_get_drvdata(input_data);
+	int delay;
 
-    mutex_lock(&data->mutex);
+	mutex_lock(&data->mutex);
+	delay = data->delay;
+	mutex_unlock(&data->mutex);
 
-    delay = data->delay;
-
-    mutex_unlock(&data->mutex);
-
-    return sprintf(buf, "%d\n", delay);
+	return sprintf(buf, "%d\n", delay);
 }
 
 static ssize_t
-sensor_delay_store(struct device *dev,
-        struct device_attribute *attr,
-        const char *buf,
-        size_t count)
+orientation_delay_store(struct device *dev, struct device_attribute *attr,
+			const char *buf, size_t count)
 {
-    struct input_dev *input_data = to_input_dev(dev);
-    struct sensor_data *data = input_get_drvdata(input_data);
-    int value = simple_strtol(buf, NULL, 10);
+	struct input_dev *input_data = to_input_dev(dev);
+	struct orientation_data *data = input_get_drvdata(input_data);
+	long value;
+	int err;
 
-    if (value < 0) {
-        return count;
-    }
+	err = strict_strtoul(buf, 10, &value);
+	if (err < 0 || value < 0)
+		return count;
 
-    if (SENSOR_MAX_DELAY < value) {
-        value = SENSOR_MAX_DELAY;
-    }
+	if (SENSOR_DEFAULT_DELAY < value)
+		value = SENSOR_DEFAULT_DELAY;
 
-    mutex_lock(&data->mutex);
+	mutex_lock(&data->mutex);
+	data->delay = value;
+	input_report_rel(input_data, REL_CONTROL_REPORT,
+				(data->enabled << 16) | value);
+	mutex_unlock(&data->mutex);
 
-    data->delay = value;
-
-    input_report_abs(input_data, ABS_CONTROL_REPORT, (data->enabled<<16) | value);
-	input_sync(input_data);
-
-    mutex_unlock(&data->mutex);
-
-    return count;
+	return count;
 }
 
 static ssize_t
-sensor_enable_show(struct device *dev,
-        struct device_attribute *attr,
-        char *buf)
+orientation_enable_show(struct device *dev,
+			struct device_attribute *attr, char *buf)
 {
-    struct input_dev *input_data = to_input_dev(dev);
-    struct sensor_data *data = input_get_drvdata(input_data);
-    int enabled;
+	struct input_dev *input_data = to_input_dev(dev);
+	struct orientation_data *data = input_get_drvdata(input_data);
 
-    mutex_lock(&data->mutex);
-
-    enabled = data->enabled;
-
-    mutex_unlock(&data->mutex);
-
-    return sprintf(buf, "%d\n", enabled);
+	return sprintf(buf, "%d\n", data->enabled);
 }
 
 static ssize_t
-sensor_enable_store(struct device *dev,
-        struct device_attribute *attr,
-        const char *buf,
-        size_t count)
+orientation_enable_store(struct device *dev, struct device_attribute *attr,
+						const char *buf,  size_t count)
 {
-    struct input_dev *input_data = to_input_dev(dev);
-    struct sensor_data *data = input_get_drvdata(input_data);
-    int value = simple_strtol(buf, NULL, 10);
+	struct input_dev *input_data = to_input_dev(dev);
+	struct orientation_data *data = input_get_drvdata(input_data);
+	long value;
+	int err;
 
-    value = !!value;
+	err = strict_strtoul(buf, 10, &value);
+	if (err < 0)
+		return count;
 
-    mutex_lock(&data->mutex);
+	if (value != 0 && value != 1)
+		return count;
 
-    data->enabled = value;
-    input_report_abs(input_data, ABS_CONTROL_REPORT, (value<<16) | data->delay);
-	input_sync(input_data);
-    mutex_unlock(&data->mutex);
+	mutex_lock(&data->mutex);
+	data->enabled = value;
+	input_report_rel(input_data, REL_CONTROL_REPORT,
+				(value << 16) | data->delay);
+	mutex_unlock(&data->mutex);
 
-    return count;
+	return count;
 }
 
 static ssize_t
-sensor_wake_store(struct device *dev,
-        struct device_attribute *attr,
-        const char *buf,
-        size_t count)
+orientation_wake_store(struct device *dev, struct device_attribute *attr,
+			const char *buf, size_t count)
 {
-    struct input_dev *input_data = to_input_dev(dev);
-    static int cnt = 1;
+	struct input_dev *input_data = to_input_dev(dev);
+	static int cnt = 1;
 
-    input_report_abs(input_data, ABS_WAKE, cnt++);
-	input_sync(input_data);
-    return count;
-}
+	input_report_rel(input_data, REL_WAKE, cnt++);
 
-#if DEBUG
-
-static int sensor_suspend(struct device *dev);
-static int sensor_resume(struct device *dev);
-
-static ssize_t
-sensor_debug_suspend_show(struct device *dev,
-        struct device_attribute *attr, char *buf)
-{
-    struct input_dev *input = to_input_dev(dev);
-    struct sensor_data *data = input_get_drvdata(input);
-
-    return sprintf(buf, "%d\n", data->suspend);
+	return count;
 }
 
 static ssize_t
-sensor_debug_suspend_store(struct device *dev,
-        struct device_attribute *attr,
-        const char *buf, size_t count)
+orientation_data_show(struct device *dev,
+			struct device_attribute *attr, char *buf)
 {
-    unsigned long suspend = simple_strtol(buf, NULL, 10);
+	struct input_dev *input_data = to_input_dev(dev);
+	unsigned long flags;
+	int x, y, z;
 
-    if (suspend) {
-        pm_message_t msg;
-        memset(&msg, 0, sizeof(msg));
-        sensor_suspend(sensor_pdev, msg);
-    } else {
-        sensor_resume(sensor_pdev);
-    }
+	spin_lock_irqsave(&input_data->event_lock, flags);
 
-    return count;
-}
+	x = input_abs_get_val(input_data, REL_X);
+	y = input_abs_get_val(input_data, REL_Y);
+	z = input_abs_get_val(input_data, REL_Z);
 
-#endif /* DEBUG */
+	spin_unlock_irqrestore(&input_data->event_lock, flags);
 
-static ssize_t
-sensor_data_show(struct device *dev,
-        struct device_attribute *attr,
-        char *buf)
-{
-    struct input_dev *input_data = to_input_dev(dev);
-    unsigned long flags;
-    int x, y, z;
-
-    spin_lock_irqsave(&input_data->event_lock, flags);
-    x = input_abs_get_val(input_data,ABS_X);
-    y = input_abs_get_val(input_data,ABS_Y);
-    z = input_abs_get_val(input_data,ABS_Z);
-
-    spin_unlock_irqrestore(&input_data->event_lock, flags);
-
-    return sprintf(buf, "%d %d %d\n", x, y, z);
+	return sprintf(buf, "%d %d %d\n", x, y, z);
 }
 
 static ssize_t
-sensor_status_show(struct device *dev,
-        struct device_attribute *attr,
-        char *buf)
+orientation_status_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
 {
-    struct input_dev *input_data = to_input_dev(dev);
-    unsigned long flags;
-    int status;
+	struct input_dev *input_data = to_input_dev(dev);
+	unsigned long flags;
+	int status;
 
-    spin_lock_irqsave(&input_data->event_lock, flags);
+	spin_lock_irqsave(&input_data->event_lock, flags);
 
-	status = input_abs_get_val(input_data,ABS_STATUS);
+	status = input_abs_get_val(input_data, REL_STATUS);
 
-    spin_unlock_irqrestore(&input_data->event_lock, flags);
+	spin_unlock_irqrestore(&input_data->event_lock, flags);
 
-    return sprintf(buf, "%d\n", status);
+	return sprintf(buf, "%d\n", status);
 }
 
 static DEVICE_ATTR(poll_delay, S_IRUGO|S_IWUSR|S_IWGRP,
-        sensor_delay_show, sensor_delay_store);
+			orientation_delay_show, orientation_delay_store);
 static DEVICE_ATTR(enable, S_IRUGO|S_IWUSR|S_IWGRP,
-        sensor_enable_show, sensor_enable_store);
+			orientation_enable_show, orientation_enable_store);
 static DEVICE_ATTR(wake, S_IWUSR|S_IWGRP,
-        NULL, sensor_wake_store);
-static DEVICE_ATTR(data, S_IRUGO, sensor_data_show, NULL);
-static DEVICE_ATTR(status, S_IRUGO, sensor_status_show, NULL);
+			NULL, orientation_wake_store);
+static DEVICE_ATTR(data, S_IRUGO, orientation_data_show, NULL);
+static DEVICE_ATTR(status, S_IRUGO, orientation_status_show, NULL);
 
-#if DEBUG
-static DEVICE_ATTR(debug_suspend, S_IRUGO|S_IWUSR,
-                   sensor_debug_suspend_show, sensor_debug_suspend_store);
-#endif /* DEBUG */
-
-static struct attribute *sensor_attributes[] = {
-    &dev_attr_poll_delay.attr,
-    &dev_attr_enable.attr,
-    &dev_attr_wake.attr,
-    &dev_attr_data.attr,
-    &dev_attr_status.attr,
-#if DEBUG
-    &dev_attr_debug_suspend.attr,
-#endif /* DEBUG */
-    NULL
+static struct attribute *orientation_attributes[] = {
+	&dev_attr_poll_delay.attr,
+	&dev_attr_enable.attr,
+	&dev_attr_wake.attr,
+	&dev_attr_data.attr,
+	&dev_attr_status.attr,
+	NULL
 };
 
-static struct attribute_group sensor_attribute_group = {
-    .attrs = sensor_attributes
+static struct attribute_group orientation_attribute_group = {
+	.attrs = orientation_attributes
 };
 
 static int
-sensor_suspend(struct device *dev)
+orientation_probe(struct platform_device *pdev)
 {
-    struct platform_device *pdev = to_platform_device(dev);
-    struct sensor_data *data = input_get_drvdata(this_data);
-    int rt = 0;
+	struct orientation_data *data = NULL;
+	struct input_dev *input_data = NULL;
+	int err;
 
-    mutex_lock(&data->mutex);
+	data = kzalloc(sizeof(struct orientation_data), GFP_KERNEL);
+	if (!data) {
+		err = -ENOMEM;
+		goto err;
+	}
 
-    if (data->enabled) {
-        input_report_abs(this_data, ABS_CONTROL_REPORT, (0<<16) | data->delay);
-		input_sync(this_data);
-    }
+	data->enabled = 0;
+	data->delay = SENSOR_DEFAULT_DELAY;
 
-    mutex_unlock(&data->mutex);
+	input_data = input_allocate_device();
+	if (!input_data) {
+		err = -ENOMEM;
+		pr_err("%s: Failed to allocate input_data device\n", __func__);
+		goto err_input_allocate_device;
+	}
 
-    return rt;
-}
+	set_bit(EV_REL, input_data->evbit);
+	input_set_capability(input_data, EV_REL, REL_X);
+	input_set_capability(input_data, EV_REL, REL_Y);
+	input_set_capability(input_data, EV_REL, REL_Z);
+	/* sattus */
+	input_set_capability(input_data, EV_REL, REL_STATUS);
+	/* wake */
+	input_set_capability(input_data, EV_REL, REL_WAKE);
+	/* enabled/delay */
+	input_set_capability(input_data, EV_REL, REL_CONTROL_REPORT);
+	input_data->name = SENSOR_NAME;
 
-static int
-sensor_resume(struct device *dev)
-{
-    struct platform_device *pdev = to_platform_device(dev);
-    struct sensor_data *data = input_get_drvdata(this_data);
-    int rt = 0;
+	err = input_register_device(input_data);
+	if (err) {
+		pr_err("%s: Unable to register input_data device: %s\n",
+					__func__, input_data->name);
+		input_free_device(input_data);
+		goto err_input_register_device;
+	}
+	input_set_drvdata(input_data, data);
 
-    mutex_lock(&data->mutex);
+	err = sysfs_create_group(&input_data->dev.kobj,
+				&orientation_attribute_group);
+	if (err) {
+		pr_err("%s: sysfs_create_group failed(%s)\n",
+				__func__, input_data->name);
+		goto err_sys_create_group;
+	}
+	mutex_init(&data->mutex);
+	this_data = input_data;
 
-    if (data->enabled) {
-        input_report_abs(this_data, ABS_CONTROL_REPORT, (1<<16) | data->delay);
-		input_sync(this_data);
-    }
+	return 0;
 
-    mutex_unlock(&data->mutex);
-
-    return rt;
-}
-
-static int
-sensor_probe(struct platform_device *pdev)
-{
-    struct sensor_data *data = NULL;
-    struct input_dev *input_data = NULL;
-    int input_registered = 0, sysfs_created = 0;
-    int rt;
-
-    data = kzalloc(sizeof(struct sensor_data), GFP_KERNEL);
-    if (!data) {
-        rt = -ENOMEM;
-        goto err;
-    }
-    data->enabled = 0;
-    data->delay = SENSOR_DEFAULT_DELAY;
-
-    input_data = input_allocate_device();
-    if (!input_data) {
-        rt = -ENOMEM;
-        pr_err("sensor_probe: Failed to allocate input_data device\n");
-        goto err;
-    }
-
-    set_bit(EV_ABS, input_data->evbit);
-    input_set_capability(input_data, EV_ABS, ABS_X);
-    input_set_capability(input_data, EV_ABS, ABS_Y);
-    input_set_capability(input_data, EV_ABS, ABS_Z);
-    input_set_capability(input_data, EV_ABS, ABS_STATUS); /* status */
-    input_set_capability(input_data, EV_ABS, ABS_WAKE); /* wake */
-    input_set_capability(input_data, EV_ABS, ABS_CONTROL_REPORT); /* enabled/delay */
-
-    input_data->name = SENSOR_NAME;
-
-    rt = input_register_device(input_data);
-    if (rt) {
-        pr_err("sensor_probe: Unable to register input_data device: %s\n",
-               input_data->name);
-        goto err;
-    }
-    input_set_drvdata(input_data, data);
-
-	input_set_abs_params(input_data, ABS_X, 0, 1<<16, 0, 0);
-	input_set_abs_params(input_data, ABS_Y, 0, 1<<16, 0, 0);
-	input_set_abs_params(input_data, ABS_Z, 0, 1<<16, 0, 0);
-	input_set_abs_params(input_data, ABS_STATUS, 0, 1, 0, 0);
-	input_set_abs_params(input_data, ABS_WAKE, 0, 1<<31, 0, 0);
-	input_set_abs_params(input_data, ABS_CONTROL_REPORT, 0, 2<<16, 0, 0);
-
-    input_registered = 1;
-
-    rt = sysfs_create_group(&input_data->dev.kobj,
-            &sensor_attribute_group);
-    if (rt) {
-        pr_err("sensor_probe: sysfs_create_group failed[%s]\n",
-               input_data->name);
-        goto err;
-    }
-    sysfs_created = 1;
-    mutex_init(&data->mutex);
-    this_data = input_data;
-
-    return 0;
-
+err_sys_create_group:
+	input_unregister_device(input_data);
+err_input_register_device:
+err_input_allocate_device:
+	kfree(data);
 err:
-    if (data != NULL) {
-        if (input_data != NULL) {
-            if (sysfs_created) {
-                sysfs_remove_group(&input_data->dev.kobj,
-                        &sensor_attribute_group);
-            }
-            if (input_registered) {
-                input_unregister_device(input_data);
-            }
-            else {
-                input_free_device(input_data);
-            }
-            input_data = NULL;
-        }
-        kfree(data);
-    }
-
-    return rt;
+	return err;
 }
 
-static int __devexit
-sensor_remove(struct platform_device *pdev)
+static int
+orientation_remove(struct platform_device *pdev)
 {
-    struct sensor_data *data;
+	struct orientation_data *data;
 
-    if (this_data != NULL) {
-        data = input_get_drvdata(this_data);
-        sysfs_remove_group(&this_data->dev.kobj,
-                &sensor_attribute_group);
-        input_unregister_device(this_data);
-        if (data != NULL) {
-            kfree(data);
-        }
-    }
+	data = input_get_drvdata(this_data);
+	sysfs_remove_group(&this_data->dev.kobj, &orientation_attribute_group);
+	input_unregister_device(this_data);
+	kfree(data);
 
-    return 0;
+	return 0;
 }
 
-static const struct dev_pm_ops sensor_pm_ops = {
-	.suspend	= sensor_suspend,
-	.resume		= sensor_resume,
+static struct platform_driver orientation_driver = {
+	.probe = orientation_probe,
+	.remove = orientation_remove,
+	.driver = {
+		.name = SENSOR_NAME,
+		.owner = THIS_MODULE,
+	},
 };
 
-/*
- * Module init and exit
- */
-static struct platform_driver sensor_driver = {
-    .probe      = sensor_probe,
-    .remove     = __devexit_p(sensor_remove),
-    .driver = {
-        .name   = SENSOR_NAME,
-        .owner  = THIS_MODULE,
-        .pm     = &sensor_pm_ops,
-    },
-};
-
-static int __init sensor_init(void)
+static int __init orientation_init(void)
 {
-    sensor_pdev = platform_device_register_simple(SENSOR_NAME, 0, NULL, 0);
-    if (IS_ERR(sensor_pdev)) {
-        return -1;
-    }
-    return platform_driver_register(&sensor_driver);
+	orientation_pdev
+		= platform_device_register_simple(SENSOR_NAME, 0, NULL, 0);
+	if (IS_ERR(orientation_pdev))
+		return -1;
+	return platform_driver_register(&orientation_driver);
 }
-module_init(sensor_init);
+module_init(orientation_init);
 
-static void __exit sensor_exit(void)
+static void __exit orientation_exit(void)
 {
-    platform_driver_unregister(&sensor_driver);
-    platform_device_unregister(sensor_pdev);
+	platform_driver_unregister(&orientation_driver);
+	platform_device_unregister(orientation_pdev);
 }
-module_exit(sensor_exit);
+module_exit(orientation_exit);
 
 MODULE_AUTHOR("Yamaha Corporation");
-MODULE_LICENSE( "GPL" );
-MODULE_VERSION("3.0.401");
+MODULE_LICENSE("GPL");
+MODULE_VERSION("1.0.0");
