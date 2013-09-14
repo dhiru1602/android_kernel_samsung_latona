@@ -162,6 +162,13 @@ struct omap_volt_data {
 };
 
 /*
+ * XXX HACK
+ * Special volt_margin value to set to disable SmartReflex class 1.5
+ * calibration entirely for a particular voltage.
+ */
+#define SR1P5_MARGIN_DISABLE_SR (1 << 31)
+
+/*
  * Introduced in OMAP4, is a concept of a default channel - in OMAP4, this
  * channel is MPU, all other domains such as IVA/CORE, could optionally
  * link their i2c reg configuration to use MPU channel's configuration if

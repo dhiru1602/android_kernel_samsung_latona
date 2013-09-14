@@ -291,7 +291,14 @@ done_calib:
 			u_volt_margin = volt_data->volt_margin;
 		}
 
-		u_volt_safe += u_volt_margin;
+		if (u_volt_margin & SR1P5_MARGIN_DISABLE_SR) {
+			/* XXX This should be impossible! */
+			pr_err("%s: SR calibration ran for %s OPP with vnom %d"
+				"for which SR was disabled??!\n", __func__,
+				voltdm->name, volt_data->volt_nominal);
+		} else {
+			u_volt_safe += u_volt_margin;
+		}
 	}
 
 	if (u_volt_safe > volt_data->volt_nominal) {
@@ -419,6 +426,10 @@ static int sr_class1p5_enable(struct voltagedomain *voltdm,
 		pr_err("%s: bad parameters!\n", __func__);
 		return -EINVAL;
 	}
+
+	/* SR calibrations are disabled for this OPP */
+	if (volt_data->volt_margin == SR1P5_MARGIN_DISABLE_SR)
+		return 0;
 
 	/* If already calibrated, nothing to do here.. */
 	if (volt_data->volt_calibrated)
