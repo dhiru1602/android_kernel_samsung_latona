@@ -42,6 +42,8 @@
 
 #include "dvfs.h"
 
+#include "omap2plus-cpufreq.h"
+
 #ifdef CONFIG_SMP
 struct lpj_info {
 	unsigned long	ref;
@@ -65,6 +67,13 @@ static unsigned int current_target_freq;
 static unsigned int current_cooling_level;
 static bool omap_cpufreq_ready;
 static bool omap_cpufreq_suspended;
+
+static struct omap_cpufreq_platform_data *cpufreq_pdata = NULL;
+
+void omap_cpufreq_set_platform_data(struct omap_cpufreq_platform_data *pdata)
+{
+	cpufreq_pdata = pdata;
+}
 
 static unsigned int omap_getspeed(unsigned int cpu)
 {
@@ -401,6 +410,10 @@ static int __cpuinit omap_cpu_init(struct cpufreq_policy *policy)
 	policy->min = policy->cpuinfo.min_freq;
 	policy->max = policy->cpuinfo.max_freq;
 	policy->cur = omap_getspeed(policy->cpu);
+
+	/* Clamp clock to the maximum nominal frequency provided by board */
+	if (cpufreq_pdata)
+		policy->max = cpufreq_pdata->max_nominal_freq;
 
 	for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++)
 		max_freq = max(freq_table[i].frequency, max_freq);
