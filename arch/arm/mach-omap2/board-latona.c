@@ -42,6 +42,7 @@
 #include "sdram-qimonda-hyb18m512160af-6.h"
 #include "omap_ion.h"
 #include "omap_ram_console.h"
+#include "omap2plus-cpufreq.h"
 #include "control.h"
 
 #define WILINK_UART_DEV_NAME            "/dev/ttyS1"
@@ -253,9 +254,14 @@ static struct cpuidle_params latona_cpuidle_params[] = {
 	{4300 + 8794, 159000, 1},
 };
 
+static struct omap_cpufreq_platform_data cpufreq_pdata = {
+	.max_nominal_freq = 1000000,
+};
+
 static void __init latona_init(void)
 {
 	omap3_mux_init(latona_board_mux_ptr, OMAP_PACKAGE_CBP);
+	omap_cpufreq_set_platform_data(&cpufreq_pdata);
 	omap3_pm_init_cpuidle(latona_cpuidle_params);
 	latona_mux_init_gpio_out();
 	latona_mux_set_wakeup_gpio();
