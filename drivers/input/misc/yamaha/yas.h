@@ -47,8 +47,9 @@ typedef unsigned int        uint32_t;
 /* -------------------------------------------------------------------------- */
 
 /* Debugging */
+#define YAS_DEBUG 0
 
-#if DEBUG
+#if YAS_DEBUG
 #ifdef __LINUX_KERNEL_DRIVER__
 #include <linux/kernel.h>
 #define YLOGD(args) (printk args )
@@ -72,12 +73,12 @@ typedef unsigned int        uint32_t;
 #define YLOGE(args) (printf args )
 #define YLOGW(args) (printf args )
 #endif /* __ANDROID__ */
-#else /* DEBUG */
+#else /* YAS_DEBUG */
 #define YLOGD(args) 
 #define YLOGI(args) 
 #define YLOGW(args) 
 #define YLOGE(args) 
-#endif /* DEBUG */
+#endif /* YAS_DEBUG */
 
 #define YAS_REPORT_DATA                     (0x01)
 #define YAS_REPORT_CALIB                    (0x02)
@@ -263,7 +264,7 @@ struct yas_acc_driver {
     int (*get_position)(void);
     int (*set_position)(int position);
     int (*measure)(struct yas_acc_data *data);
-#if DEBUG
+#if YAS_DEBUG
     int (*get_register)(uint8_t adr, uint8_t *val);
 #endif
     struct yas_acc_driver_callback callback;

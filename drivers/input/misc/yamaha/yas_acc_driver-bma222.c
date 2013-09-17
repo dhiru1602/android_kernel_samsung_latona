@@ -346,7 +346,7 @@ static int yas_bma222_set_filter_enable(int);
 static int yas_bma222_get_position(void);
 static int yas_bma222_set_position(int);
 static int yas_bma222_measure(int *, int *);
-#if DEBUG
+#if YAS_DEBUG
 static int yas_get_register(uint8_t, uint8_t *);
 #endif
 
@@ -1149,7 +1149,7 @@ static int yas_measure(struct yas_acc_data *data)
 
     return err;
 }
-#if DEBUG
+#if YAS_DEBUG
 static int yas_get_register(uint8_t adr, uint8_t *val)
 {
     if (pcb == NULL) {
@@ -1209,7 +1209,7 @@ int yas_acc_driver_init(struct yas_acc_driver *f)
     f->get_position = yas_get_position;
     f->set_position = yas_set_position;
     f->measure = yas_measure;
-#if DEBUG
+#if YAS_DEBUG
     f->get_register = yas_get_register;
 #endif
     pcb = &cb;
