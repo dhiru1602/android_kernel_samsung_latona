@@ -1,3 +1,0 @@
-config SENSORS_CORE
-	tristate "Sensors sysfs"
-	default n

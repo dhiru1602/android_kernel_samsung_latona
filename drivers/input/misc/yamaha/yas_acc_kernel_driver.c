@@ -825,12 +825,6 @@ static DEVICE_ATTR(debug_suspend,
                    );
 #endif /* YAS_DEBUG */
 
-static struct attribute *accel_sensor_attrs[] = {
-    &dev_attr_calibration.attr,
-    &dev_attr_raw_data.attr,
-    NULL
-};
-
 static struct attribute *yas_acc_attributes[] = {
     &dev_attr_enable.attr,
     &dev_attr_poll_delay.attr,
@@ -839,6 +833,8 @@ static struct attribute *yas_acc_attributes[] = {
     &dev_attr_threshold.attr,
     &dev_attr_filter_enable.attr,
     &dev_attr_wake.attr,
+    &dev_attr_calibration.attr,
+    &dev_attr_raw_data.attr,
 #if YAS_DEBUG
     &dev_attr_debug_reg.attr,
     &dev_attr_debug_suspend.attr,
@@ -919,8 +915,6 @@ static int yas_acc_resume(struct device *dev)
     return 0;
 }
 
-extern struct class *sensors_class;
-extern int sensors_register(struct device *dev, void * drvdata, struct device_attribute *attributes[], char *name);
 static struct device *accel_sensor_device;
 
 static int yas_acc_probe(struct i2c_client *client, const struct i2c_device_id *id)
@@ -970,13 +964,7 @@ static int yas_acc_probe(struct i2c_client *client, const struct i2c_device_id *
         goto ERR4;
     }
 
-    err = sensors_register(accel_sensor_device, NULL, accel_sensor_attrs, "accelerometer_sensor");
-    if(err) {
-    	printk(KERN_ERR "%s: cound not register accelerometer sensor device(%d).\n", __func__, err);
-    }
-	
-	printk(KERN_ERR "bma222_init_proc -\n");
-
+    printk(KERN_ERR "bma222_init_proc -\n");
 
     return 0;
 
