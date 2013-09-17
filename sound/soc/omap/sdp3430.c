@@ -143,7 +143,7 @@ int sdp3430_i2s_startup(struct snd_pcm_substream *substream)
 	  return 0;
 }
 
-int sdp3430_i2s_shutdown(struct snd_pcm_substream *substream)
+void sdp3430_i2s_shutdown(struct snd_pcm_substream *substream)
 {    
 	/* remove latency constraint */       
 	snd_hw_latency--;     
@@ -152,9 +152,7 @@ int sdp3430_i2s_shutdown(struct snd_pcm_substream *substream)
 		pm_qos_update_request(&pm_qos_handler,
 						CLEAR_MPU_CORE_CONSTRAINT);
 		omap_dpll3_errat_wa(1);    
-	}   
-
-	return 0;
+	}
 }	
 static struct snd_soc_ops sdp3430_ops = {
 	.startup = sdp3430_i2s_startup,	

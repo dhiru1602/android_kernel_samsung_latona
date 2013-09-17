@@ -49,7 +49,10 @@ struct delayed_work amp_control_work;
 static struct wake_lock max97000_wakelock;
 
 static u8 max97000_regs[10] = { 0x36, 0xCC, 0x03, 0x1f, 0x5f, 0x3f, 0x00, 0x00, 0x96, 0x00};
+
+#if SEC_MAX97000_DEBUG
 static u8 max97000_regs_backup[10];
+#endif
 
 #define DEFAULT_INPUT 0x36
 
@@ -120,27 +123,24 @@ static int max97000_set_reg_from_file(char* filename, int mode)
 #endif
 
 	fp = filp_open( filename, O_RDONLY, 0 ) ;
-	if ( fp && ( fp!= 0xfffffffe ) && ( fp != 0xfffffff3 ) )
-	{
-		oldfs = get_fs();
-		set_fs(KERNEL_DS);
-		nFileSize = fp->f_op->llseek(fp, 0, SEEK_END);
-		fp->f_op->llseek(fp, 0, SEEK_SET);
-		pBuf = (char*)kmalloc(nFileSize+1, GFP_KERNEL);
-		fp->f_op->read(fp, pBuf, nFileSize, &fp->f_pos);
-		pBuf[nFileSize] = '\0';
-		filp_close(fp, current->files);
-		set_fs(oldfs);
-
-//		printk("%s\n", pBuf);
-
-//		printk( "max97000_OpenINIFile(%s) : File Size = %d \n", filename, nFileSize );
-	}
-	else
-	{
+	if (IS_ERR(fp)) {
 		  printk( "max97000_OpenINIFile : Do not find %s file !! \n", filename );
 		  return -1;
 	}
+
+	oldfs = get_fs();
+	set_fs(KERNEL_DS);
+	nFileSize = fp->f_op->llseek(fp, 0, SEEK_END);
+	fp->f_op->llseek(fp, 0, SEEK_SET);
+	pBuf = (char*)kmalloc(nFileSize+1, GFP_KERNEL);
+	fp->f_op->read(fp, pBuf, nFileSize, &fp->f_pos);
+	pBuf[nFileSize] = '\0';
+	filp_close(fp, current->files);
+	set_fs(oldfs);
+
+//	printk("%s\n", pBuf);
+
+//	printk( "max97000_OpenINIFile(%s) : File Size = %d \n", filename, nFileSize );
 
 	nSize = nFileSize;
 

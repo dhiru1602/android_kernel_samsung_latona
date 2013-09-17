@@ -7,8 +7,6 @@
 
 #include "./sec_gain.h"
 
-#define SEC_AUDIO_DEBUG 0
-
 #if SEC_AUDIO_DEBUG
 #define P(format,...)\
 		printk("audio:%s() " format "\n", __func__, ## __VA_ARGS__);
@@ -40,7 +38,7 @@ static int twl4030_set_reg_from_file(struct snd_soc_codec *codec, char* filename
 static char StringToHexFor16Bit( char *ss );
 void set_codec_gain_init(struct snd_soc_codec *codec);
 
-extern int twl4030_get_voicecall_state();
+extern int twl4030_get_voicecall_state(void);
 #ifdef VOICE_RECOGNITION
 extern int twl4030_is_vr_mode(void);
 #endif
@@ -669,27 +667,24 @@ static int twl4030_set_reg_from_file(struct snd_soc_codec *codec, char* filename
 	printk("twl4030 gain setting %s\n", filename);
 	
 	fp = filp_open( filename, O_RDONLY, 0 ) ;
-	if ( fp && ( fp!= 0xfffffffe ) && ( fp != 0xfffffff3 ) )
-	{
-		oldfs = get_fs();
-		set_fs(KERNEL_DS);
-		nFileSize = fp->f_op->llseek(fp, 0, SEEK_END);
-		fp->f_op->llseek(fp, 0, SEEK_SET);
-		pBuf = (char*)kmalloc(nFileSize+1, GFP_KERNEL);
-		fp->f_op->read(fp, pBuf, nFileSize, &fp->f_pos);
-		pBuf[nFileSize] = '\0';
-		filp_close(fp, current->files);
-		set_fs(oldfs);
-
-//		printk("%s\n", pBuf);
-
-//		printk( "twl4030_OpenINIFile : File Size = %d \n", nFileSize );
-	}
-	else
-	{
+	if (IS_ERR(fp)) {
 		  WARN( "twl4030_OpenINIFile : Do not find %s file !! \n", filename );
 		  return -1;
 	}
+
+	oldfs = get_fs();
+	set_fs(KERNEL_DS);
+	nFileSize = fp->f_op->llseek(fp, 0, SEEK_END);
+	fp->f_op->llseek(fp, 0, SEEK_SET);
+	pBuf = (char*)kmalloc(nFileSize+1, GFP_KERNEL);
+	fp->f_op->read(fp, pBuf, nFileSize, &fp->f_pos);
+	pBuf[nFileSize] = '\0';
+	filp_close(fp, current->files);
+	set_fs(oldfs);
+
+//	printk("%s\n", pBuf);
+
+//	printk( "twl4030_OpenINIFile : File Size = %d \n", nFileSize );
 
 	nSize = nFileSize;
 

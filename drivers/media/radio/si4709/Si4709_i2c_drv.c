@@ -11,7 +11,7 @@ int Si4709_i2c_drv_init(void);
 void Si4709_i2c_drv_exit(void);
 
 /*static functions*/
-static int Si4709_probe (struct i2c_client *);
+static int Si4709_probe (struct i2c_client *, const struct i2c_device_id *);
 static int Si4709_remove(struct i2c_client *);
 static int Si4709_suspend(struct device *dev);
 static int Si4709_resume(struct device *dev);
@@ -40,7 +40,7 @@ static struct i2c_driver Si4709_i2c_driver =
 };
 
 
-static int Si4709_probe (struct i2c_client *client)
+static int Si4709_probe (struct i2c_client *client, const struct i2c_device_id *device_id)
 {
     int ret = 0;
 

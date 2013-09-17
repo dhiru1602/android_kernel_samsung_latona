@@ -88,7 +88,7 @@
 extern int max97000_add_controls(struct snd_soc_codec *codec);
 extern void max97000_power_down_mode(void);
 extern void max97000_set_force_out_mode(int mode, int output);
-void set_amp_gain_init();
+void set_amp_gain_init(void);
 
 
 #endif

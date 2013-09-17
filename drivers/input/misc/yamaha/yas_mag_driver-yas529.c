@@ -18,7 +18,7 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
-#include <linux/yas.h>
+#include "yas.h"
 
 struct utimeval {
     int32_t tv_sec;

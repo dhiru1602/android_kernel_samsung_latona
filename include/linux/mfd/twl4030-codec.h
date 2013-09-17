@@ -24,6 +24,8 @@
 #ifndef __TWL4030_CODEC_H__
 #define __TWL4030_CODEC_H__
 
+#include <sound/soc.h>
+
 /* Codec registers */
 #define TWL4030_REG_CODEC_MODE		0x01
 #define TWL4030_REG_OPTION		0x02
@@ -268,6 +270,8 @@
 
 #define TWL4030_SAME_DEVICE	0x10
 #define VOICE_RECOGNITION		1
+
+#define SEC_AUDIO_DEBUG 0
 
 extern int twl4030_is_rec_8k_enable(void);
 extern int get_sec_gain_test_mode(void);

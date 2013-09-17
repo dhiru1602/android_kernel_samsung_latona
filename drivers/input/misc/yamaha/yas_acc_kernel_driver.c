@@ -756,11 +756,6 @@ static int bma222_fast_calibration(char layout[])
     return 0;
 }
 
-static ssize_t bma222_calibration_show(struct device *dev,
-                                       struct device_attribute *attr, char *buf)
-{
-}
-
 static ssize_t bma222_calibration_store(struct device *dev,
                                         struct device_attribute *attr,
                                         const char *buf, size_t count)
@@ -814,8 +809,8 @@ static DEVICE_ATTR(raw_data,
                    S_IRUGO,
                    yas_acc_private_data_show,
                    NULL);
-static DEVICE_ATTR(calibration, S_IRUGO|S_IWUSR|S_IWGRP,
-                   bma222_calibration_show, bma222_calibration_store);
+static DEVICE_ATTR(calibration, S_IWUSR|S_IWGRP,
+                   NULL, bma222_calibration_store);
 
 #if DEBUG
 static DEVICE_ATTR(debug_reg,
@@ -1038,7 +1033,7 @@ struct i2c_driver yas_acc_driver = {
  * ---------------------------------------------------------------------------------------- */
 static int __init yas_acc_init(void)
 {
-    i2c_add_driver(&yas_acc_driver);
+    return i2c_add_driver(&yas_acc_driver);
 }
 module_init(yas_acc_init);
 

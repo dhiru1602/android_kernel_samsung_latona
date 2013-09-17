@@ -48,10 +48,6 @@
 #ifdef SAMSUNG_CUSTOMISATION
 #ifdef CONFIG_SND_SOC_MAX97000
 #include "./max97000.h"
-#elif CONFIG_SND_SOC_MAX9877
-#include "./max9877.h"
-#elif CONFIG_SND_SOC_YDA165
-#include "./yda165.h"
 #endif
 
 #if SEC_AUDIO_DEBUG
@@ -62,7 +58,6 @@
 #endif
 
 #define USE_GPIO_MAIN_MIC_BIAS
-#define VOICE_RECOGNITION
 #define VOICE_IF_AP_MASTER
 #include "sec_gain.h"
 
@@ -1203,10 +1198,6 @@ static void twl4030_codec_enable(struct snd_soc_codec *codec, int enable)
 #if defined(CONFIG_SND_SOC_MAX97000)
 		//if(!twl4030_codec_suspended)
 		max97000_power_down_mode(); //for powerdown noise
-#endif
-#if defined(CONFIG_SND_SOC_MAX9877)
-		//if(!twl4030_codec_suspended)
-		max9877_power_down_mode(); //for powerdown noise
 #endif
 		for(i=0;i<ARRAY_SIZE(volume_off);i++){
 			twl4030_write(codec, volume_off[i].reg,volume_off[i].value);                        
