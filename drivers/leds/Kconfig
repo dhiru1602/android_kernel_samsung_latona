@@ -496,4 +496,11 @@ config LEDS_LATONA
         help
           This options enables support for the LEDs on OMAP processors.
 
+config LEDS_LATONA_BACKLIGHT
+        tristate "LED backlight timeout support"
+	default n
+        depends on LEDS_LATONA
+        help
+          This options enables support for the buttons backlight timeout.
+
 endif # NEW_LEDS
