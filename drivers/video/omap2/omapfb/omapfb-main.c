@@ -37,10 +37,6 @@
 
 #include "omapfb.h"
 
-#ifdef CONFIG_FB_OMAP2_PROGRESS_BAR
-#include "omapfb-progressbar.h"
-#endif
-
 #define MODULE_NAME     "omapfb"
 
 #define OMAPFB_PLANE_XRES_MIN		8
@@ -62,6 +58,10 @@ module_param_named(test, omapfb_test_pattern, bool, 0644);
 static int omapfb_fb_init(struct omapfb2_device *fbdev, struct fb_info *fbi);
 static int omapfb_get_recommended_bpp(struct omapfb2_device *fbdev,
 		struct omap_dss_device *dssdev);
+
+#ifdef CONFIG_FB_OMAP2_PROGRESS_BAR
+extern void omapfb_start_progress(struct fb_info *fb);
+#endif
 
 #ifdef DEBUG
 static void draw_pixel(struct fb_info *fbi, int x, int y, unsigned color)
