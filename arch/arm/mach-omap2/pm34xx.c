@@ -496,6 +496,7 @@ void omap_sram_idle(bool suspend)
 	if (core_next_state <= PWRDM_POWER_RET) {
 		omap3_save_scratchpad_contents();
 	}
+	omap3_intc_prepare_idle();
 #endif
 
 	/* CORE */
@@ -521,7 +522,9 @@ void omap_sram_idle(bool suspend)
 		}
 	}
 
+#ifndef CONFIG_MACH_OMAP_LATONA
 	omap3_intc_prepare_idle();
+#endif
 
 	/*
 	* On EMU/HS devices ROM code restores a SRDC value
