@@ -66,6 +66,18 @@ static void __init latona_init_early(void)
 					  hyb18m512160af6_sdrc_params);
 }
 
+/* Secure ram save size */
+static struct omap3_secure_copy_data secure_copy_data = {
+	.size = 0xF040,
+	/*60K + 64 Bytes header EMU/HS devices */
+};
+
+static void __init latona_init_irq(void)
+{
+	omap3_secure_copy_data_set(&secure_copy_data);
+	omap_init_irq();
+}
+
 static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
 	.port_mode[0]		= OMAP_USBHS_PORT_MODE_UNUSED,
 	.port_mode[1]		= OMAP_EHCI_PORT_MODE_PHY,
@@ -296,7 +308,7 @@ MACHINE_START(LATONA, "SAMSUNG LATONA BOARD")
 	.reserve	= latona_reserve,
 	.map_io		= omap3_map_io,
 	.init_early	= latona_init_early,
-	.init_irq	= omap_init_irq,
+	.init_irq	= latona_init_irq,
 	.init_machine	= latona_init,
 	.timer		= &omap_timer,
 MACHINE_END
