@@ -62,8 +62,7 @@ extern struct omap_board_mux *latona_board_wk_mux_ptr;
 static void __init latona_init_early(void)
 {
 	omap2_init_common_infrastructure();
-	omap2_init_common_devices(hyb18m512160af6_sdrc_params,
-					  hyb18m512160af6_sdrc_params);
+	omap2_init_common_devices(hyb18m512160af6_sdrc_params, NULL);
 }
 
 /* Secure ram save size */
