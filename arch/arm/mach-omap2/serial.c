@@ -81,7 +81,7 @@ static struct omap_device_pm_latency omap_uart_latency[] = {
 	},
 };
 
-#if defined (CONFIG_OMAP_MUX) && !defined(CONFIG_MACH_OMAP_LATONA)
+#if defined (CONFIG_OMAP_MUX)
 static struct omap_device_pad default_uart1_pads[] __initdata = {
 	{
 		.name	= "uart1_cts.uart1_cts",
@@ -145,6 +145,7 @@ static struct omap_device_pad default_uart3_pads[] __initdata = {
 	},
 };
 
+#if !defined(CONFIG_MACH_OMAP_LATONA)
 static struct omap_device_pad default_omap36xx_uart4_pads[] __initdata = {
 	{
 		.name   = "gpmc_wait2.uart4_tx",
@@ -157,6 +158,9 @@ static struct omap_device_pad default_omap36xx_uart4_pads[] __initdata = {
 		.idle	= OMAP_PIN_INPUT | OMAP_MUX_MODE2,
 	},
 };
+#else
+static struct omap_device_pad default_omap36xx_uart4_pads[] __initdata = {};
+#endif
 
 static struct omap_device_pad default_omap4_uart4_pads[] __initdata = {
 	{
