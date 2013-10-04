@@ -32,6 +32,7 @@
 #include <asm/mach/map.h>
 #include <plat/common.h>
 #include <plat/usb.h>
+#include <plat/omap-serial.h>
 #include <linux/switch.h>
 #include <mach/board-latona.h>
 #include <linux/i2c/twl4030-madc.h>
@@ -826,6 +827,13 @@ static void enable_board_wakeup_source(void)
 		OMAP_WAKEUP_EN | OMAP_PIN_INPUT_PULLUP);
 }
 
+static inline void __init latona_serial_init(void)
+{
+	omap_serial_init_port_pads(0, NULL, 0, NULL);
+	omap_serial_init_port_pads(1, NULL, 0, NULL);
+	omap_serial_init_port_pads(2, NULL, 0, NULL);
+}
+
 void __init latona_peripherals_init(void)
 {
 	platform_add_devices(latona_board_devices,
@@ -843,6 +851,6 @@ void __init latona_peripherals_init(void)
 	latona_phone_svnet_init(); /* Initialize Phone SVNET Drivers */ 
 #endif
 	enable_board_wakeup_source();
-	omap_serial_init();
+	latona_serial_init();
 	board_init_zeus_key(); /* ZEUS Key */ 
 }
