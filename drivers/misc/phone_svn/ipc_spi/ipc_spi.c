@@ -2946,6 +2946,7 @@ RETRY_WAIT_SEM :
 					if( srdy_timeout_count > 5 ) {
 						printk( "[IPC_SPI] (%d)SRDY TimeOut Count Over.\n", __LINE__ );
 
+#if 0 /* Don't restart */
 						modemctl_force_silent_reset();
 						
 						srdy_timeout_count = 0;
@@ -2957,6 +2958,7 @@ RETRY_WAIT_SEM :
 						ipc_spi_clear_all_vbuff();
 									
 						goto SILENT_RESET;
+#endif
 					}
 
 					sema_init( &srdy_sem, 0 );
@@ -3489,6 +3491,7 @@ static void ipc_spi_cp_force_crash( void )
 	
 }
 
+#if 0 /* Don't restart */
 void  ipc_spi_restart_spi( void )
 {
 	printk( "Phone Restart SPI Init.\n" );
@@ -3497,6 +3500,7 @@ void  ipc_spi_restart_spi( void )
 	stop_spi_sync = 0;
 }
 EXPORT_SYMBOL( ipc_spi_restart_spi );
+#endif
 
 static int __devinit ipc_spi_platform_probe( struct platform_device *pdev )
 {

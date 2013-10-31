@@ -284,6 +284,7 @@ static int modem_on(struct modemctl *mc)
 		return -ENXIO;
 	}
 
+#if 0 /* Do not restart SPI */
 	if( check_phone_restart ) {
 		dev_dbg( mc->dev, "%s: Phone Restart SPI Init.\n", __func__ );
 		ipc_spi_restart_spi();
@@ -291,6 +292,7 @@ static int modem_on(struct modemctl *mc)
 	else {
 		check_phone_restart = 1;
 	}
+#endif
 
 	mc->ops->modem_on(mc);
 
@@ -561,6 +563,7 @@ static void mc_work(struct work_struct *work)
 	}
 }
 
+#if 0 /* Don't restart */
 void modemctl_force_silent_reset( void )
 {
 	int cpdump_int = 0;
@@ -579,6 +582,7 @@ void modemctl_force_silent_reset( void )
 	printk( "modemctl_force_silent_reset : send event\n" );
 }
 EXPORT_SYMBOL( modemctl_force_silent_reset );
+#endif
 
 static irqreturn_t modemctl_irq_handler(int irq, void *dev_id)
 {
