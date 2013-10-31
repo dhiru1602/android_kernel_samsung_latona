@@ -2961,8 +2961,6 @@ RETRY_WAIT_SEM :
 #endif
 					}
 
-					sema_init( &srdy_sem, 0 );
-					
 					ipc_spi_set_MRDY_pin( 0 );
 					mdelay( 10 );
 					ipc_spi_set_MRDY_pin( 1 );
