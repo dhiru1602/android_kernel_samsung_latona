@@ -2958,6 +2958,8 @@ RETRY_WAIT_SEM :
 						ipc_spi_clear_all_vbuff();
 									
 						goto SILENT_RESET;
+#else
+						ipc_spi_clear_all_vbuff();
 #endif
 					}
 
