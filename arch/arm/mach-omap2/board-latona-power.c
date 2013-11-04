@@ -316,9 +316,6 @@ void __init latona_power_init(void)
 {
 	struct platform_device *pdev;
 
-	/* Update oscillator information */
-	omap_pm_set_osc_lp_time(15000, 1);
-
 	pdev = platform_device_register_resndata(NULL, "pda-power", -1,
 						 NULL, 0, &charger_pdata,
 						 sizeof(charger_pdata));
