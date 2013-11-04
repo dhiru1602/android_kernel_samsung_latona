@@ -77,9 +77,10 @@ static int NCP15WB473_batt_table[] =
     4674
 };
 
+extern int latona_bootmode;
+
 static DEFINE_SPINLOCK(charge_en_lock);
 static int charger_state;
-static bool is_charging_mode;
 
 static bool enable_sr = true;
 module_param(enable_sr, bool, S_IRUSR | S_IRGRP | S_IROTH);
@@ -289,20 +290,6 @@ static struct max17040_platform_data max17040_pdata = {
 	.limit_recharging_time = 5400, /* 90 min */
 };
 
-static int __init latona_charger_mode_setup(char *str)
-{
-	if (!str)		/* No mode string */
-		return 0;
-
-	is_charging_mode = !strcmp(str, "charger");
-
-	pr_debug("Charge mode string = \"%s\" charger mode = %d\n", str,
-		 is_charging_mode);
-
-	return 1;
-}
-__setup("androidboot.mode=", latona_charger_mode_setup);
-
 static const __initdata struct i2c_board_info latona_i2c4_boardinfo[] = {
 	{
 		I2C_BOARD_INFO("max17040", 0x36),
@@ -322,7 +309,9 @@ void __init latona_power_init(void)
 	if (IS_ERR_OR_NULL(pdev))
 		pr_err("cannot register pda-power\n");
 
-	max17040_pdata.use_fuel_alert = !is_charging_mode;
+	if (latona_bootmode != 5)
+		max17040_pdata.use_fuel_alert = true;
+
 	i2c_register_board_info(4, latona_i2c4_boardinfo, ARRAY_SIZE(latona_i2c4_boardinfo));
 
 	if (enable_sr)
