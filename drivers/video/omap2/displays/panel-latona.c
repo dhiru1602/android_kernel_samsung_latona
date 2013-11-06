@@ -1663,7 +1663,8 @@ static void nt35510_spi_shutdown(struct spi_device *spi)
 {
 	dev_dbg(&spi->dev, "first power off LCD\n");
 	is_nt35510_spi_shutdown = 1;
-	nt35510_lcd_poweroff();
+	if (atomic_read(&ldi_power_state) == POWER_ON)
+		nt35510_lcd_poweroff();
 	dev_dbg(&spi->dev, "power off - backlight.\n");
 	gpio_set_value(OMAP_GPIO_LCD_EN_SET, GPIO_LEVEL_LOW);
 }
