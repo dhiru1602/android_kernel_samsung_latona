@@ -38,7 +38,7 @@
 #include <linux/serial_core.h>
 #include <linux/irq.h>
 #include <linux/pm_runtime.h>
-#include <linux/wakelock.h>
+
 #include <plat/dma.h>
 #include <plat/dmtimer.h>
 #include <plat/omap-serial.h>
@@ -245,8 +245,6 @@ static void serial_omap_stop_rx(struct uart_port *port)
 	serial_out(up, UART_IER, up->ier);
 	serial_omap_port_disable(up);
 }
-
-static struct wake_lock omap_serial_wakelock;
 
 static inline void receive_chars(struct uart_omap_port *up, int *status)
 {
@@ -992,12 +990,6 @@ serial_omap_pm(struct uart_port *port, unsigned int state,
 	serial_out(up, UART_EFR, efr | UART_EFR_ECB);
 	serial_out(up, UART_LCR, 0);
 
-	/*Hold wake lock only If previous state is suspend*/
-	if (oldstate == 3)
-	{
-		wake_lock_timeout(&omap_serial_wakelock, 5 * HZ);
-	}
-
 	serial_out(up, UART_IER, (state != 0) ? UART_IERX_SLEEP : 0);
 	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_B);
 	serial_out(up, UART_EFR, efr);
@@ -1718,7 +1710,6 @@ static int __init serial_omap_init(void)
 {
 	int ret;
 
-	wake_lock_init(&omap_serial_wakelock,WAKE_LOCK_SUSPEND, "omap-serial");
 	ret = uart_register_driver(&serial_omap_reg);
 	if (ret != 0)
 		return ret;
@@ -1730,7 +1721,6 @@ static int __init serial_omap_init(void)
 
 static void __exit serial_omap_exit(void)
 {
-	wake_lock_destroy(&omap_serial_wakelock);
 	platform_driver_unregister(&serial_omap_driver);
 	uart_unregister_driver(&serial_omap_reg);
 }
