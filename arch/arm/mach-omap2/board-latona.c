@@ -23,7 +23,6 @@
 #include <linux/skbuff.h>
 #include <linux/ti_wilink_st.h>
 #include <linux/wl12xx.h>
-#include <linux/wakelock.h>
 
 #include <asm/setup.h>
 #include <asm/mach-types.h>
@@ -91,7 +90,6 @@ static int plat_kim_resume(struct platform_device *pdev)
 }
 
 static bool uart_req;
-static struct wake_lock st_wk_lock;
 /* Call the uart disable of serial driver */
 static int plat_uart_disable(void)
 {
@@ -103,7 +101,6 @@ static int plat_uart_disable(void)
 		if (!err)
 			uart_req = false;
 	}
-	wake_unlock(&st_wk_lock);
 	return err;
 }
 
@@ -118,7 +115,6 @@ static int plat_uart_enable(void)
 		if (!err)
 			uart_req = true;
 	}
-	wake_lock(&st_wk_lock);
 	return err;
 }
 
@@ -265,7 +261,6 @@ static void __init latona_init(void)
 	omap_register_ion();
 	/* Added to register latona devices */
 	platform_add_devices(latona_devices, ARRAY_SIZE(latona_devices));
-	wake_lock_init(&st_wk_lock, WAKE_LOCK_SUSPEND, "st_wake_lock");
 	wl127x_vio_leakage_fix();
 	latona_cmdline_set_serialno(); //Inject serialno in commandline
 }
