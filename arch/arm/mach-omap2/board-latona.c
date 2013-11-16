@@ -23,6 +23,7 @@
 #include <linux/skbuff.h>
 #include <linux/ti_wilink_st.h>
 #include <linux/wl12xx.h>
+#include <linux/wakelock.h>
 
 #include <asm/setup.h>
 #include <asm/mach-types.h>
@@ -88,6 +89,19 @@ static int plat_kim_resume(struct platform_device *pdev)
 	return 0;
 }
 
+static struct wake_lock st_wk_lock;
+static int plat_kim_chip_asleep(void)
+{
+	wake_unlock(&st_wk_lock);
+	return 0;
+}
+
+static int plat_kim_chip_awake(void)
+{
+	wake_lock_timeout(&st_wk_lock, 5*HZ);
+	return 0;
+}
+
 /* wl127x BT, FM, GPS connectivity chip */
 struct ti_st_plat_data wilink_pdata = {
 	.nshutdown_gpio = OMAP_GPIO_BT_NRST,
@@ -96,6 +110,8 @@ struct ti_st_plat_data wilink_pdata = {
 	.baud_rate = 3000000,
 	.suspend = plat_kim_suspend,
 	.resume = plat_kim_resume,
+	.chip_asleep = plat_kim_chip_asleep,
+	.chip_awake = plat_kim_chip_awake,
 };
 static struct platform_device wl127x_device = {
 	.name           = "kim",
@@ -227,6 +243,7 @@ static void __init latona_init(void)
 	omap_register_ion();
 	/* Added to register latona devices */
 	platform_add_devices(latona_devices, ARRAY_SIZE(latona_devices));
+	wake_lock_init(&st_wk_lock, WAKE_LOCK_SUSPEND, "st_wake_lock");
 	wl127x_vio_leakage_fix();
 	latona_cmdline_set_serialno(); //Inject serialno in commandline
 }
