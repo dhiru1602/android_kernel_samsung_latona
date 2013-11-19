@@ -32,7 +32,7 @@ bool off_mode_enabled;
 #ifdef CONFIG_TIDSPBRIDGE_DVFS
 #include <plat/common.h>
 #include <../mach-omap2/omap_opp_data.h>
-static struct clk *clk_handle;
+static struct clk *clk_handle = NULL;
 #endif
 
 /*
@@ -171,10 +171,6 @@ u8 omap_pm_dsp_get_opp(void)
 			dsp_rate[cnt++] = omap36xx_opp_def_list_shared[i].freq;
 	}
 
-	clk_handle = clk_get(NULL, "dpll2_ck");
-	if (!clk_handle)
-		pr_err("%s: clk_get failed to get dpll2_ck\n", __func__);
-
 	freq = clk_get_rate(clk_handle);
 
 	size = sizeof(dsp_rate)/sizeof(int);
@@ -287,6 +283,11 @@ int __init omap_pm_if_early_init(void)
 /* Must be called after clock framework is initialized */
 int __init omap_pm_if_init(void)
 {
+#ifdef CONFIG_TIDSPBRIDGE_DVFS
+	clk_handle = clk_get(NULL, "dpll2_ck");
+	if (IS_ERR(clk_handle))
+		return PTR_ERR(clk_handle);
+#endif
 	return omap_pm_if_init_helper();
 }
 
