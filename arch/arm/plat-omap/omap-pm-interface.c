@@ -127,6 +127,7 @@ void omap_pm_dsp_set_min_opp(u8 opp_id)
 	int i, cnt = 1;
 	int size;
 	unsigned long dsp_rate[5] = {0};
+	unsigned long cur_rate = clk_get_rate(clk_handle);
 
 	size  =
 	sizeof(omap36xx_opp_def_list_shared)/sizeof(struct omap_opp_def);
@@ -136,6 +137,10 @@ void omap_pm_dsp_set_min_opp(u8 opp_id)
 		if (!strcmp("iva", omap36xx_opp_def_list_shared[i].hwmod_name))
 			dsp_rate[cnt++] = omap36xx_opp_def_list_shared[i].freq;
 	}
+
+	/* Change rate only when required */
+	if (cur_rate == dsp_rate[opp_id])
+		return;
 
 	iva_dev = omap2_get_iva_device();
 
