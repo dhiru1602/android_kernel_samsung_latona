@@ -125,7 +125,6 @@ enum {
 };
 #endif
 
-static int check_phone_restart = 0;
 extern void ipc_spi_restart_spi( void );
 
 #ifdef CONFIG_HAS_WAKELOCK
@@ -283,16 +282,6 @@ static int modem_on(struct modemctl *mc)
 	if(!mc->ops || !mc->ops->modem_on) {
 		return -ENXIO;
 	}
-
-#if 0 /* Do not restart SPI */
-	if( check_phone_restart ) {
-		dev_dbg( mc->dev, "%s: Phone Restart SPI Init.\n", __func__ );
-		ipc_spi_restart_spi();
-	}
-	else {
-		check_phone_restart = 1;
-	}
-#endif
 
 	mc->ops->modem_on(mc);
 
@@ -922,7 +911,6 @@ static int modemctl_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct modemctl *mc = platform_get_drvdata(pdev);
-	int retval = 0;
 
 #if !defined( USE_EARLYSUSPEND_TO_CTRL_PDAACTIVE_LOW )
 	pda_off(mc);
@@ -931,6 +919,7 @@ static int modemctl_suspend(struct device *dev)
 #if defined( CONFIG_SVNET_WHITELIST ) && \
 	!defined( USE_EARLYSUSPEND_TO_CTRL_WHITELIST )
 	// call process white list
+	int retval = 0;
 	retval = process_whilte_list();
 	if( unlikely( retval !=0 ) ) {
 		printk( "fail to send whitelist : %d\n", retval );

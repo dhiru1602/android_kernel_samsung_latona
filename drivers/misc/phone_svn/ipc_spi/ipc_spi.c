@@ -1340,7 +1340,6 @@ static void ipc_spi_prepare_tx_data( u8 *tx_b )
 	u16 pkt_fmt_len = 0;
 	u32 pkt_len = 0;
 	u8 bof = 0, eof = 0;
-	int i;
 
 	memset( ( void * )tx_b, 0, DEF_BUF_SIZE + 4 );
 
@@ -3461,34 +3460,6 @@ static void ipc_spi_send_modem_bin( struct work_struct *send_modem_w )
 err :
 	// make data interrupt cmd
 	ipc_spi_make_data_interrupt( int_cmd_fail, od );
-}
-
-static void ipc_spi_cp_force_crash( void )
-{
-	u32 int_cmd = 0;
-	
-	printk( "[ipc_spi_cp_force_crash]\n" );
-
-	if( ipc_spi ) {
-// Silent Reset
-#if 0
-		// make data interrupt cmd
-		int_cmd = MB_CMD( MBC_ERR_DISPLAY );
-		
-		ipc_spi->reg->mailbox_BA = int_cmd;
-
-		if( transfer_thread_waiting ) {
-			//transfer_thread_waiting = 0;
-			up( &transfer_event_sem );
-		}
-
-		printk( "Send CP Fatal command.\n" );
-#endif
-	}
-	else {
-		printk( "error ipc_spi null.\n" );
-	}
-	
 }
 
 #if 0 /* Don't restart */
