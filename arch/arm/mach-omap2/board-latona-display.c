@@ -28,7 +28,8 @@ bool init_clk_disable = true;
 
 static int latona_panel_enable_lcd(struct omap_dss_device *dssdev)
 {
-	omap_pm_set_min_bus_tput(&(dssdev->dev), OCP_INITIATOR_AGENT, 800000);
+	// Run L3@400Mhz when screen is ON.
+	omap_pm_set_min_bus_tput(&(dssdev->dev), OCP_INITIATOR_AGENT, 400000 * 4);
 
 	return 0;
 }
