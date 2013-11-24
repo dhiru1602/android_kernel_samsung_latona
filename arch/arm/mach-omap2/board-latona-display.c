@@ -24,28 +24,23 @@
 #include <linux/clk.h>
 
 static struct clk *dss_sys_fclk;
-bool init_clk_disable = true;
-
-static void dss_clks_disable(void)
-{
-    clk_disable(dss_sys_fclk);
-}
+static bool init_clk_disable = true;
 
 static void latona_panel_disable_lcd(struct omap_dss_device *dssdev)
 {
 	if (init_clk_disable) {
-		dss_clks_disable();
+		clk_disable(dss_sys_fclk);
 		init_clk_disable = false;
 	}
 }
 
 struct omap_dss_device omap_board_lcd_device = {
-    .name = "lcd",
-    .driver_name = "nt35510_panel",
-    .type = OMAP_DISPLAY_TYPE_DPI,
-    .channel = OMAP_DSS_CHANNEL_LCD,
-    .phy.dpi.data_lines = 24,
-    .platform_disable = latona_panel_disable_lcd,
+	.name = "lcd",
+	.driver_name = "nt35510_panel",
+	.type = OMAP_DISPLAY_TYPE_DPI,
+	.channel = OMAP_DSS_CHANNEL_LCD,
+	.phy.dpi.data_lines = 24,
+	.platform_disable = latona_panel_disable_lcd,
 };
 
 static struct omap_dss_device *omap_board_dss_devices[] = {
@@ -61,19 +56,18 @@ static struct omap_dss_board_info omap_board_dss_data = {
 
 //ZEUS_LCD
 static struct omap2_mcspi_device_config board_lcd_mcspi_config = {
-    .turbo_mode = 0,
-    .single_channel = 1,    /* 0: slave, 1: master */
+	.turbo_mode = 0,
+	.single_channel = 1,    /* 0: slave, 1: master */
 };
 
 static struct spi_board_info board_spi_board_info[] __initdata = {
-
-    [0] = {
-           .modalias = "nt35510_disp_spi",
-           .bus_num = 1,
-           .chip_select = 0,
-           .max_speed_hz = 375000,
-           .controller_data = &board_lcd_mcspi_config,
-           },     
+	[0] = {
+		.modalias = "nt35510_disp_spi",
+		.bus_num = 1,
+		.chip_select = 0,
+		.max_speed_hz = 375000,
+		.controller_data = &board_lcd_mcspi_config,
+	},
 };
 
 void __init latona_display_init(void)
