@@ -26,14 +26,6 @@
 static struct clk *dss_sys_fclk;
 bool init_clk_disable = true;
 
-static int latona_panel_enable_lcd(struct omap_dss_device *dssdev)
-{
-	// Run L3@400Mhz when screen is ON.
-	omap_pm_set_min_bus_tput(&(dssdev->dev), OCP_INITIATOR_AGENT, 400000 * 4);
-
-	return 0;
-}
-
 static void dss_clks_disable(void)
 {
     clk_disable(dss_sys_fclk);
@@ -41,8 +33,6 @@ static void dss_clks_disable(void)
 
 static void latona_panel_disable_lcd(struct omap_dss_device *dssdev)
 {
-	omap_pm_set_min_bus_tput(&(dssdev->dev), OCP_INITIATOR_AGENT, -1);
-
 	if (init_clk_disable) {
 		dss_clks_disable();
 		init_clk_disable = false;
@@ -55,7 +45,6 @@ struct omap_dss_device omap_board_lcd_device = {
     .type = OMAP_DISPLAY_TYPE_DPI,
     .channel = OMAP_DSS_CHANNEL_LCD,
     .phy.dpi.data_lines = 24,
-    .platform_enable = latona_panel_enable_lcd,
     .platform_disable = latona_panel_disable_lcd,
 };
 
