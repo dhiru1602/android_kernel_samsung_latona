@@ -68,6 +68,13 @@ static struct platform_device headset_switch_device = {
 		}
 };
 
+#ifdef CONFIG_SWITCH_SIO
+struct platform_device latona_sio_switch = {
+	.name = "switch-sio",
+	.id = -1,
+};
+#endif
+
 static struct resource board_zeus_key_resources[] = {
 	[0] = {
 	       .start = 0,                                             /* Power Button */ 
@@ -342,6 +349,9 @@ static struct platform_device *latona_board_devices[] __initdata = {
 	&headset_switch_device,
 	&board_zeus_key_device,     /* ZEUS KEY */ 
 	&latona_led_device,         /* SAMSUNG LEDs */ 
+#ifdef CONFIG_SWITCH_SIO
+	&latona_sio_switch,
+#endif
 };
 
 static int adc_vs_lux_table[][2] = {
