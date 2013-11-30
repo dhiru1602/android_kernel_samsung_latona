@@ -92,14 +92,14 @@ static void usb_api_set_usb_switch(USB_SWITCH_MODE usb_switch)
 		//USB_SEL GPIO Set High => CP USB enable
 		gpio_set_value(OMAP_GPIO_CP_VBUS_EN, GPIO_LEVEL_HIGH);
 #ifdef CONFIG_FSA9480_MICROUSB
-		mcirousb_usbpath_change(1);
+		microusb_usbpath_change(1);
 #endif
 		usb_path = SWITCH_MODEM;
 	} else {
 		//USB_SEL GPIO Set Low => AP USB enable
 		gpio_set_value(OMAP_GPIO_CP_VBUS_EN, GPIO_LEVEL_LOW);
 #ifdef CONFIG_FSA9480_MICROUSB
-		mcirousb_usbpath_change(0);
+		microusb_usbpath_change(0);
 #endif
 		usb_path = SWITCH_PDA;
 	}

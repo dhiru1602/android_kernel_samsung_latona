@@ -728,7 +728,7 @@ struct i2c_driver fsa9480_i2c_driver = {
 };
 
 // Called by switch sio driver
-void mcirousb_usbpath_change(int usb_path)
+void microusb_usbpath_change(int usb_path)
 {
 	u8 pData;
 
@@ -760,7 +760,7 @@ void mcirousb_usbpath_change(int usb_path)
 		}
 	}
 }
-EXPORT_SYMBOL(mcirousb_usbpath_change);
+EXPORT_SYMBOL(microusb_usbpath_change);
 
 void microusb_disconnect_notify(void)
 {

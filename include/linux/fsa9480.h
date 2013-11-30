@@ -312,5 +312,5 @@ struct fsa9480_platform_data {
 
 int microusb_enable(void);
 void microusb_disable(void);
-void mcirousb_usbpath_change(int usb_path);
+void microusb_usbpath_change(int usb_path);
 int get_real_usbic_state(void);
