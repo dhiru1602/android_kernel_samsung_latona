@@ -48,7 +48,7 @@
 
 #define LATONA_OMAP_OUTPUT_GPIO(name, val)		{name, val, (unsigned int)#name},
 
-static unsigned int __omap_board_output_gpio[][3] = {
+static unsigned int latona_board_output_gpio[][3] = {
 	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_PS_HOLD_PU, 0)
 	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_FM_nRST, 0)
 	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_CAM_CIF_NRST, 0)
@@ -72,12 +72,7 @@ static unsigned int __omap_board_output_gpio[][3] = {
 	LATONA_OMAP_OUTPUT_GPIO(OMAP_GPIO_EN_TEMP_VDD, 0)
 };	/* end array __omap_output_gpio */
 
-unsigned int latona_board_output_gpio_size = ARRAY_SIZE(__omap_board_output_gpio);
-EXPORT_SYMBOL(latona_board_output_gpio_size);
-unsigned int (*latona_board_output_gpio_ptr)[3] = __omap_board_output_gpio;
-EXPORT_SYMBOL(latona_board_output_gpio_ptr);
-
-static unsigned int __omap_wakeup_gpio[] = {
+static unsigned int latona_board_wakeup_gpio[] = {
 	OMAP_GPIO_JACK_NINT,
 	OMAP_GPIO_IPC_SRDY,
 	OMAP_GPIO_CHG_ING_N,
@@ -91,12 +86,7 @@ static unsigned int __omap_wakeup_gpio[] = {
 	OMAP_GPIO_FM_INT,
 };	/* end array omap_wakeup_gpio */
 
-unsigned int latona_board_wakeup_gpio_size = ARRAY_SIZE(__omap_wakeup_gpio);
-EXPORT_SYMBOL(latona_board_wakeup_gpio_size);
-unsigned int (*latona_board_wakeup_gpio_ptr) = __omap_wakeup_gpio;
-EXPORT_SYMBOL(latona_board_wakeup_gpio_ptr);
-
-static struct omap_board_mux __omap_board_core_mux[] = {
+static struct omap_board_mux latona_board_core_mux[] = {
 
 /*
  *		Name, reg-offset,
@@ -816,17 +806,21 @@ static struct omap_board_mux __omap_board_core_mux[] = {
 	{.reg_offset = OMAP_MUX_TERMINATOR},
 };
 
-unsigned int latona_board_mux_size = ARRAY_SIZE(__omap_board_core_mux);
-EXPORT_SYMBOL(latona_board_mux_size);
-struct omap_board_mux *latona_board_mux_ptr = __omap_board_core_mux;
-EXPORT_SYMBOL(latona_board_mux_ptr);
+int __init latona_mux_init(void)
+{
+#ifdef CONFIG_OMAP_MUX
+	return omap3_mux_init(latona_board_core_mux, OMAP_PACKAGE_CBP);
+#else
+	return omap3_mux_init(NULL, OMAP_PACKAGE_CBP);
+#endif
+}
 
 int __init latona_mux_init_padconf(void)
 {
 	int ret = 0;
 	unsigned int i;
 
-	for (i = 0; i < latona_board_mux_size; i++) {
+	for (i = 0; i < ARRAY_SIZE(latona_board_core_mux); i++) {
 		ret = omap_cfg_reg(i);
 		if (ret) {
 			pr_err("omap pad conf. fail : %d, %d\n", ret, i);
@@ -842,18 +836,18 @@ int __init latona_mux_init_gpio_out(void)
 	int err = 0;
 	unsigned int i = 0;
 
-	for (i = 0; i < latona_board_output_gpio_size; i++) {
-		err = gpio_request(latona_board_output_gpio_ptr[i][0],
-				   (char *)latona_board_output_gpio_ptr[i][2]);
+	for (i = 0; i < ARRAY_SIZE(latona_board_output_gpio); i++) {
+		err = gpio_request(latona_board_output_gpio[i][0],
+				   (char *)latona_board_output_gpio[i][2]);
 		if (err < 0) {
 			pr_err("can't get %s GPIO\n",
-			       (char *)latona_board_output_gpio_ptr[i][2]);
+			       (char *)latona_board_output_gpio[i][2]);
 			ret = -1;
 			goto __return;
 		}
 
-		gpio_direction_output(latona_board_output_gpio_ptr[i][0],
-				      latona_board_output_gpio_ptr[i][1]);
+		gpio_direction_output(latona_board_output_gpio[i][0],
+				      latona_board_output_gpio[i][1]);
 	}
 
 __return:
@@ -865,8 +859,8 @@ int __init latona_mux_set_wakeup_gpio(void)
 	int ret = 0;
 	unsigned int i = 0;
 
-	for (i = 0; i < latona_board_wakeup_gpio_size; i++)
-		enable_irq_wake(OMAP_GPIO_IRQ(latona_board_wakeup_gpio_ptr[i]));
+	for (i = 0; i < ARRAY_SIZE(latona_board_wakeup_gpio); i++)
+		enable_irq_wake(OMAP_GPIO_IRQ(latona_board_wakeup_gpio[i]));
 
 	return ret;
 }

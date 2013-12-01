@@ -52,14 +52,6 @@
 #define LATONA_RAM_CONSOLE_SIZE    SZ_1M
 #endif
 
-#ifdef CONFIG_OMAP_MUX
-extern struct omap_board_mux *latona_board_mux_ptr;
-extern struct omap_board_mux *latona_board_wk_mux_ptr;
-#else
-#define latona_board_mux_ptr		NULL
-#define latona_board_wk_mux_ptr		NULL
-#endif
-
 static void __init latona_init_early(void)
 {
 	omap2_init_common_infrastructure();
@@ -260,7 +252,7 @@ static struct omap_cpufreq_platform_data cpufreq_pdata = {
 
 static void __init latona_init(void)
 {
-	omap3_mux_init(latona_board_mux_ptr, OMAP_PACKAGE_CBP);
+	latona_mux_init();
 	omap_cpufreq_set_platform_data(&cpufreq_pdata);
 	omap3_pm_init_cpuidle(latona_cpuidle_params);
 	latona_mux_init_gpio_out();
