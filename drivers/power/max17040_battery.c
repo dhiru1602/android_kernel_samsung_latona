@@ -52,7 +52,7 @@
 
 struct max17040_chip {
 	struct i2c_client		*client;
-	struct work_struct		work;
+	struct delayed_work		work;
 	struct power_supply		battery;
 	struct max17040_platform_data	*pdata;
 
@@ -404,7 +404,7 @@ static void max17040_work(struct work_struct *work)
 	struct timespec ts;
 	struct max17040_chip *chip;
 
-	chip = container_of(work, struct max17040_chip, work);
+	chip = container_of(work, struct max17040_chip, work.work);
 
 	max17040_update(chip);
 
@@ -424,7 +424,7 @@ static void max17040_battery_alarm(struct alarm *alarm)
 		container_of(alarm, struct max17040_chip, alarm);
 
 	wake_lock(&chip->work_wake_lock);
-	schedule_work(&chip->work);
+	schedule_delayed_work(&chip->work, msecs_to_jiffies(200));
 
 }
 
@@ -434,7 +434,7 @@ static void max17040_ext_power_changed(struct power_supply *psy)
 				struct max17040_chip, battery);
 
 	wake_lock(&chip->work_wake_lock);
-	schedule_work(&chip->work);
+	schedule_delayed_work(&chip->work, 0);
 }
 
 static enum power_supply_property max17040_battery_props[] = {
@@ -458,7 +458,7 @@ static int max17040_pm_notifier(struct notifier_block *notifier,
 	switch (pm_event) {
 	case PM_SUSPEND_PREPARE:
 		if (!chip->pdata->charger_enable()) {
-			cancel_work_sync(&chip->work);
+			cancel_delayed_work_sync(&chip->work);
 			max17040_program_alarm(chip, SLOW_POLL);
 			chip->slow_poll = 1;
 		}
@@ -570,7 +570,7 @@ static int __devinit max17040_probe(struct i2c_client *client,
 		max17040_reset(client);
 
 	max17040_get_version(client);
-	INIT_WORK(&chip->work, max17040_work);
+	INIT_DELAYED_WORK(&chip->work, max17040_work);
 
 	ret = power_supply_register(&client->dev, &chip->battery);
 	if (ret) {
@@ -587,7 +587,7 @@ static int __devinit max17040_probe(struct i2c_client *client,
 		dev_err(&client->dev, "failed: register pm notifier\n");
 		goto err_pm_notifier;
 	}
-	schedule_work(&chip->work);
+	schedule_delayed_work(&chip->work, 0);
 
 	if (HAS_ALERT_INTERRUPT(chip->ver) && chip->pdata->use_fuel_alert) {
 		/* setting the low SOC alert threshold */
@@ -630,7 +630,7 @@ static int __devexit max17040_remove(struct i2c_client *client)
 	unregister_pm_notifier(&chip->pm_notifier);
 	power_supply_unregister(&chip->battery);
 	alarm_cancel(&chip->alarm);
-	cancel_work_sync(&chip->work);
+	cancel_delayed_work_sync(&chip->work);
 	wake_lock_destroy(&chip->work_wake_lock);
 	if (HAS_ALERT_INTERRUPT(chip->ver) && chip->pdata->use_fuel_alert)
 		free_irq(client->irq, chip);
