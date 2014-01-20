@@ -526,8 +526,9 @@ int twl4030_madc_conversion(struct twl4030_madc_request *req)
 	u8 ch_msb, ch_lsb;
 	int ret;
 
-	if (!req)
+	if (!req || !twl4030_madc)
 		return -EINVAL;
+
 	mutex_lock(&twl4030_madc->lock);
 	if (req->method < TWL4030_MADC_RT || req->method > TWL4030_MADC_SW2) {
 		ret = -EINVAL;
@@ -546,13 +547,13 @@ int twl4030_madc_conversion(struct twl4030_madc_request *req)
 	if (ret) {
 		dev_err(twl4030_madc->dev,
 			"unable to write sel register 0x%X\n", method->sel + 1);
-		return ret;
+		goto out;
 	}
 	ret = twl_i2c_write_u8(TWL4030_MODULE_MADC, ch_lsb, method->sel);
 	if (ret) {
 		dev_err(twl4030_madc->dev,
 			"unable to write sel register 0x%X\n", method->sel + 1);
-		return ret;
+		goto out;
 	}
 	/* Select averaging for all channels if do_avg is set */
 	if (req->do_avg) {
@@ -562,7 +563,7 @@ int twl4030_madc_conversion(struct twl4030_madc_request *req)
 			dev_err(twl4030_madc->dev,
 				"unable to write avg register 0x%X\n",
 				method->avg + 1);
-			return ret;
+			goto out;
 		}
 		ret = twl_i2c_write_u8(TWL4030_MODULE_MADC,
 				       ch_lsb, method->avg);
@@ -570,7 +571,7 @@ int twl4030_madc_conversion(struct twl4030_madc_request *req)
 			dev_err(twl4030_madc->dev,
 				"unable to write sel reg 0x%X\n",
 				method->sel + 1);
-			return ret;
+			goto out;
 		}
 	}
 	if (req->type == TWL4030_MADC_IRQ_ONESHOT && req->func_cb != NULL) {
@@ -722,7 +723,6 @@ static int __devinit twl4030_madc_probe(struct platform_device *pdev)
 	if (!madc)
 		return -ENOMEM;
 
-	/* Copy the pointer to device struct */
 	madc->dev = &pdev->dev;
 
 	/*
@@ -762,6 +762,7 @@ static int __devinit twl4030_madc_probe(struct platform_device *pdev)
 	if (ret) {
 		dev_err(&pdev->dev, "unable to read reg GPBR1 0x%X\n",
 				TWL4030_REG_GPBR1);
+		goto err_i2c;
 	}
 
 	/* If MADC clk is not on, turn it on */
@@ -776,7 +777,6 @@ static int __devinit twl4030_madc_probe(struct platform_device *pdev)
 			goto err_i2c;
 		}
 	}
-
 
 	platform_set_drvdata(pdev, madc);
 	mutex_init(&madc->lock);
