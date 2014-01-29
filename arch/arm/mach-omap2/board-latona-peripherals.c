@@ -333,7 +333,7 @@ static struct fixed_voltage_config latona_vwlan = {
 	.gpio			= LATONA_WIFI_PMENA_GPIO,
 	.startup_delay		= 70000, /* 70msec */
 	.enable_high		= 1,
-	.enabled_at_boot	= 0,
+	.enabled_at_boot	= 1,
 	.init_data		= &latona_vmmc3,
 };
 
