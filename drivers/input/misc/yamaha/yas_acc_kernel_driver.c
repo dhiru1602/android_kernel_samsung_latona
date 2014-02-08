@@ -27,7 +27,6 @@
 #include <linux/types.h>
 #include <linux/workqueue.h>
 #include <linux/slab.h>
-#include <mach/board-latona.h>
 
 #define __LINUX_KERNEL_DRIVER__
 #include "yas.h"

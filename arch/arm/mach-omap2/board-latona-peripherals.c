@@ -38,6 +38,7 @@
 #include <linux/i2c/twl4030-madc.h>
 #include <linux/irq.h>
 #include <linux/gp2a.h>
+#include <linux/yas529.h>
 #include "mux.h"
 #include "hsmmc.h"
 #include "common-board-devices.h"
@@ -675,6 +676,11 @@ static struct mxt_platform_data latona_mxt_platform_data = {
 	.tsp_en_gpio	= OMAP_GPIO_TOUCH_EN,
 };
 
+static struct yas529_platform_data yas529_pdata = {
+	.reset_line = OMAP_GPIO_MSENSE_NRST,
+	.reset_asserted = 0,
+};
+
 static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
 #if defined(CONFIG_SND_SOC_MAX97000)
 	{
@@ -694,6 +700,7 @@ static struct i2c_board_info __initdata latona_i2c_bus2_info[] = {
 	},
 	{
 		I2C_BOARD_INFO("Yas529Geomag", 0x2E),
+		.platform_data = &yas529_pdata,
 	},
 	{
 		I2C_BOARD_INFO("gp2a", 0x44),

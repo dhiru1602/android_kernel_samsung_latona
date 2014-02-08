@@ -31,6 +31,7 @@
 #include <asm/atomic.h>
 #include <plat/mux.h>
 #include <plat/gpio.h>
+#include <linux/yas529.h>
 
 #include "yas529.h"
 
@@ -154,6 +155,7 @@ static void geomagnetic_current_time(int32_t *sec, int32_t *msec);
 struct geomagnetic_data {
 	struct input_dev *input_data;
 	struct input_dev *input_raw;
+	struct yas529_platform_data *pdata;
 	struct delayed_work work;
 	struct semaphore driver_lock;
 	struct semaphore multi_lock;
@@ -2889,6 +2891,41 @@ geomagnetic_current_time(int32_t *sec, int32_t *msec)
 	*msec = tv.tv_usec / 1000;
 }
 
+static void geomagnetic_reset(struct geomagnetic_data *data) {
+	int counter = 0;
+	uint8_t cmd[2] = { 0 };
+	struct i2c_msg i2cmsg[2];
+
+	i2cmsg[0].addr = this_client->addr;
+	i2cmsg[0].flags = 0;
+	i2cmsg[0].len = 1;
+	i2cmsg[0].buf = cmd;
+	i2cmsg[1].addr = this_client->addr;
+	i2cmsg[1].flags = 1;
+	i2cmsg[1].len = 2;
+	i2cmsg[1].buf = cmd;
+
+	cmd[0] = 0xd0;
+
+	for (counter = 0; counter < 3; counter++) {
+
+		gpio_set_value(data->pdata->reset_line, data->pdata->reset_asserted);
+		msleep(2);
+		gpio_set_value(data->pdata->reset_line, !data->pdata->reset_asserted);
+
+		if (i2c_transfer(this_client->adapter, i2cmsg, 2) < 0) {
+			dev_err(&this_client->dev, "[geomagnetic_init] %d Read I2C ERROR!\n",
+				counter);
+		}
+		dev_err(&this_client->dev, "[geomagnetic_init] %d DeviceID is %x %x\n",
+			counter, cmd[0], cmd[1]);
+		if (cmd[1] == 0x40)
+			break;
+		msleep(10);
+		cmd[0] = 0xd0;
+		cmd[1] = 0;
+	}
+}
 static int
 geomagnetic_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -2896,17 +2933,6 @@ geomagnetic_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	struct input_dev *input_data = NULL, *input_raw = NULL;
 	int rt, sysfs_created = 0, sysfs_raw_created = 0;
 	int data_registered = 0, raw_registered = 0, i;
-
-	printk("Yamaha YAS529 GeoMagnetic PROBE");
-    // gpio init
-    if(gpio_is_valid(OMAP_GPIO_MSENSE_NRST))
-    {
-        if(gpio_request(OMAP_GPIO_MSENSE_NRST, NULL))
-        {
-             printk(KERN_ERR "Failed to request OMAP_GPIO_MSENSE_NRST!\n");
-        }
-        gpio_direction_output(OMAP_GPIO_MSENSE_NRST, 1);
-    }
 
 	i2c_set_clientdata(client, NULL);
 	data = kzalloc(sizeof(struct geomagnetic_data), GFP_KERNEL);
@@ -2994,12 +3020,19 @@ geomagnetic_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	}
 	sysfs_raw_created = 1;
 
+	data->pdata = client->dev.platform_data;
+
 	this_client = client;
 	data->input_raw = input_raw;
 	data->input_data = input_data;
 	input_set_drvdata(input_data, data);
 	input_set_drvdata(input_raw, data);
 	i2c_set_clientdata(client, data);
+
+	gpio_request(data->pdata->reset_line, "YAS529 Reset Line");
+	gpio_direction_output(data->pdata->reset_line, !data->pdata->reset_asserted);
+
+	geomagnetic_reset(data);
 
 	rt = geomagnetic_driver_init(&hwdep_driver);
 	if (rt < 0) {
