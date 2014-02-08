@@ -827,11 +827,24 @@ static void enable_board_wakeup_source(void)
 		OMAP_WAKEUP_EN | OMAP_PIN_INPUT_PULLUP);
 }
 
+static struct omap_device_pad latona_uart3_pads[] __initdata = {
+	{
+		.name	= "uart3_tx_irtx.uart3_tx_irtx",
+		.enable	= OMAP_PIN_OUTPUT | OMAP_MUX_MODE0,
+	},
+	{
+		.name	= "uart3_rx_irrx.uart3_rx_irrx",
+		.flags	= OMAP_DEVICE_PAD_REMUX | OMAP_DEVICE_PAD_WAKEUP,
+		.enable	= OMAP_PIN_INPUT | OMAP_MUX_MODE0,
+		.idle	= OMAP_PIN_INPUT | OMAP_MUX_MODE0,
+	},
+};
+
 static inline void __init latona_serial_init(void)
 {
 	omap_serial_init_port_pads(0, NULL, 0, NULL);
 	omap_serial_init_port_pads(1, NULL, 0, NULL);
-	omap_serial_init_port_pads(2, NULL, 0, NULL);
+	omap_serial_init_port_pads(2, latona_uart3_pads, ARRAY_SIZE(latona_uart3_pads), NULL);
 }
 
 void __init latona_peripherals_init(void)
