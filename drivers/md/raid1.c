@@ -906,7 +906,7 @@ static int make_request(mddev_t *mddev, struct bio * bio)
 			 * know the original bi_idx, so we just free
 			 * them all
 			 */
-			__bio_for_each_segment(bvec, mbio, j, 0)
+			bio_for_each_segment(bvec, mbio, j)
 				bvec->bv_page = r1_bio->behind_pages[j];
 			if (test_bit(WriteMostly, &conf->mirrors[i].rdev->flags))
 				atomic_inc(&r1_bio->behind_remaining);

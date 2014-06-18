@@ -799,7 +799,7 @@ int bio_uncopy_user(struct bio *bio)
 					     bmd->nr_sgvecs, bio_data_dir(bio) == READ,
 					     0, bmd->is_our_pages);
 		else if (bmd->is_our_pages)
-			__bio_for_each_segment(bvec, bio, i, 0)
+			bio_for_each_segment(bvec, bio, i)
 				__free_page(bvec->bv_page);
 	}
 	bio_free_map_data(bmd);
